@@ -1,0 +1,184 @@
+import { useState } from 'react'
+import { MapPin, Star, X } from 'lucide-react'
+
+const projects = [
+  {
+    title: 'Waterproofing Project',
+    location: 'Port Elizabeth Central',
+    description:
+      'Complete roof waterproofing using bitumen torch-on system for a residential property.',
+    rating: 5,
+    status: 'Completed',
+    images: ['/images/placeholder-project.jpg'],
+  },
+  {
+    title: 'Damp Treatment',
+    location: 'Summerstrand',
+    description:
+      'Damp proofing treatment for residential property suffering from rising damp and moisture damage.',
+    rating: 5,
+    status: 'Completed',
+    images: ['/images/placeholder-project.jpg'],
+  },
+  {
+    title: 'Renovation Work',
+    location: 'Walmer',
+    description:
+      'General maintenance and repairs for commercial building including painting and structural work.',
+    rating: 5,
+    status: 'Completed',
+    images: ['/images/placeholder-project.jpg'],
+  },
+]
+
+export function Projects() {
+  const [lightboxProject, setLightboxProject] = useState<number | null>(null)
+
+  return (
+    <section id="projects" className="py-20 bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Section heading */}
+        <div className="text-center mb-4">
+          <span className="section-badge">Our Work</span>
+          <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-navy">
+            Recent Projects
+          </h2>
+          <p className="mt-3 text-text-muted">
+            See our quality workmanship in action across Port Elizabeth
+          </p>
+        </div>
+
+        <div className="text-center mb-12">
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-steel hover:text-steel-light transition-colors"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+            Follow us on Facebook for more project updates
+          </a>
+        </div>
+
+        {/* Project cards */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project, index) => (
+            <div
+              key={project.title}
+              className="group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+              onClick={() => setLightboxProject(index)}
+            >
+              {/* Image placeholder */}
+              <div className="h-48 bg-gradient-to-br from-bg-light to-bg-alt flex items-center justify-center">
+                <svg
+                  className="w-16 h-16 text-steel/30"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1}
+                >
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              </div>
+
+              <div className="p-5">
+                <h3 className="font-heading text-lg font-bold text-navy">
+                  {project.title}
+                </h3>
+                <div className="mt-1 flex items-center gap-1 text-sm text-text-muted">
+                  <MapPin size={14} />
+                  {project.location}
+                </div>
+                <p className="mt-3 text-sm text-text-muted leading-relaxed">
+                  {project.description}
+                </p>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: project.rating }).map((_, i) => (
+                      <Star
+                        key={i}
+                        size={16}
+                        className="fill-amber text-amber"
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    {project.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Facebook integration card */}
+        <div className="mt-12 rounded-2xl border border-gray-200 bg-bg-light p-6 sm:p-8 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg
+              className="w-6 h-6 text-[#1877F2]"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+            <h4 className="font-heading text-lg font-bold text-navy">
+              Facebook Integration
+            </h4>
+          </div>
+          <p className="text-text-muted mb-4">
+            Check out our Facebook page for more project photos and updates
+          </p>
+          <a
+            href="https://facebook.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-[#1877F2] px-6 py-2.5 text-sm font-semibold text-[#1877F2] no-underline hover:bg-[#1877F2] hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+            Visit Facebook Page
+          </a>
+        </div>
+      </div>
+
+      {/* Lightbox modal */}
+      {lightboxProject !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxProject(null)}
+        >
+          <div
+            className="relative w-full max-w-2xl rounded-2xl bg-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setLightboxProject(null)}
+              className="absolute top-4 right-4 text-text-muted hover:text-text-dark bg-transparent border-none cursor-pointer"
+            >
+              <X size={24} />
+            </button>
+            <h3 className="font-heading text-xl font-bold text-navy mb-2">
+              {projects[lightboxProject].title}
+            </h3>
+            <div className="flex items-center gap-1 text-sm text-text-muted mb-4">
+              <MapPin size={14} />
+              {projects[lightboxProject].location}
+            </div>
+            <div className="aspect-video rounded-xl bg-gradient-to-br from-bg-light to-bg-alt flex items-center justify-center mb-4">
+              <p className="text-text-muted text-sm">
+                Project photos will be displayed here
+              </p>
+            </div>
+            <p className="text-text-muted">
+              {projects[lightboxProject].description}
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}

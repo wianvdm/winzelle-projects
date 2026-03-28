@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+
+  --color-navy: #1B2A4A;
+  --color-navy-light: #243558;
+  --color-steel: #4A6FA5;
+  --color-steel-light: #5A82B8;
+  --color-amber: #D4A017;
+  --color-amber-light: #E0B032;
+  --color-bg-light: #F5F7FA;
+  --color-bg-alt: #E8ECF1;
+  --color-text-dark: #2D2D2D;
+  --color-text-muted: #6B7280;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body, #app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--color-text-dark);
+  font-family: var(--font-sans);
+  background-color: #ffffff;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Section heading accent underline */
+.section-underline {
+  width: 60px;
+  height: 3px;
+  background-color: var(--color-steel);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
+}
+
+/* Badge label (e.g., "Our Work", "Contact Us") */
+.section-badge {
+  display: inline-block;
+  padding: 0.25rem 1rem;
+  border: 1px solid var(--color-steel);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-steel);
+  letter-spacing: 0.05em;
+}
+
+/* Frosted glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 1.25rem;
+}
