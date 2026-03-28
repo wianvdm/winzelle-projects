@@ -67,15 +67,16 @@ export function QuoteForm() {
   }
 
   return (
-    <section id="quote" className="py-20 bg-bg-light">
+    <section id="quote" className="py-20 bg-gradient-to-br from-primary via-secondary to-accent">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section heading */}
         <div className="text-center mb-14">
-          <span className="section-badge">Contact Us</span>
-          <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-navy">
+          <span className="section-badge border-light text-light">Contact Us</span>
+          <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-white">
             Get Your Free Quote Today
           </h2>
-          <p className="mt-3 text-text-muted">
+          <div className="section-underline !bg-light" />
+          <p className="mt-3 text-gray-200">
             Contact us for a personalized quote for your construction or
             maintenance project
           </p>
@@ -83,8 +84,8 @@ export function QuoteForm() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left column - Form */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8">
-            <h3 className="font-heading text-xl font-bold text-navy mb-1">
+          <div className="rounded-2xl border border-accent bg-white shadow-xl p-6 sm:p-8">
+            <h3 className="font-heading text-xl font-bold text-primary mb-1">
               Request a Quote
             </h3>
             <p className="text-sm text-text-muted mb-6">
@@ -96,7 +97,7 @@ export function QuoteForm() {
                 <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                   <Send size={24} className="text-green-600" />
                 </div>
-                <h4 className="font-heading text-lg font-bold text-navy mb-2">
+                <h4 className="font-heading text-lg font-bold text-primary mb-2">
                   Quote Request Sent!
                 </h4>
                 <p className="text-text-muted">
@@ -104,7 +105,7 @@ export function QuoteForm() {
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="mt-4 text-steel font-medium hover:text-steel-light bg-transparent border-none cursor-pointer"
+                  className="mt-4 text-accent font-medium hover:text-secondary bg-transparent border-none cursor-pointer"
                 >
                   Send another request
                 </button>
@@ -123,7 +124,7 @@ export function QuoteForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-steel focus:ring-1 focus:ring-steel outline-none transition-colors"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -138,7 +139,7 @@ export function QuoteForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-steel focus:ring-1 focus:ring-steel outline-none transition-colors"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -152,7 +153,7 @@ export function QuoteForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, phone: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-steel focus:ring-1 focus:ring-steel outline-none transition-colors"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -165,7 +166,7 @@ export function QuoteForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, projectType: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark focus:border-steel focus:ring-1 focus:ring-steel outline-none transition-colors bg-white"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors bg-white"
                   >
                     <option value="">Select a service</option>
                     {serviceOptions.map((opt) => (
@@ -187,13 +188,13 @@ export function QuoteForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, details: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-steel focus:ring-1 focus:ring-steel outline-none transition-colors resize-vertical"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-text-dark placeholder:text-gray-400 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors resize-vertical"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-steel px-6 py-3 text-base font-semibold text-white hover:bg-steel-light transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-accent px-6 py-3 text-base font-semibold text-white hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   <Send size={18} />
                   {submitting ? 'Sending...' : 'Submit Quote Request'}
@@ -205,8 +206,8 @@ export function QuoteForm() {
           {/* Right column - Contact info cards */}
           <div className="space-y-6">
             {/* Contact Information */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-6">
-              <h4 className="font-heading text-lg font-bold text-navy mb-1">
+            <div className="rounded-2xl border border-accent bg-white shadow-xl p-6">
+              <h4 className="font-heading text-lg font-bold text-primary mb-1">
                 Contact Information
               </h4>
               <p className="text-sm text-text-muted mb-5">
@@ -214,8 +215,8 @@ export function QuoteForm() {
               </p>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-steel/10 flex items-center justify-center shrink-0">
-                    <MapPin size={18} className="text-steel" />
+                  <div className="w-10 h-10 rounded-full bg-light flex items-center justify-center shrink-0">
+                    <MapPin size={18} className="text-primary" />
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Location</p>
@@ -225,8 +226,8 @@ export function QuoteForm() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-steel/10 flex items-center justify-center shrink-0">
-                    <Phone size={18} className="text-steel" />
+                  <div className="w-10 h-10 rounded-full bg-light flex items-center justify-center shrink-0">
+                    <Phone size={18} className="text-primary" />
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Phone</p>
@@ -235,8 +236,8 @@ export function QuoteForm() {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-steel/10 flex items-center justify-center shrink-0">
-                    <Mail size={18} className="text-steel" />
+                  <div className="w-10 h-10 rounded-full bg-light flex items-center justify-center shrink-0">
+                    <Mail size={18} className="text-primary" />
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Email</p>
@@ -252,13 +253,13 @@ export function QuoteForm() {
             </div>
 
             {/* WhatsApp card */}
-            <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+            <div className="rounded-2xl border border-green-200 bg-green-50 shadow-xl p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                   <MessageCircle size={20} className="text-white" />
                 </div>
                 <div>
-                  <h4 className="font-heading text-lg font-bold text-navy">
+                  <h4 className="font-heading text-lg font-bold text-primary">
                     Chat With Us Directly
                   </h4>
                   <p className="text-sm text-text-muted">
@@ -278,8 +279,8 @@ export function QuoteForm() {
             </div>
 
             {/* Business Hours */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-6">
-              <h4 className="font-heading text-lg font-bold text-navy mb-4">
+            <div className="rounded-2xl border border-accent bg-white shadow-xl p-6">
+              <h4 className="font-heading text-lg font-bold text-primary mb-4">
                 Business Hours
               </h4>
               <div className="space-y-2.5">
@@ -300,10 +301,10 @@ export function QuoteForm() {
                   <span className="font-medium text-text-dark">Closed</span>
                 </div>
               </div>
-              <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber/10 px-4 py-3">
+              <div className="mt-4 flex items-start gap-2 rounded-lg bg-accent/10 px-4 py-3">
                 <AlertTriangle
                   size={16}
-                  className="mt-0.5 shrink-0 text-amber"
+                  className="mt-0.5 shrink-0 text-accent"
                 />
                 <div>
                   <p className="text-sm font-medium text-text-dark">

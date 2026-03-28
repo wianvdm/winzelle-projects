@@ -40,7 +40,7 @@ export function Projects() {
         {/* Section heading */}
         <div className="text-center mb-4">
           <span className="section-badge">Our Work</span>
-          <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-navy">
+          <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-primary">
             Recent Projects
           </h2>
           <p className="mt-3 text-text-muted">
@@ -48,32 +48,19 @@ export function Projects() {
           </p>
         </div>
 
-        <div className="text-center mb-12">
-          <a
-            href="https://facebook.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-steel hover:text-steel-light transition-colors"
-          >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            Follow us on Facebook for more project updates
-          </a>
-        </div>
 
         {/* Project cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project, index) => (
             <div
               key={project.title}
-              className="group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+              className="group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
               onClick={() => setLightboxProject(index)}
             >
               {/* Image placeholder */}
-              <div className="h-48 bg-gradient-to-br from-bg-light to-bg-alt flex items-center justify-center">
+              <div className="h-48 bg-gradient-to-br from-surface to-light flex items-center justify-center">
                 <svg
-                  className="w-16 h-16 text-steel/30"
+                  className="w-16 h-16 text-accent/30"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -85,7 +72,7 @@ export function Projects() {
               </div>
 
               <div className="p-5">
-                <h3 className="font-heading text-lg font-bold text-navy">
+                <h3 className="font-heading text-lg font-bold text-primary">
                   {project.title}
                 </h3>
                 <div className="mt-1 flex items-center gap-1 text-sm text-text-muted">
@@ -101,7 +88,7 @@ export function Projects() {
                       <Star
                         key={i}
                         size={16}
-                        className="fill-amber text-amber"
+                        className="fill-accent text-accent"
                       />
                     ))}
                   </div>
@@ -115,27 +102,27 @@ export function Projects() {
         </div>
 
         {/* Facebook integration card */}
-        <div className="mt-12 rounded-2xl border border-gray-200 bg-bg-light p-6 sm:p-8 text-center">
+        <div className="mt-12 rounded-2xl border border-accent bg-gradient-to-br from-primary to-secondary p-6 sm:p-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
-              className="w-6 h-6 text-[#1877F2]"
+              className="w-6 h-6 text-light"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
-            <h4 className="font-heading text-lg font-bold text-navy">
-              Facebook Integration
+            <h4 className="font-heading text-lg font-bold text-white">
+              Follow Us on Facebook
             </h4>
           </div>
-          <p className="text-text-muted mb-4">
+          <p className="text-light mb-4">
             Check out our Facebook page for more project photos and updates
           </p>
           <a
             href="https://facebook.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-[#1877F2] px-6 py-2.5 text-sm font-semibold text-[#1877F2] no-underline hover:bg-[#1877F2] hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-light px-6 py-2.5 text-sm font-semibold text-primary no-underline hover:bg-accent hover:text-white transition-colors"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -161,14 +148,14 @@ export function Projects() {
             >
               <X size={24} />
             </button>
-            <h3 className="font-heading text-xl font-bold text-navy mb-2">
+            <h3 className="font-heading text-xl font-bold text-primary mb-2">
               {projects[lightboxProject].title}
             </h3>
             <div className="flex items-center gap-1 text-sm text-text-muted mb-4">
               <MapPin size={14} />
               {projects[lightboxProject].location}
             </div>
-            <div className="aspect-video rounded-xl bg-gradient-to-br from-bg-light to-bg-alt flex items-center justify-center mb-4">
+            <div className="aspect-video rounded-xl bg-gradient-to-br from-surface to-light flex items-center justify-center mb-4">
               <p className="text-text-muted text-sm">
                 Project photos will be displayed here
               </p>
