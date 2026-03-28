@@ -18,12 +18,12 @@ export function Navbar() {
           {/* Logo + company name */}
           <a href="#home" className="flex items-center gap-3 no-underline">
             <img
-              src="/images/logo.png"
+              src="/images/winzelle_logo.jpg"
               alt="Winzelle Projects Logo"
               className="h-10 w-10 rounded-lg object-contain"
             />
             <div>
-              <span className="font-heading text-lg font-bold text-navy">
+              <span className="font-heading text-lg font-bold text-primary">
                 Winzelle Projects
               </span>
               <span className="hidden sm:block text-xs text-text-muted">
@@ -38,7 +38,7 @@ export function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-text-dark hover:text-steel transition-colors no-underline"
+                className="text-sm font-medium text-text-dark hover:text-secondary transition-colors no-underline"
               >
                 {link.label}
               </a>
@@ -49,13 +49,13 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <a
               href="#quote"
-              className="hidden sm:inline-flex items-center rounded-full bg-amber px-5 py-2 text-sm font-semibold text-white no-underline hover:bg-amber-light transition-colors"
+              className="hidden sm:inline-flex items-center rounded-full bg-light px-5 py-2 text-sm font-semibold text-primary no-underline hover:bg-accent hover:text-white transition-colors"
             >
               Get a Quote
             </a>
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 text-navy"
+              className="md:hidden p-2 text-primary"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -73,7 +73,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="block text-sm font-medium text-text-dark hover:text-steel no-underline"
+                className="block text-sm font-medium text-text-dark hover:text-secondary no-underline"
               >
                 {link.label}
               </a>
@@ -81,7 +81,7 @@ export function Navbar() {
             <a
               href="#quote"
               onClick={() => setMobileOpen(false)}
-              className="block w-full text-center rounded-full bg-amber px-5 py-2.5 text-sm font-semibold text-white no-underline hover:bg-amber-light transition-colors"
+              className="block w-full text-center rounded-full bg-light px-5 py-2.5 text-sm font-semibold text-primary no-underline hover:bg-accent hover:text-white transition-colors"
             >
               Get a Quote
             </a>

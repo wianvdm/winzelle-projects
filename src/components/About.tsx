@@ -32,7 +32,7 @@ export function About() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section heading */}
         <div className="text-center mb-14">
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-navy">
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-primary">
             About Us
           </h2>
           <div className="section-underline" />
@@ -41,7 +41,7 @@ export function About() {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* Left column */}
           <div>
-            <h3 className="font-heading text-xl sm:text-2xl font-bold text-navy mb-6">
+            <h3 className="font-heading text-xl sm:text-2xl font-bold text-primary mb-6">
               Your Trusted Construction Partner in Port Elizabeth
             </h3>
             <p className="text-text-muted leading-relaxed mb-4">
@@ -65,13 +65,13 @@ export function About() {
               {valueBadges.map((badge) => (
                 <div
                   key={badge.title}
-                  className="rounded-xl border border-gray-200 bg-bg-light p-5 text-center"
+                  className="rounded-xl border border-gray-200 bg-light p-5 text-center"
                 >
                   <badge.icon
                     size={24}
-                    className="mx-auto mb-2 text-navy"
+                    className="mx-auto mb-2 text-primary"
                   />
-                  <p className="font-heading text-lg font-bold text-navy">
+                  <p className="font-heading text-lg font-bold text-primary">
                     {badge.title}
                   </p>
                   <p className="text-sm text-text-muted">{badge.subtitle}</p>
@@ -82,8 +82,8 @@ export function About() {
 
           {/* Right column - Commitment card */}
           <div>
-            <div className="rounded-2xl border border-steel/20 bg-bg-light p-8">
-              <h4 className="font-heading text-xl font-bold text-navy mb-4">
+            <div className="rounded-2xl border border-accent bg-[linear-gradient(135deg,#cbe5f1_0%,#fefefd_100%)] p-8">
+              <h4 className="font-heading text-xl font-bold text-primary mb-4">
                 Our Commitment
               </h4>
               <p className="text-text-muted leading-relaxed mb-6">
@@ -98,7 +98,7 @@ export function About() {
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle
                       size={20}
-                      className="mt-0.5 shrink-0 text-steel"
+                      className="mt-0.5 shrink-0 text-accent"
                     />
                     <span className="text-text-dark font-medium">{item}</span>
                   </li>
@@ -112,13 +112,13 @@ export function About() {
         <div className="mt-12">
           <button
             onClick={() => setStoryOpen(!storyOpen)}
-            className="mx-auto flex items-center gap-2 text-steel font-medium hover:text-steel-light transition-colors bg-transparent border-none cursor-pointer"
+            className="mx-auto flex items-center gap-2 text-accent font-medium hover:text-accent-light transition-colors bg-transparent border-none cursor-pointer"
           >
             {storyOpen ? 'Hide Our Story' : 'Read Our Story'}
             {storyOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </button>
           {storyOpen && (
-            <div className="mt-6 mx-auto max-w-3xl rounded-2xl bg-bg-light border border-gray-200 p-8">
+            <div className="mt-6 mx-auto max-w-3xl rounded-2xl bg-surface border border-gray-200 p-8">
               <p className="text-text-muted leading-relaxed mb-4">
                 It was with great sadness that we had to say goodbye to Winzelle
                 Dried Fruits at the end of December 2024. Due to financial

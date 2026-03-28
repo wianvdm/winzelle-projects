@@ -21,14 +21,14 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-navy text-white">
+    <footer className="bg-primary text-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
           {/* Company info */}
           <div>
             <div className="flex items-center gap-3 mb-4">
               <img
-                src="/images/logo.png"
+                src="/images/winzelle_logo.jpg"
                 alt="Winzelle Projects"
                 className="h-10 w-10 rounded-lg object-contain"
               />
@@ -36,16 +36,16 @@ export function Footer() {
                 <span className="font-heading text-lg font-bold">
                   Winzelle Projects
                 </span>
-                <span className="block text-xs text-gray-400">
+                <span className="block text-xs text-light">
                   Waterproofing & Damp Sealing
                 </span>
               </div>
             </div>
-            <p className="text-sm text-gray-400 leading-relaxed mb-4">
+            <p className="text-sm text-light leading-relaxed mb-4">
               Professional waterproofing and construction services in Port
               Elizabeth.
             </p>
-            <div className="space-y-1 text-sm text-gray-400">
+            <div className="space-y-1 text-sm text-light">
               <p>Port Elizabeth, South Africa</p>
               <p>+27 XX XXX XXXX</p>
             </div>
@@ -61,7 +61,7 @@ export function Footer() {
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors no-underline"
+                    className="text-sm text-light hover:text-white transition-colors no-underline"
                   >
                     {link.label}
                   </a>
@@ -78,7 +78,7 @@ export function Footer() {
                 <li key={service}>
                   <a
                     href="#services"
-                    className="text-sm text-gray-400 hover:text-white transition-colors no-underline"
+                    className="text-sm text-light hover:text-white transition-colors no-underline"
                   >
                     {service}
                   </a>
@@ -90,9 +90,9 @@ export function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/10">
+      <div className="border-t border-secondary">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-gray-500 m-0">
+          <p className="text-sm text-secondary m-0">
             &copy; {currentYear} Winzelle Projects. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
@@ -101,7 +101,7 @@ export function Footer() {
               href="https://facebook.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-500 hover:text-white transition-colors no-underline"
+              className="text-secondary hover:text-white transition-colors no-underline"
               aria-label="Facebook"
             >
               <svg
@@ -117,7 +117,7 @@ export function Footer() {
               href="https://wa.me/27XXXXXXXXXX"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-gray-500 hover:text-white transition-colors no-underline"
+              className="text-secondary hover:text-white transition-colors no-underline"
               aria-label="WhatsApp"
             >
               <MessageCircle size={20} />

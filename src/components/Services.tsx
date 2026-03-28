@@ -96,11 +96,11 @@ export function Services() {
   const [expanded, setExpanded] = useState<number | null>(null)
 
   return (
-    <section id="services" className="py-20 bg-bg-light">
+    <section id="services" className="py-20 bg-surface">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section heading */}
         <div className="text-center mb-14">
-          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-navy">
+          <h2 className="font-heading text-3xl sm:text-4xl font-bold text-primary">
             Our Services
           </h2>
           <p className="mt-3 text-text-muted">
@@ -116,13 +116,13 @@ export function Services() {
             return (
               <div
                 key={service.title}
-                className="group rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+                className="group rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
                 onClick={() => setExpanded(isExpanded ? null : index)}
               >
-                <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-navy text-white">
+                <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary text-light">
                   <service.icon size={24} />
                 </div>
-                <h3 className="font-heading text-lg font-bold text-navy mb-2">
+                <h3 className="font-heading text-lg font-bold text-primary mb-2">
                   {service.title}
                 </h3>
                 <p className="text-sm text-text-muted leading-relaxed mb-3">
@@ -130,7 +130,7 @@ export function Services() {
                 </p>
 
                 {/* Expand/collapse indicator */}
-                <button className="flex items-center gap-1 text-xs font-medium text-steel bg-transparent border-none cursor-pointer p-0">
+                <button className="flex items-center gap-1 text-xs font-medium text-accent bg-transparent border-none cursor-pointer p-0">
                   {isExpanded ? 'Show less' : 'View details'}
                   {isExpanded ? (
                     <ChevronUp size={14} />
@@ -147,7 +147,7 @@ export function Services() {
                         key={detail}
                         className="flex items-center gap-2 text-sm text-text-dark"
                       >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-steel" />
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                         {detail}
                       </li>
                     ))}
@@ -162,7 +162,7 @@ export function Services() {
         <div className="mt-12 text-center">
           <a
             href="#quote"
-            className="inline-flex items-center rounded-full bg-amber px-8 py-3 text-base font-semibold text-white no-underline hover:bg-amber-light transition-colors"
+            className="inline-flex items-center rounded-full bg-light px-8 py-3 text-base font-semibold text-primary no-underline hover:bg-accent hover:text-white hover:shadow-lg transition-all"
           >
             Request a Free Quote
           </a>
