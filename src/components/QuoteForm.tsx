@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   MapPin,
   Phone,
@@ -7,6 +7,22 @@ import {
   Send,
   MessageCircle,
 } from 'lucide-react'
+import { sanityClient } from '../lib/sanity.client'
+import { contactQuery, siteSettingsQuery } from '../lib/sanity.queries'
+
+interface ContactData {
+  heading?: string
+  subtitle?: string
+  formSubtitle?: string
+  whatsappMessage?: string
+}
+
+interface SiteSettings {
+  phone?: string
+  email?: string
+  address?: string
+  whatsappNumber?: string
+}
 
 const serviceOptions = [
   'Waterproofing',
@@ -29,6 +45,29 @@ export function QuoteForm() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [contact, setContact] = useState<ContactData | null>(null)
+  const [settings, setSettings] = useState<SiteSettings | null>(null)
+
+  useEffect(() => {
+    sanityClient.fetch<ContactData>(contactQuery).then(setContact)
+    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
+  }, [])
+
+  const heading = contact?.heading || 'Get Your Free Quote Today'
+  const subtitle =
+    contact?.subtitle ||
+    'Contact us for a personalized quote for your construction or maintenance project'
+  const formSubtitle =
+    contact?.formSubtitle ||
+    "Fill out the form below and we'll get back to you within 24 hours"
+  const waMessage = encodeURIComponent(
+    contact?.whatsappMessage || "Hi, I'd like a quote for..."
+  )
+
+  const phone = settings?.phone || '+27 XX XXX XXXX'
+  const email = settings?.email || 'info@winzelleprojects.co.za'
+  const address = settings?.address || 'Port Elizabeth, South Africa'
+  const waNumber = settings?.whatsappNumber || '27XXXXXXXXXX'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,13 +112,10 @@ export function QuoteForm() {
         <div className="text-center mb-14">
           <span className="section-badge border-light text-light">Contact Us</span>
           <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-white">
-            Get Your Free Quote Today
+            {heading}
           </h2>
           <div className="section-underline !bg-light" />
-          <p className="mt-3 text-gray-200">
-            Contact us for a personalized quote for your construction or
-            maintenance project
-          </p>
+          <p className="mt-3 text-gray-200">{subtitle}</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -88,9 +124,7 @@ export function QuoteForm() {
             <h3 className="font-heading text-xl font-bold text-primary mb-1">
               Request a Quote
             </h3>
-            <p className="text-sm text-text-muted mb-6">
-              Fill out the form below and we'll get back to you within 24 hours
-            </p>
+            <p className="text-sm text-text-muted mb-6">{formSubtitle}</p>
 
             {submitted ? (
               <div className="text-center py-12">
@@ -220,9 +254,7 @@ export function QuoteForm() {
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Location</p>
-                    <p className="text-sm text-text-muted">
-                      Port Elizabeth, South Africa
-                    </p>
+                    <p className="text-sm text-text-muted">{address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -231,7 +263,7 @@ export function QuoteForm() {
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Phone</p>
-                    <p className="text-sm text-text-muted">+27 XX XXX XXXX</p>
+                    <p className="text-sm text-text-muted">{phone}</p>
                     <p className="text-xs text-text-muted">Mon-Fri 8am - 5pm</p>
                   </div>
                 </div>
@@ -241,9 +273,7 @@ export function QuoteForm() {
                   </div>
                   <div>
                     <p className="font-medium text-text-dark">Email</p>
-                    <p className="text-sm text-text-muted">
-                      info@winzelleprojects.co.za
-                    </p>
+                    <p className="text-sm text-text-muted">{email}</p>
                     <p className="text-xs text-text-muted">
                       We reply within 24 hours
                     </p>
@@ -268,7 +298,7 @@ export function QuoteForm() {
                 </div>
               </div>
               <a
-                href="https://wa.me/27XXXXXXXXXX?text=Hi%2C%20I'd%20like%20a%20quote%20for..."
+                href={`https://wa.me/${waNumber}?text=${waMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 w-full flex items-center justify-center gap-2 rounded-lg bg-green-500 px-6 py-3 text-base font-semibold text-white no-underline hover:bg-green-600 transition-colors"

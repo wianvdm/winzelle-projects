@@ -1,38 +1,80 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MapPin, Star, X } from 'lucide-react'
+import { sanityClient, urlFor } from '../lib/sanity.client'
+import { projectsQuery, siteSettingsQuery } from '../lib/sanity.queries'
 
-const projects = [
+interface SanityImage {
+  asset: { _ref: string }
+  caption?: string
+}
+
+interface ProjectData {
+  _id: string
+  title: string
+  location?: string
+  description?: string
+  coverImage?: SanityImage
+  galleryImages?: SanityImage[]
+  rating?: number
+  status?: string
+}
+
+interface SiteSettings {
+  facebookUrl?: string
+}
+
+const FALLBACK_PROJECTS: ProjectData[] = [
   {
+    _id: 'p1',
     title: 'Waterproofing Project',
     location: 'Port Elizabeth Central',
     description:
       'Complete roof waterproofing using bitumen torch-on system for a residential property.',
     rating: 5,
     status: 'Completed',
-    images: ['/images/placeholder-project.jpg'],
   },
   {
+    _id: 'p2',
     title: 'Damp Treatment',
     location: 'Summerstrand',
     description:
       'Damp proofing treatment for residential property suffering from rising damp and moisture damage.',
     rating: 5,
     status: 'Completed',
-    images: ['/images/placeholder-project.jpg'],
   },
   {
+    _id: 'p3',
     title: 'Renovation Work',
     location: 'Walmer',
     description:
       'General maintenance and repairs for commercial building including painting and structural work.',
     rating: 5,
     status: 'Completed',
-    images: ['/images/placeholder-project.jpg'],
   },
 ]
 
 export function Projects() {
   const [lightboxProject, setLightboxProject] = useState<number | null>(null)
+  const [projects, setProjects] = useState<ProjectData[]>([])
+  const [facebookUrl, setFacebookUrl] = useState('https://facebook.com')
+
+  useEffect(() => {
+    sanityClient
+      .fetch<ProjectData[]>(projectsQuery)
+      .then((data) => {
+        if (data?.length) setProjects(data)
+        else setProjects(FALLBACK_PROJECTS)
+      })
+      .catch(() => setProjects(FALLBACK_PROJECTS))
+
+    sanityClient
+      .fetch<SiteSettings>(siteSettingsQuery)
+      .then((s) => {
+        if (s?.facebookUrl) setFacebookUrl(s.facebookUrl)
+      })
+  }, [])
+
+  const displayProjects = projects.length ? projects : FALLBACK_PROJECTS
 
   return (
     <section id="projects" className="py-20 bg-white">
@@ -48,43 +90,52 @@ export function Projects() {
           </p>
         </div>
 
-
         {/* Project cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project, index) => (
+          {displayProjects.map((project, index) => (
             <div
-              key={project.title}
+              key={project._id}
               className="group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
               onClick={() => setLightboxProject(index)}
             >
-              {/* Image placeholder */}
-              <div className="h-48 bg-gradient-to-br from-surface to-light flex items-center justify-center">
-                <svg
-                  className="w-16 h-16 text-accent/30"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1}
-                >
-                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <polyline points="9 22 9 12 15 12 15 22" />
-                </svg>
+              {/* Cover image or placeholder */}
+              <div className="h-48 bg-gradient-to-br from-surface to-light flex items-center justify-center overflow-hidden">
+                {project.coverImage?.asset ? (
+                  <img
+                    src={urlFor(project.coverImage).width(600).height(192).fit('crop').url()}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg
+                    className="w-16 h-16 text-accent/30"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1}
+                  >
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                )}
               </div>
 
               <div className="p-5">
                 <h3 className="font-heading text-lg font-bold text-primary">
                   {project.title}
                 </h3>
-                <div className="mt-1 flex items-center gap-1 text-sm text-text-muted">
-                  <MapPin size={14} />
-                  {project.location}
-                </div>
+                {project.location && (
+                  <div className="mt-1 flex items-center gap-1 text-sm text-text-muted">
+                    <MapPin size={14} />
+                    {project.location}
+                  </div>
+                )}
                 <p className="mt-3 text-sm text-text-muted leading-relaxed">
                   {project.description}
                 </p>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center gap-1">
-                    {Array.from({ length: project.rating }).map((_, i) => (
+                    {Array.from({ length: project.rating ?? 5 }).map((_, i) => (
                       <Star
                         key={i}
                         size={16}
@@ -92,9 +143,11 @@ export function Projects() {
                       />
                     ))}
                   </div>
-                  <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    {project.status}
-                  </span>
+                  {project.status && (
+                    <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                      {project.status}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -119,7 +172,7 @@ export function Projects() {
             Check out our Facebook page for more project photos and updates
           </p>
           <a
-            href="https://facebook.com"
+            href={facebookUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full bg-light px-6 py-2.5 text-sm font-semibold text-primary no-underline hover:bg-accent hover:text-white transition-colors"
@@ -149,19 +202,29 @@ export function Projects() {
               <X size={24} />
             </button>
             <h3 className="font-heading text-xl font-bold text-primary mb-2">
-              {projects[lightboxProject].title}
+              {displayProjects[lightboxProject].title}
             </h3>
-            <div className="flex items-center gap-1 text-sm text-text-muted mb-4">
-              <MapPin size={14} />
-              {projects[lightboxProject].location}
-            </div>
-            <div className="aspect-video rounded-xl bg-gradient-to-br from-surface to-light flex items-center justify-center mb-4">
-              <p className="text-text-muted text-sm">
-                Project photos will be displayed here
-              </p>
+            {displayProjects[lightboxProject].location && (
+              <div className="flex items-center gap-1 text-sm text-text-muted mb-4">
+                <MapPin size={14} />
+                {displayProjects[lightboxProject].location}
+              </div>
+            )}
+            <div className="aspect-video rounded-xl bg-gradient-to-br from-surface to-light flex items-center justify-center mb-4 overflow-hidden">
+              {displayProjects[lightboxProject].coverImage?.asset ? (
+                <img
+                  src={urlFor(displayProjects[lightboxProject].coverImage!).width(800).height(450).fit('crop').url()}
+                  alt={displayProjects[lightboxProject].title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <p className="text-text-muted text-sm">
+                  Project photos will be displayed here
+                </p>
+              )}
             </div>
             <p className="text-text-muted">
-              {projects[lightboxProject].description}
+              {displayProjects[lightboxProject].description}
             </p>
           </div>
         </div>

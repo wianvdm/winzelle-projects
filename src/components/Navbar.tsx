@@ -1,5 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
+import { sanityClient } from '../lib/sanity.client'
+import { siteSettingsQuery } from '../lib/sanity.queries'
+
+interface SiteSettings {
+  companyName?: string
+  tagline?: string
+}
 
 const navLinks = [
   { label: 'Home', href: '#home' },
@@ -10,6 +17,14 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [settings, setSettings] = useState<SiteSettings | null>(null)
+
+  useEffect(() => {
+    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
+  }, [])
+
+  const companyName = settings?.companyName || 'Winzelle Projects'
+  const tagline = settings?.tagline || 'Waterproofing & Damp Sealing Experts'
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
@@ -24,10 +39,10 @@ export function Navbar() {
             />
             <div>
               <span className="font-heading text-lg font-bold text-primary">
-                Winzelle Projects
+                {companyName}
               </span>
               <span className="hidden sm:block text-xs text-text-muted">
-                Waterproofing & Damp Sealing Experts
+                {tagline}
               </span>
             </div>
           </a>

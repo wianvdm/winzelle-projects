@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Droplets,
   ShieldCheck,
@@ -8,11 +8,32 @@ import {
   Building2,
   ChevronDown,
   ChevronUp,
+  type LucideIcon,
 } from 'lucide-react'
+import { sanityClient } from '../lib/sanity.client'
+import { servicesQuery } from '../lib/sanity.queries'
 
-const services = [
+interface ServiceData {
+  _id: string
+  title: string
+  icon?: string
+  description?: string
+  details?: string[]
+}
+
+const iconMap: Record<string, LucideIcon> = {
+  Droplets,
+  ShieldCheck,
+  Flame,
+  Wrench,
+  Home,
+  Building2,
+}
+
+const FALLBACK_SERVICES: ServiceData[] = [
   {
-    icon: Droplets,
+    _id: 'waterproofing',
+    icon: 'Droplets',
     title: 'Waterproofing',
     description:
       'Professional waterproofing solutions for roofs, balconies, and foundations using premium materials and proven techniques.',
@@ -25,7 +46,8 @@ const services = [
     ],
   },
   {
-    icon: ShieldCheck,
+    _id: 'damp-sealing',
+    icon: 'ShieldCheck',
     title: 'Damp Sealing',
     description:
       'Expert damp proofing and sealing services to protect your property from moisture damage and rising damp.',
@@ -38,7 +60,8 @@ const services = [
     ],
   },
   {
-    icon: Flame,
+    _id: 'bitumen',
+    icon: 'Flame',
     title: 'Bitumen Torch-On',
     description:
       'High-quality torch-on waterproofing systems for flat roofs and other surfaces requiring durable protection.',
@@ -51,7 +74,8 @@ const services = [
     ],
   },
   {
-    icon: Wrench,
+    _id: 'repairs',
+    icon: 'Wrench',
     title: 'General Repairs',
     description:
       'Comprehensive repair and maintenance services for residential and commercial properties.',
@@ -64,7 +88,8 @@ const services = [
     ],
   },
   {
-    icon: Home,
+    _id: 'maintenance',
+    icon: 'Home',
     title: 'Maintenance',
     description:
       'Regular maintenance programs to keep your property in optimal condition and prevent costly repairs.',
@@ -77,7 +102,8 @@ const services = [
     ],
   },
   {
-    icon: Building2,
+    _id: 'structural',
+    icon: 'Building2',
     title: 'Structural Repairs',
     description:
       'Specialized structural repair services for foundation cracks, subsidence, and spalling damage.',
@@ -93,7 +119,20 @@ const services = [
 ]
 
 export function Services() {
-  const [expanded, setExpanded] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [services, setServices] = useState<ServiceData[]>([])
+
+  useEffect(() => {
+    sanityClient
+      .fetch<ServiceData[]>(servicesQuery)
+      .then((data) => {
+        if (data?.length) setServices(data)
+        else setServices(FALLBACK_SERVICES)
+      })
+      .catch(() => setServices(FALLBACK_SERVICES))
+  }, [])
+
+  const displayServices = services.length ? services : FALLBACK_SERVICES
 
   return (
     <section id="services" className="py-20 bg-surface">
@@ -111,16 +150,19 @@ export function Services() {
 
         {/* Service cards grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => {
-            const isExpanded = expanded === index
+          {displayServices.map((service) => {
+            const isExpanded = expanded === service._id
+            const IconComponent = service.icon
+              ? (iconMap[service.icon] ?? Wrench)
+              : Wrench
             return (
               <div
-                key={service.title}
+                key={service._id}
                 className="group rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
-                onClick={() => setExpanded(isExpanded ? null : index)}
+                onClick={() => setExpanded(isExpanded ? null : service._id)}
               >
                 <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary text-light">
-                  <service.icon size={24} />
+                  <IconComponent size={24} />
                 </div>
                 <h3 className="font-heading text-lg font-bold text-primary mb-2">
                   {service.title}
@@ -140,7 +182,7 @@ export function Services() {
                 </button>
 
                 {/* Expanded detail list */}
-                {isExpanded && (
+                {isExpanded && service.details?.length && (
                   <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                     {service.details.map((detail) => (
                       <li

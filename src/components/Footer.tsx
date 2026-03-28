@@ -1,4 +1,16 @@
+import { useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
+import { sanityClient } from '../lib/sanity.client'
+import { siteSettingsQuery } from '../lib/sanity.queries'
+
+interface SiteSettings {
+  companyName?: string
+  tagline?: string
+  phone?: string
+  address?: string
+  facebookUrl?: string
+  whatsappNumber?: string
+}
 
 const quickLinks = [
   { label: 'Home', href: '#home' },
@@ -19,6 +31,18 @@ const serviceLinks = [
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const [settings, setSettings] = useState<SiteSettings | null>(null)
+
+  useEffect(() => {
+    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
+  }, [])
+
+  const companyName = settings?.companyName || 'Winzelle Projects'
+  const tagline = settings?.tagline || 'Waterproofing & Damp Sealing'
+  const phone = settings?.phone || '+27 XX XXX XXXX'
+  const address = settings?.address || 'Port Elizabeth, South Africa'
+  const facebookUrl = settings?.facebookUrl || 'https://facebook.com'
+  const waNumber = settings?.whatsappNumber || '27XXXXXXXXXX'
 
   return (
     <footer className="bg-primary text-white">
@@ -34,11 +58,9 @@ export function Footer() {
               />
               <div>
                 <span className="font-heading text-lg font-bold">
-                  Winzelle Projects
+                  {companyName}
                 </span>
-                <span className="block text-xs text-light">
-                  Waterproofing & Damp Sealing
-                </span>
+                <span className="block text-xs text-light">{tagline}</span>
               </div>
             </div>
             <p className="text-sm text-light leading-relaxed mb-4">
@@ -46,8 +68,8 @@ export function Footer() {
               Elizabeth.
             </p>
             <div className="space-y-1 text-sm text-light">
-              <p>Port Elizabeth, South Africa</p>
-              <p>+27 XX XXX XXXX</p>
+              <p>{address}</p>
+              <p>{phone}</p>
             </div>
           </div>
 
@@ -93,12 +115,12 @@ export function Footer() {
       <div className="border-t border-secondary">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-sm text-secondary m-0">
-            &copy; {currentYear} Winzelle Projects. All rights reserved.
+            &copy; {currentYear} {companyName}. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             {/* Facebook */}
             <a
-              href="https://facebook.com"
+              href={facebookUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-secondary hover:text-white transition-colors no-underline"
@@ -114,7 +136,7 @@ export function Footer() {
             </a>
             {/* WhatsApp */}
             <a
-              href="https://wa.me/27XXXXXXXXXX"
+              href={`https://wa.me/${waNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-secondary hover:text-white transition-colors no-underline"
