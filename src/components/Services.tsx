@@ -24,7 +24,9 @@ const iconMap: Record<ServiceIconName, LucideIcon> = {
 export function Services() {
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const displayServices = services
+  const displayServices = [...services].sort(
+    (first, second) => first.displayOrder - second.displayOrder
+  )
 
   return (
     <section id="services" className="py-20 bg-surface">
