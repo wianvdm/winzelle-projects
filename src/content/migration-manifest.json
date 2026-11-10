@@ -1,0 +1,170 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-11-10T08:52:47Z",
+  "migration": "W4 (#6)",
+  "source": {
+    "sanity": {
+      "projectId": "bvpp9gzg",
+      "dataset": "production",
+      "apiVersion": "2025-03-28"
+    },
+    "export": {
+      "file": "export-pass-1.ndjson",
+      "lines": 27,
+      "bytes": 14352,
+      "sha256": "9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb"
+    },
+    "composition": {
+      "totalDocuments": 27,
+      "publishedApplicationDocuments": 14,
+      "preservedDraftDocuments": 1,
+      "systemDocuments": 12
+    }
+  },
+  "selectedSourceIds": {
+    "siteSettings": "bd1513ac-353a-48d9-994f-26fa271164a8",
+    "heroSection": "b57833e6-745f-47c3-9f9f-b5c3212a8918",
+    "aboutSection": "aboutSection",
+    "contactSection": "contactSection",
+    "facebookBanner": "facebookBanner",
+    "services": [
+      "service-waterproofing",
+      "service-damp-sealing",
+      "service-bitumen",
+      "service-general-repairs",
+      "service-maintenance",
+      "service-structural"
+    ],
+    "imageAssets": [
+      "image-f6cfd0b3999aa71621f351eb2452a3c12d449c30-1024x1024-jpg"
+    ]
+  },
+  "counts": {
+    "siteSettings": 1,
+    "heroSection": 1,
+    "aboutSection": 1,
+    "contactSection": 1,
+    "facebookBanner": 1,
+    "services": 6,
+    "projects": 0
+  },
+  "fieldCoverage": {
+    "systemFieldsExcluded": [
+      "_id",
+      "_type",
+      "_rev",
+      "_createdAt",
+      "_updatedAt",
+      "_system"
+    ],
+    "siteSettings": {
+      "mapped": {
+        "companyName": "companyName",
+        "tagline": "tagline",
+        "phone": "phone",
+        "email": "email",
+        "whatsappNumber": "whatsappNumber",
+        "facebookUrl": "facebookUrl",
+        "address": "address",
+        "logo": "logoPath"
+      },
+      "mappingNotes": {
+        "logo": "Sanity image asset reference replaced by the root-absolute local path recorded in public/content/media-manifest.json"
+      },
+      "approvedOmissions": []
+    },
+    "heroSection": {
+      "mapped": {
+        "heading": "heading",
+        "subtitle": "subtitle",
+        "secondaryText": "secondaryText",
+        "ctaPrimaryLabel": "ctaPrimaryLabel",
+        "ctaSecondaryLabel": "ctaSecondaryLabel"
+      },
+      "approvedOmissions": [
+        {
+          "field": "backgroundImage",
+          "reason": "Schema field absent from the selected live document and unused by every component"
+        }
+      ]
+    },
+    "aboutSection": {
+      "mapped": {
+        "heading": "heading",
+        "description": "description",
+        "commitmentText": "commitmentText",
+        "commitmentItems": "commitmentItems",
+        "storyText": "storyText"
+      },
+      "approvedOmissions": []
+    },
+    "service": {
+      "mapped": {
+        "_id": "id",
+        "title": "title",
+        "icon": "icon",
+        "description": "description",
+        "details": "details",
+        "displayOrder": "displayOrder"
+      },
+      "approvedOmissions": []
+    },
+    "project": {
+      "mapped": {},
+      "approvedOmissions": [
+        {
+          "field": "(all)",
+          "reason": "Live project collection is empty; the local Project type mirrors the schema for future entries"
+        }
+      ]
+    },
+    "contactSection": {
+      "mapped": {
+        "heading": "heading",
+        "subtitle": "subtitle",
+        "formSubtitle": "formSubtitle",
+        "whatsappMessage": "whatsappMessage"
+      },
+      "approvedOmissions": [
+        {
+          "field": "web3formsKey",
+          "reason": "Schema field absent from the selected live document; QuoteForm reads the access key from the VITE_WEB3FORMS_ACCESS_KEY environment variable"
+        }
+      ]
+    },
+    "facebookBanner": {
+      "mapped": {
+        "heading": "heading",
+        "subtitle": "subtitle"
+      },
+      "approvedOmissions": [
+        {
+          "field": "bodyText",
+          "reason": "Schema field absent from the selected live document and unused by every component"
+        },
+        {
+          "field": "facebookUrl",
+          "reason": "Schema field absent from the selected live document; the rendered Facebook link comes from siteSettings.facebookUrl"
+        }
+      ]
+    }
+  },
+  "drafts": {
+    "drafts.siteSettings": {
+      "decision": "Not selected as canonical. Preserved unmodified in the durable backup only; its alternative values do not enter typed content.",
+      "unselectedFieldNames": [
+        "companyName",
+        "whatsappNumber"
+      ]
+    }
+  },
+  "excluded": {
+    "systemDocuments": 12,
+    "draftDocuments": 1,
+    "historicalSeedDuplicates": [
+      "siteSettings",
+      "heroSection"
+    ],
+    "notes": "Historical seed-ID singletons remain published in Sanity but lose the frontend [0] queries to the selected UUID documents; they are not migrated."
+  }
+}

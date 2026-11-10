@@ -1,6 +1,6 @@
 # Content migration backup
 
-Read-only backup of the production Sanity dataset, exported at 2026-11-10T07:55:50Z during a maintainer-approved content freeze. Scope is W2 (#4) under parent #2. Raw content stays outside this repository; only sanitized evidence is recorded here.
+Read-only backup of the production Sanity dataset, exported at 2026-11-10T07:55:50Z during a maintainer-approved content freeze. Scope is W2 (#4) under parent #2. Raw content stays outside this repository; only sanitized evidence is recorded here. The W4 (#6) materialization of that backup into typed local content is recorded at the end of this document.
 
 ## Approval and status
 
@@ -91,3 +91,48 @@ Not executed. Run it only when the maintainer approves a restore. Maintainer con
 
 - W2 stops at this record. Migration, including the two differing draft fields, belongs to W4.
 - Repository source edits: 0. CMS mutations: 0.
+
+# W4 typed content materialization
+
+Scope is W4 (#6) under parent #2. The canonical live content is now typed local data; Sanity runtime code, components, and the CMS dataset are untouched. Component cutover belongs to W5.
+
+## What was materialized
+
+| Path | Contents |
+| --- | --- |
+| `src/content/types.ts` | Local TypeScript types mirroring the Sanity schemas and component query needs |
+| `src/content/site-settings.ts` | Canonical siteSettings `bd1513ac-353a-48d9-994f-26fa271164a8`, logo as `logoPath` |
+| `src/content/hero.ts` | Canonical heroSection `b57833e6-745f-47c3-9f9f-b5c3212a8918` |
+| `src/content/about.ts` | aboutSection |
+| `src/content/services.ts` | All six services, displayOrder ascending |
+| `src/content/projects.ts` | Empty collection, matching live |
+| `src/content/contact.ts` | contactSection |
+| `src/content/facebook-banner.ts` | facebookBanner |
+| `src/content/index.ts` | Single export surface for W5 |
+| `src/content/migration-manifest.json` | Source export hash, selected source IDs, counts, field coverage, draft decision |
+| `public/content/images/winzelle-logo.jpg` | Verified logo asset, byte-identical to the backup copy |
+| `public/content/media-manifest.json` | Asset source URL/ID, local path, bytes, SHA-1/SHA-256, approved omissions |
+| `scripts/verify-content-migration.mjs` | Node built-in verifier, see below |
+
+Raw exports, system documents, and seed-history records did not enter typed content. The `drafts.siteSettings` alternatives for `companyName` and `whatsappNumber` remain unselected; only the field names are recorded in the migration manifest, and only in the durable backup do the values survive.
+
+## Verifier
+
+```sh
+node scripts/verify-content-migration.mjs
+node scripts/verify-content-migration.mjs --source-export <path-to-export.ndjson>
+```
+
+Default mode validates the committed content, manifests, and asset with no inputs. `--source-export` also compares every typed value, count, canonical ID, field coverage, and asset record against a maintainer-supplied export identified by hash; the path is supplied at run time and never hardcoded. Requires Node >= 22.18 (or `--experimental-strip-types`) for TypeScript type stripping. No dependencies, no network access.
+
+## Observed verification results (2026-11-10)
+
+- Committed-content mode: 28/28 checks passed, exit 0.
+- Source mode against export pass 1 (SHA-256 `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb`, 27 lines, 14352 bytes): 137/137 checks passed, exit 0. Covered value equality for all mapped fields, service ordering, empty projects, asset URL/SHA-1/bytes/MIME, historical seed duplicates excluded, and no draft substitution.
+- Negative control: injecting the draft `whatsappNumber` alternative into `src/content/site-settings.ts` failed both `siteSettings.whatsappNumber matches typed whatsappNumber` and `draft alternative for whatsappNumber not selected` (135/137, exit 1). Restoring the canonical value returned 137/137.
+- Local logo asset: 116977 bytes, SHA-1 `f6cfd0b3999aa71621f351eb2452a3c12d449c30`, SHA-256 `24e5f6dfd6f61923b33f8b051d9ea2a22d5e7ec77540a8358a0787179be4d401`, matching the backup record and the media manifest.
+
+## W4 boundaries
+
+- No component, Sanity module, package file, workflow, or dataset change. Repository runtime rendering is unchanged.
+- CMS mutations: 0. The draft remains untouched in the live dataset and in the backup.
