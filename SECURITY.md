@@ -18,5 +18,5 @@ Include: affected component (site, Worker, Sanity content path, contact form), r
 ## Scope notes
 
 - `main` is the only supported source version. Production hosting uses a Cloudflare Worker.
-- `VITE_` prefixed variables (Sanity project coordinates, `VITE_WEB3FORMS_ACCESS_KEY`) are public build values by design, not secrets. `VITE_WEB3FORMS_ACCESS_KEY` is protected by origin restriction on the Web3Forms side and must never be stored as a GitHub secret or moved to a private variable without an issue tracking the change.
+- `VITE_` prefixed variables (Sanity project coordinates, `VITE_WEB3FORMS_ACCESS_KEY`) are public build values by design, not secrets. Configure Web3Forms origin restrictions before relying on the key; verification belongs to W10 #12. Never store the key as a GitHub secret or move it to a private variable without an issue tracking the change.
 - Security work triaged by the maintainer carries `type:security` and stays free of public vulnerability details until disclosure.
