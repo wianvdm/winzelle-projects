@@ -1,20 +1,8 @@
-import { useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { siteSettingsQuery } from '../lib/sanity.queries'
-
-interface SiteSettings {
-  whatsappNumber?: string
-}
+import { siteSettings } from '../content'
 
 export function WhatsAppButton() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
-
-  useEffect(() => {
-    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
-  }, [])
-
-  const waNumber = settings?.whatsappNumber || '27XXXXXXXXXX'
+  const waNumber = siteSettings.whatsappNumber
 
   return (
     <a

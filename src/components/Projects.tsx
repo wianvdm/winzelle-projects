@@ -1,80 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { MapPin, Star, X } from 'lucide-react'
-import { sanityClient, urlFor } from '../lib/sanity.client'
-import { projectsQuery, siteSettingsQuery } from '../lib/sanity.queries'
-
-interface SanityImage {
-  asset: { _ref: string }
-  caption?: string
-}
-
-interface ProjectData {
-  _id: string
-  title: string
-  location?: string
-  description?: string
-  coverImage?: SanityImage
-  galleryImages?: SanityImage[]
-  rating?: number
-  status?: string
-}
-
-interface SiteSettings {
-  facebookUrl?: string
-}
-
-const FALLBACK_PROJECTS: ProjectData[] = [
-  {
-    _id: 'p1',
-    title: 'Waterproofing Project',
-    location: 'Port Elizabeth Central',
-    description:
-      'Complete roof waterproofing using bitumen torch-on system for a residential property.',
-    rating: 5,
-    status: 'Completed',
-  },
-  {
-    _id: 'p2',
-    title: 'Damp Treatment',
-    location: 'Summerstrand',
-    description:
-      'Damp proofing treatment for residential property suffering from rising damp and moisture damage.',
-    rating: 5,
-    status: 'Completed',
-  },
-  {
-    _id: 'p3',
-    title: 'Renovation Work',
-    location: 'Walmer',
-    description:
-      'General maintenance and repairs for commercial building including painting and structural work.',
-    rating: 5,
-    status: 'Completed',
-  },
-]
+import { facebookBanner, projects, siteSettings } from '../content'
 
 export function Projects() {
   const [lightboxProject, setLightboxProject] = useState<number | null>(null)
-  const [projects, setProjects] = useState<ProjectData[]>([])
-  const [facebookUrl, setFacebookUrl] = useState('https://facebook.com')
+  const facebookUrl = siteSettings.facebookUrl
 
-  useEffect(() => {
-    sanityClient
-      .fetch<ProjectData[]>(projectsQuery)
-      .then((data) => {
-        if (data?.length) setProjects(data)
-        else setProjects(FALLBACK_PROJECTS)
-      })
-      .catch(() => setProjects(FALLBACK_PROJECTS))
-
-    sanityClient
-      .fetch<SiteSettings>(siteSettingsQuery)
-      .then((s) => {
-        if (s?.facebookUrl) setFacebookUrl(s.facebookUrl)
-      })
-  }, [])
-
-  const displayProjects = projects.length ? projects : FALLBACK_PROJECTS
+  const displayProjects = projects
 
   return (
     <section id="projects" className="py-20 bg-white">
@@ -94,15 +26,15 @@ export function Projects() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayProjects.map((project, index) => (
             <div
-              key={project._id}
+              key={project.id}
               className="group rounded-2xl border border-gray-200 bg-white overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
               onClick={() => setLightboxProject(index)}
             >
               {/* Cover image or placeholder */}
               <div className="h-48 bg-gradient-to-br from-surface to-light flex items-center justify-center overflow-hidden">
-                {project.coverImage?.asset ? (
+                {project.coverImagePath ? (
                   <img
-                    src={urlFor(project.coverImage).width(600).height(192).fit('crop').url()}
+                    src={project.coverImagePath}
                     alt={project.title}
                     className="w-full h-full object-cover"
                   />
@@ -165,11 +97,11 @@ export function Projects() {
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
             <h4 className="font-heading text-lg font-bold text-white">
-              Follow Us on Facebook
+              {facebookBanner.heading}
             </h4>
           </div>
           <p className="text-light mb-4">
-            Check out our Facebook page for more project photos and updates
+            {facebookBanner.subtitle}
           </p>
           <a
             href={facebookUrl}
@@ -211,9 +143,9 @@ export function Projects() {
               </div>
             )}
             <div className="aspect-video rounded-xl bg-gradient-to-br from-surface to-light flex items-center justify-center mb-4 overflow-hidden">
-              {displayProjects[lightboxProject].coverImage?.asset ? (
+              {displayProjects[lightboxProject].coverImagePath ? (
                 <img
-                  src={urlFor(displayProjects[lightboxProject].coverImage!).width(800).height(450).fit('crop').url()}
+                  src={displayProjects[lightboxProject].coverImagePath}
                   alt={displayProjects[lightboxProject].title}
                   className="w-full h-full object-cover"
                 />

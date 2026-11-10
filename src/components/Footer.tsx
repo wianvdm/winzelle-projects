@@ -1,16 +1,5 @@
-import { useEffect, useState } from 'react'
 import { MessageCircle } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { siteSettingsQuery } from '../lib/sanity.queries'
-
-interface SiteSettings {
-  companyName?: string
-  tagline?: string
-  phone?: string
-  address?: string
-  facebookUrl?: string
-  whatsappNumber?: string
-}
+import { siteSettings } from '../content'
 
 const quickLinks = [
   { label: 'Home', href: '#home' },
@@ -31,18 +20,13 @@ const serviceLinks = [
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
 
-  useEffect(() => {
-    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
-  }, [])
-
-  const companyName = settings?.companyName || 'Winzelle Projects'
-  const tagline = settings?.tagline || 'Waterproofing & Damp Sealing'
-  const phone = settings?.phone || '+27 XX XXX XXXX'
-  const address = settings?.address || 'Port Elizabeth, South Africa'
-  const facebookUrl = settings?.facebookUrl || 'https://facebook.com'
-  const waNumber = settings?.whatsappNumber || '27XXXXXXXXXX'
+  const companyName = siteSettings.companyName
+  const tagline = siteSettings.tagline
+  const phone = siteSettings.phone
+  const address = siteSettings.address
+  const facebookUrl = siteSettings.facebookUrl
+  const waNumber = siteSettings.whatsappNumber
 
   return (
     <footer className="bg-primary text-white">
@@ -52,7 +36,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               <img
-                src="/images/winzelle_logo.jpg"
+                src={siteSettings.logoPath}
                 alt="Winzelle Projects"
                 className="h-10 w-10 rounded-lg object-contain"
               />

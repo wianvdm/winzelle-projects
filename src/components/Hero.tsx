@@ -1,32 +1,12 @@
-import { useEffect, useState } from 'react'
 import { Shield } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { heroQuery } from '../lib/sanity.queries'
-
-interface HeroData {
-  heading?: string
-  subtitle?: string
-  secondaryText?: string
-  ctaPrimaryLabel?: string
-  ctaSecondaryLabel?: string
-}
+import { heroSection, siteSettings } from '../content'
 
 export function Hero() {
-  const [data, setData] = useState<HeroData | null>(null)
-
-  useEffect(() => {
-    sanityClient.fetch<HeroData>(heroQuery).then(setData)
-  }, [])
-
-  const heading = data?.heading || 'Professional Waterproofing & Damp Sealing'
-  const subtitle =
-    data?.subtitle ||
-    'Specialized contractors for all your general repairs & maintenance, damp proofing, bitumen torch-on and much more...'
-  const secondaryText =
-    data?.secondaryText ||
-    'Serving Port Elizabeth and surrounding areas with expertise in waterproofing and damp sealing solutions.'
-  const ctaPrimary = data?.ctaPrimaryLabel || 'Request Free Quote'
-  const ctaSecondary = data?.ctaSecondaryLabel || 'Our Services'
+  const heading = heroSection.heading
+  const subtitle = heroSection.subtitle
+  const secondaryText = heroSection.secondaryText
+  const ctaPrimary = heroSection.ctaPrimaryLabel
+  const ctaSecondary = heroSection.ctaSecondaryLabel
 
   return (
     <section
@@ -70,7 +50,7 @@ export function Hero() {
           <div className="hidden lg:flex justify-center">
             <div className="glass-card p-8 w-72 h-72 flex items-center justify-center">
               <img
-                src="/images/winzelle_logo.jpg"
+                src={siteSettings.logoPath}
                 alt="Winzelle Projects"
                 className="w-56 h-56 object-contain"
               />
