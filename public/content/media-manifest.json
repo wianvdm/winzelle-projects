@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-11-10T08:52:47Z",
+  "migration": "W4 (#6)",
+  "assets": [
+    {
+      "sourceId": "image-f6cfd0b3999aa71621f351eb2452a3c12d449c30-1024x1024-jpg",
+      "sourceUrl": "https://cdn.sanity.io/images/bvpp9gzg/production/f6cfd0b3999aa71621f351eb2452a3c12d449c30-1024x1024.jpg",
+      "localPath": "images/winzelle-logo.jpg",
+      "publicUrlPath": "/content/images/winzelle-logo.jpg",
+      "referencedBy": [
+        {
+          "module": "src/content/site-settings.ts",
+          "field": "logoPath"
+        }
+      ],
+      "mimeType": "image/jpeg",
+      "bytes": 116977,
+      "sha1": "f6cfd0b3999aa71621f351eb2452a3c12d449c30",
+      "sha256": "24e5f6dfd6f61923b33f8b051d9ea2a22d5e7ec77540a8358a0787179be4d401",
+      "approvedOmissions": [
+        {
+          "field": "metadata",
+          "reason": "Sanity CDN derivatives (blurHash, lqip, palette, thumbHash, dimensions); the local asset is served as a static file"
+        },
+        {
+          "field": "uploadId",
+          "reason": "Sanity-internal upload identifier"
+        },
+        {
+          "field": "path",
+          "reason": "Sanity CDN storage path; superseded by sourceUrl"
+        },
+        {
+          "field": "originalFilename",
+          "reason": "Upload-time filename; the local filename is fixed by this manifest"
+        },
+        {
+          "field": "assetId",
+          "reason": "Duplicate of the hash embedded in sourceId"
+        },
+        {
+          "field": "extension",
+          "reason": "Duplicate of the local file extension"
+        }
+      ]
+    }
+  ]
+}
