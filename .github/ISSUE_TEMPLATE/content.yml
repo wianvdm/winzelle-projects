@@ -1,0 +1,36 @@
+name: Content change
+description: Copy, images, or other site content updates.
+labels: ["type:content"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Content that lives in code or config. Sanity CMS content changes follow the same issue-first rule; record the dataset and documents affected. The maintainer assigns priority and area labels during triage.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What content changes and why.
+      placeholder: Update the about page copy for the 2026 studio refresh; replace two outdated portfolio images.
+    validations:
+      required: true
+  - type: checkboxes
+    id: review
+    attributes:
+      label: Content review
+      description: Confirm before submitting.
+      options:
+        - label: Preview checked (local dev or deployed preview)
+          required: true
+        - label: Spelling, links, and image alt text verified
+          required: true
+        - label: No credentials, PII, or unpublished client details included
+          required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable conditions that prove the content is correct.
+      placeholder: Copy matches the approved draft; images render at all breakpoints; no placeholder text remains.
+    validations:
+      required: true

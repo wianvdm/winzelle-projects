@@ -1,0 +1,51 @@
+name: Maintenance
+description: Dependency updates, configuration drift, cleanup, and other repository upkeep.
+labels: ["type:maintenance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Upkeep that prevents decay rather than adding capability. The maintainer assigns priority and area labels during triage.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What degrades if this is skipped, and why now.
+      placeholder: Vite 7 patch releases pile up; staying behind makes the next minor upgrade riskier.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      description: Expected blast radius of the change.
+      options:
+        - Low (isolated, easily reverted)
+        - Medium (touches shared components or build config)
+        - High (touches deployment, lockfile-wide upgrades, or data)
+    validations:
+      required: true
+  - type: textarea
+    id: test-plan
+    attributes:
+      label: Test plan
+      description: How the change will be verified. Required for medium and high risk.
+      placeholder: npm run build and npm run test locally; deploy preview and smoke the public pages.
+    validations:
+      required: false
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback plan
+      description: How to undo the change if it fails. Required for high risk.
+      placeholder: Revert the PR and redeploy the previous tag.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable conditions that prove the upkeep is complete.
+      placeholder: Lockfile updated; build and tests pass; no new warnings in dev server output.
+    validations:
+      required: true

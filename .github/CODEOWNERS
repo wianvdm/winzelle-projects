@@ -1,0 +1,32 @@
+# Governance and ownership. CODEOWNERS review requests reviewer attention; branch
+# protection that makes review required is unavailable on this repository's current
+# plan, so this file records intent rather than enforcement.
+
+# This file
+/.github/CODEOWNERS @WianVDM
+
+# CI workflows and automation config
+/.github/workflows/ @WianVDM
+/.github/dependabot.yml @WianVDM
+/.github/dependabot/ @WianVDM
+
+# Release automation
+/.github/release-please*.json @WianVDM
+/release-please-config.json @WianVDM
+/.release-please-manifest.json @WianVDM
+/.github/actions/ @WianVDM
+
+# Release and package scripts
+/scripts/ @WianVDM
+
+# Package manifests and lockfiles
+/package.json @WianVDM
+/package-lock.json @WianVDM
+/studio/package.json @WianVDM
+/studio/package-lock.json @WianVDM
+
+# Deployment configuration
+/wrangler.toml @WianVDM
+
+# Public environment surface
+/.env.example @WianVDM
