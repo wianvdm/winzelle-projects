@@ -33,7 +33,7 @@ Either pass is a restore input. Cite the selected file by that hash.
 ## Draft decision
 
 - `drafts.siteSettings` is the working copy of seed-ID `siteSettings` and adds only the logo to it.
-- Against the active UUID record it shares the logo asset and six other fields. `companyName` and `whatsappNumber` differ.
+- Against the active UUID record it shares six identical fields, including the logo. `companyName` and `whatsappNumber` differ.
 - Publishing it would update only seed-ID `siteSettings`, which the frontend does not resolve. Discarding it would drop the only copy of the two differing values.
 - Accepted rule: leave the draft untouched and preserve it in the backup. W4 carries both values into the migration and decides them there.
 
@@ -73,11 +73,11 @@ Active singleton resolution:
 
 ## Locating the backup
 
-The backup is access-controlled and lives outside the repository. It holds two export files, an `assets/` directory, and four audit files: `manifest.json`, `asset-manifest.json`, `seed-reconciliation.json` and `verification.json`. The maintainer shares its location out of band. Do not copy raw exports or assets into the repository.
+The backup is access-controlled and lives outside the repository. A durable non-temp copy is restricted to the current maintainer account; its ACL, file inventory, hashes, and NDJSON readability were verified. It holds two export files, an `assets/` directory, and four audit files: `manifest.json`, `asset-manifest.json`, `seed-reconciliation.json` and `verification.json`. The maintainer shares its location out of band. Do not copy raw exports or assets into the repository.
 
 ## Restore procedure
 
-Not executed. Run it only when the maintainer approves a restore.
+Not executed. Run it only when the maintainer approves a restore. Maintainer confirmation of backup readability and this procedure is pending review of this PR and must be recorded on W2 #4 before W4.
 
 1. Verify the export against the recorded hash `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb`, 27 lines and 14352 bytes.
 2. Verify the asset against SHA-256 `24e5f6dfd6f61923b33f8b051d9ea2a22d5e7ec77540a8358a0787179be4d401` and 116977 bytes.
