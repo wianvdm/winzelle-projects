@@ -77,16 +77,21 @@ function parseSourceFlag(argv) {
 }
 
 function loadSourceExport(exportPath) {
-  const bytes = readFileSync(exportPath)
-  const text = bytes.toString('utf8')
-  const lines = text.split('\n').filter((line) => line.trim() !== '')
-  const docs = lines.map((line) => JSON.parse(line))
-  return {
-    byteCount: bytes.length,
-    lineCount: lines.length,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-    docs,
-    byId: new Map(docs.map((doc) => [doc._id, doc])),
+  try {
+    const bytes = readFileSync(exportPath)
+    const text = bytes.toString('utf8')
+    const lines = text.split('\n').filter((line) => line.trim() !== '')
+    const docs = lines.map((line) => JSON.parse(line))
+    return {
+      byteCount: bytes.length,
+      lineCount: lines.length,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      docs,
+      byId: new Map(docs.map((doc) => [doc._id, doc])),
+    }
+  } catch {
+    check('source export readable and valid NDJSON', false)
+    return null
   }
 }
 
@@ -282,7 +287,10 @@ function verifyLogoSource(exportData, migration, mediaManifest) {
   const doc = exportData.byId.get(migration.selectedSourceIds.siteSettings)
   const asset = mediaManifest.assets.find((a) =>
     a.referencedBy.some((ref) => ref.field === 'logoPath'))
-  if (!doc || !asset) return
+  if (!doc || !asset) {
+    check('canonical siteSettings document and logo asset present', false)
+    return
+  }
   check('canonical logo asset ref matches media manifest source id',
     doc.logo?.asset?._ref === asset.sourceId)
   const assetDoc = exportData.byId.get(asset.sourceId)
@@ -327,6 +335,7 @@ function verifyExcludedDocuments(exportData, migration) {
 
 function verifyAgainstSource({ exportPath, migration, mediaManifest, content }) {
   const exportData = loadSourceExport(exportPath)
+  if (!exportData) return
   verifyExportFile(exportData, migration)
   verifyComposition(exportData, migration)
   verifySelectedDocuments(exportData, migration, content)
