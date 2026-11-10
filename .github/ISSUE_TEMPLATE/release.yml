@@ -1,0 +1,46 @@
+name: Release
+description: Coordinate a production release and its verification.
+labels: ["type:maintenance", "area:release"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Releases are executed by the maintainer. Agents never tag or deploy. Release automation (Release Please) arrives in a later ticket; until then this form tracks manual releases.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What the release contains and why it ships now.
+      placeholder: Ship the gallery filter and the contact-form fix ahead of the weekend traffic peak.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      description: Expected blast radius of the release.
+      options:
+        - Low (content or isolated fixes)
+        - Medium (shared components or configuration)
+        - High (deployment, data, or core flows)
+    validations:
+      required: true
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback plan
+      description: How to recover the previous production state, and its limits.
+      placeholder: Redeploy the previous tag via Wrangler; content changes in Sanity are not covered by a code rollback.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: "Release checklist: contents, verification steps, and what proves the release succeeded."
+      placeholder: |
+        - All child PRs merged and listed.
+        - Build and tests green at the release commit.
+        - Production smoke pass on /, /gallery, /contact recorded.
+    validations:
+      required: true

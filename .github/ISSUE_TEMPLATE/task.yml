@@ -1,0 +1,53 @@
+name: Feature or task
+description: Propose a new capability or a defined piece of work.
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One focused outcome per issue so it maps to one pull request. The maintainer assigns priority and area labels during triage.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What should change and why it matters.
+      placeholder: Visitors can filter gallery images by room so they find relevant examples faster.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      description: Expected blast radius if the change goes wrong.
+      options:
+        - Low (isolated, easily reverted)
+        - Medium (touches shared components or content)
+        - High (touches deployment, data, or core flows)
+    validations:
+      required: true
+  - type: textarea
+    id: test-plan
+    attributes:
+      label: Test plan
+      description: How the change will be verified. Required for medium and high risk.
+      placeholder: Unit test for filter logic; manual pass on desktop and mobile with screenshots.
+    validations:
+      required: false
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback plan
+      description: How to undo the change if it fails in production. Required for high risk.
+      placeholder: Revert the PR; no data migration involved.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Observable conditions that prove the work is done.
+      placeholder: |
+        - Filter control visible on /gallery.
+        - Selecting a room shows only matching images; clearing restores all.
+    validations:
+      required: true

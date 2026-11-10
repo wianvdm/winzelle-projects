@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a confirmed defect in the Winzelle site or repository.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Confirmed defect only. For vulnerabilities, do not use this form: report privately per [SECURITY.md](https://github.com/wianvdm/winzelle-projects/blob/main/SECURITY.md).
+        The maintainer assigns priority (`priority:p0` to `priority:p3`) and area labels during triage.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is broken and its user-visible impact.
+      placeholder: The contact form silently drops submissions on Safari iOS; users get no error.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Steps to reproduce, expected result, observed result. Include the URL or environment.
+      placeholder: |
+        1. Open /contact on Safari iOS 18.
+        2. Submit the form with valid data.
+        Expected: success message. Observed: spinner never resolves.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk
+      description: Your read of the blast radius. The maintainer may re-triage.
+      options:
+        - Low (cosmetic or minor)
+        - Medium (one feature degraded)
+        - High (core flow broken)
+        - Critical (outage or data loss)
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What proves this is fixed, including the regression check.
+      placeholder: Form submits successfully on Safari iOS; a regression test covers the failing path.
+    validations:
+      required: true
