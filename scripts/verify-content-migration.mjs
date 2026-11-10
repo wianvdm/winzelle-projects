@@ -68,19 +68,12 @@ function classifyDocument(doc) {
 }
 
 function parseSourceFlag(argv) {
-  const index = argv.indexOf('--source-export')
-  if (index === -1) return null
-  const value = argv[index + 1]
-  if (!value) {
-    console.error('FAIL  --source-export requires a path to an NDJSON export file')
+  if (argv.length === 0) return null
+  if (argv.length !== 2 || argv[0] !== '--source-export' || !argv[1] || argv[1].startsWith('--')) {
+    console.error('FAIL  usage: verify-content-migration.mjs [--source-export <file.ndjson>]')
     process.exit(1)
   }
-  const unknown = argv.filter((arg, i) => arg.startsWith('--') && i !== index)
-  if (unknown.length > 0) {
-    console.error(`FAIL  unknown argument: ${unknown[0]}`)
-    process.exit(1)
-  }
-  return path.resolve(value)
+  return path.resolve(argv[1])
 }
 
 function loadSourceExport(exportPath) {
@@ -287,7 +280,8 @@ function verifyServiceDocuments(exportData, migration, content) {
 
 function verifyLogoSource(exportData, migration, mediaManifest) {
   const doc = exportData.byId.get(migration.selectedSourceIds.siteSettings)
-  const asset = mediaManifest.assets[0]
+  const asset = mediaManifest.assets.find((a) =>
+    a.referencedBy.some((ref) => ref.field === 'logoPath'))
   if (!doc || !asset) return
   check('canonical logo asset ref matches media manifest source id',
     doc.logo?.asset?._ref === asset.sourceId)
