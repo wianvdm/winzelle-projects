@@ -7,6 +7,8 @@ Observed read-only at 2026-11-09T13:31:09Z. Starting state for the production-re
 - Repository `wianvdm/winzelle-projects` is private on the GitHub Free plan, with one maintainer, `WianVDM`.
 - HEAD at observation: `d986d35a35636dd39c49c9e99b603444d6f769a1`.
 - One merged pull request, no open pull requests.
+- Branches at observation: `main`, matching `origin/main`, and `origin/feat/color-token-refactor-and-branding`.
+- Twenty-one labels, including the production-readiness taxonomy.
 - Issues #3-#16 (W1-W14) and parent #2 exist on the Production readiness milestone.
 - Branch protection and rulesets are unavailable. The API returns HTTP 403 with an upgrade requirement for a private Free repository. Merge commits, squash merges and rebase merges are enabled; `delete_branch_on_merge` is false.
 - Zero workflows and zero check contexts.
@@ -43,8 +45,8 @@ Observed read-only at 2026-11-09T13:31:09Z. Starting state for the production-re
 | --- | --- | --- | --- |
 | GitHub Pro billing for branch protection and rulesets | Maintainer | W9 #11 | Remote enforcement needs a paid plan on a private repository |
 | Cloudflare account, Worker and deployment inventory, API token scope | Maintainer | W10 #12 | Needs authenticated API access |
-| Web3Forms recipient, allowed origins, spam and rate settings | Maintainer | Form and hosting work | Needs dashboard confirmation |
-| Release Please identity | Maintainer | W10 | W10 prefers a repository-scoped GitHub App with contents and pull-requests write; a fine-grained PAT is the fallback |
+| Web3Forms recipient, allowed origins, spam and rate settings | Maintainer | W10 #12 | Needs dashboard confirmation |
+| Release Please identity | Maintainer | W10 #12 | W10 prefers a repository-scoped GitHub App with contents and pull-requests write; a fine-grained PAT is the fallback |
 
 ## Unknown
 
@@ -57,4 +59,4 @@ Observed read-only at 2026-11-09T13:31:09Z. Starting state for the production-re
 - Keep the repository private. Do not replace remote enforcement with local hooks.
 - `VITE_WEB3FORMS_ACCESS_KEY` is a public build variable and needs origin restriction; never store it as a GitHub secret.
 - Defer the Cloudflare token to W10 and scope it to the intended account and Worker for inventory and deployment.
-- W2 can start with the public Sanity read path. If a complete export cannot be proven, the maintainer must provide a dataset export or read token.
+- W2 requires a Sanity read token or a maintainer-provided dataset export. The observed public read path proves connectivity only, not export completeness.
