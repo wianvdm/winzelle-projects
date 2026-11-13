@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Droplets,
   ShieldCheck,
@@ -10,18 +10,9 @@ import {
   ChevronUp,
   type LucideIcon,
 } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { servicesQuery } from '../lib/sanity.queries'
+import { services, type ServiceIconName } from '../content'
 
-interface ServiceData {
-  _id: string
-  title: string
-  icon?: string
-  description?: string
-  details?: string[]
-}
-
-const iconMap: Record<string, LucideIcon> = {
+const iconMap: Record<ServiceIconName, LucideIcon> = {
   Droplets,
   ShieldCheck,
   Flame,
@@ -30,109 +21,12 @@ const iconMap: Record<string, LucideIcon> = {
   Building2,
 }
 
-const FALLBACK_SERVICES: ServiceData[] = [
-  {
-    _id: 'waterproofing',
-    icon: 'Droplets',
-    title: 'Waterproofing',
-    description:
-      'Professional waterproofing solutions for roofs, balconies, and foundations using premium materials and proven techniques.',
-    details: [
-      'Roof waterproofing',
-      'Balcony and deck waterproofing',
-      'Foundation waterproofing',
-      'Below-ground waterproofing',
-      'Membrane installation',
-    ],
-  },
-  {
-    _id: 'damp-sealing',
-    icon: 'ShieldCheck',
-    title: 'Damp Sealing',
-    description:
-      'Expert damp proofing and sealing services to protect your property from moisture damage and rising damp.',
-    details: [
-      'Rising damp treatment',
-      'Liquid latex damp sealing',
-      'Moisture barrier installation',
-      'Wall damp proofing',
-      'Basement sealing',
-    ],
-  },
-  {
-    _id: 'bitumen',
-    icon: 'Flame',
-    title: 'Bitumen Torch-On',
-    description:
-      'High-quality torch-on waterproofing systems for flat roofs and other surfaces requiring durable protection.',
-    details: [
-      'Flat roof torch-on systems',
-      'Multi-layer applications',
-      'Surface preparation and priming',
-      'Joint and flashing sealing',
-      'Maintenance and re-coating',
-    ],
-  },
-  {
-    _id: 'repairs',
-    icon: 'Wrench',
-    title: 'General Repairs',
-    description:
-      'Comprehensive repair and maintenance services for residential and commercial properties.',
-    details: [
-      'Paving repairs and re-levelling',
-      'Door and window repairs',
-      'Interior and exterior painting',
-      'Building repairs',
-      'Roof painting and repairs',
-    ],
-  },
-  {
-    _id: 'maintenance',
-    icon: 'Home',
-    title: 'Maintenance',
-    description:
-      'Regular maintenance programs to keep your property in optimal condition and prevent costly repairs.',
-    details: [
-      'Routine property inspections',
-      'Preventative maintenance plans',
-      'Roof maintenance',
-      'Exterior upkeep',
-      'Property handover maintenance',
-    ],
-  },
-  {
-    _id: 'structural',
-    icon: 'Building2',
-    title: 'Structural Repairs',
-    description:
-      'Specialized structural repair services for foundation cracks, subsidence, and spalling damage.',
-    details: [
-      'Foundation crack repairs',
-      'Subsidence repairs',
-      'Spalling concrete repairs',
-      'Structural crack stitching',
-      'Scaffold erecting and inspections',
-      'Roof reports and assessments',
-    ],
-  },
-]
-
 export function Services() {
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [services, setServices] = useState<ServiceData[]>([])
 
-  useEffect(() => {
-    sanityClient
-      .fetch<ServiceData[]>(servicesQuery)
-      .then((data) => {
-        if (data?.length) setServices(data)
-        else setServices(FALLBACK_SERVICES)
-      })
-      .catch(() => setServices(FALLBACK_SERVICES))
-  }, [])
-
-  const displayServices = services.length ? services : FALLBACK_SERVICES
+  const displayServices = [...services].sort(
+    (first, second) => first.displayOrder - second.displayOrder
+  )
 
   return (
     <section id="services" className="py-20 bg-surface">
@@ -151,15 +45,13 @@ export function Services() {
         {/* Service cards grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayServices.map((service) => {
-            const isExpanded = expanded === service._id
-            const IconComponent = service.icon
-              ? (iconMap[service.icon] ?? Wrench)
-              : Wrench
+            const isExpanded = expanded === service.id
+            const IconComponent = iconMap[service.icon]
             return (
               <div
-                key={service._id}
+                key={service.id}
                 className="group rounded-2xl border border-gray-200 bg-white p-6 transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
-                onClick={() => setExpanded(isExpanded ? null : service._id)}
+                onClick={() => setExpanded(isExpanded ? null : service.id)}
               >
                 <div className="mb-4 inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary text-light">
                   <IconComponent size={24} />
@@ -182,7 +74,7 @@ export function Services() {
                 </button>
 
                 {/* Expanded detail list */}
-                {isExpanded && service.details?.length && (
+                {isExpanded && service.details.length > 0 && (
                   <ul className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                     {service.details.map((detail) => (
                       <li

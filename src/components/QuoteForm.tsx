@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   MapPin,
   Phone,
@@ -7,22 +7,7 @@ import {
   Send,
   MessageCircle,
 } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { contactQuery, siteSettingsQuery } from '../lib/sanity.queries'
-
-interface ContactData {
-  heading?: string
-  subtitle?: string
-  formSubtitle?: string
-  whatsappMessage?: string
-}
-
-interface SiteSettings {
-  phone?: string
-  email?: string
-  address?: string
-  whatsappNumber?: string
-}
+import { contactSection, siteSettings } from '../content'
 
 const serviceOptions = [
   'Waterproofing',
@@ -45,29 +30,16 @@ export function QuoteForm() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [contact, setContact] = useState<ContactData | null>(null)
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
 
-  useEffect(() => {
-    sanityClient.fetch<ContactData>(contactQuery).then(setContact)
-    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
-  }, [])
+  const heading = contactSection.heading
+  const subtitle = contactSection.subtitle
+  const formSubtitle = contactSection.formSubtitle
+  const waMessage = encodeURIComponent(contactSection.whatsappMessage)
 
-  const heading = contact?.heading || 'Get Your Free Quote Today'
-  const subtitle =
-    contact?.subtitle ||
-    'Contact us for a personalized quote for your construction or maintenance project'
-  const formSubtitle =
-    contact?.formSubtitle ||
-    "Fill out the form below and we'll get back to you within 24 hours"
-  const waMessage = encodeURIComponent(
-    contact?.whatsappMessage || "Hi, I'd like a quote for..."
-  )
-
-  const phone = settings?.phone || '+27 XX XXX XXXX'
-  const email = settings?.email || 'info@winzelleprojects.co.za'
-  const address = settings?.address || 'Port Elizabeth, South Africa'
-  const waNumber = settings?.whatsappNumber || '27XXXXXXXXXX'
+  const phone = siteSettings.phone
+  const email = siteSettings.email
+  const address = siteSettings.address
+  const waNumber = siteSettings.whatsappNumber
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

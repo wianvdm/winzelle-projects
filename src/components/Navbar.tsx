@@ -1,12 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Menu, X } from 'lucide-react'
-import { sanityClient } from '../lib/sanity.client'
-import { siteSettingsQuery } from '../lib/sanity.queries'
-
-interface SiteSettings {
-  companyName?: string
-  tagline?: string
-}
+import { siteSettings } from '../content'
 
 const navLinks = [
   { label: 'Home', href: '#home' },
@@ -17,14 +11,9 @@ const navLinks = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [settings, setSettings] = useState<SiteSettings | null>(null)
 
-  useEffect(() => {
-    sanityClient.fetch<SiteSettings>(siteSettingsQuery).then(setSettings)
-  }, [])
-
-  const companyName = settings?.companyName || 'Winzelle Projects'
-  const tagline = settings?.tagline || 'Waterproofing & Damp Sealing Experts'
+  const companyName = siteSettings.companyName
+  const tagline = siteSettings.tagline
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
@@ -33,7 +22,7 @@ export function Navbar() {
           {/* Logo + company name */}
           <a href="#home" className="flex items-center gap-3 no-underline">
             <img
-              src="/images/winzelle_logo.jpg"
+              src={siteSettings.logoPath}
               alt="Winzelle Projects Logo"
               className="h-10 w-10 rounded-lg object-contain"
             />
