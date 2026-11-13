@@ -1,6 +1,6 @@
 name: Feature or task
 description: Propose a new capability or a defined piece of work.
-labels: ["type:feature"]
+labels: ['type:feature']
 body:
   - type: markdown
     attributes:

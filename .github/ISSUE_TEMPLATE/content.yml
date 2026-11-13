@@ -1,6 +1,6 @@
 name: Content change
 description: Copy, images, or other site content updates.
-labels: ["type:content"]
+labels: ['type:content']
 body:
   - type: markdown
     attributes:

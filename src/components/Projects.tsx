@@ -100,9 +100,7 @@ export function Projects() {
               {facebookBanner.heading}
             </h4>
           </div>
-          <p className="text-light mb-4">
-            {facebookBanner.subtitle}
-          </p>
+          <p className="text-light mb-4">{facebookBanner.subtitle}</p>
           <a
             href={facebookUrl}
             target="_blank"

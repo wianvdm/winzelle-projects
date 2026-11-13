@@ -78,11 +78,16 @@ export function QuoteForm() {
   }
 
   return (
-    <section id="quote" className="py-20 bg-gradient-to-br from-primary via-secondary to-accent">
+    <section
+      id="quote"
+      className="py-20 bg-gradient-to-br from-primary via-secondary to-accent"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section heading */}
         <div className="text-center mb-14">
-          <span className="section-badge border-light text-light">Contact Us</span>
+          <span className="section-badge border-light text-light">
+            Contact Us
+          </span>
           <h2 className="mt-4 font-heading text-3xl sm:text-4xl font-bold text-white">
             {heading}
           </h2>

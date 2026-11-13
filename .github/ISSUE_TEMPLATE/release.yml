@@ -1,6 +1,6 @@
 name: Release
 description: Coordinate a production release and its verification.
-labels: ["type:maintenance", "area:release"]
+labels: ['type:maintenance', 'area:release']
 body:
   - type: markdown
     attributes:
@@ -37,7 +37,7 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: "Release checklist: contents, verification steps, and what proves the release succeeded."
+      description: 'Release checklist: contents, verification steps, and what proves the release succeeded.'
       placeholder: |
         - All child PRs merged and listed.
         - Build and tests green at the release commit.

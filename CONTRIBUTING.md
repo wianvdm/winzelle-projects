@@ -34,11 +34,12 @@ A PR without `Closes #N` is valid in exactly three cases, detailed in `CLAUDE.md
 
 ## Local development
 
+Use Node 24.22.3, pinned in `.nvmrc`.
+
 ```bash
-npm install
+npm ci          # install from package-lock.json
 npm run dev     # Vite dev server on port 3000
-npm run test    # Vitest
-npm run build   # production build
+npm run verify  # format:check, lint, typecheck, test, build
 ```
 
 Copy `.env.example` to `.env` for local variables. `VITE_` prefixed variables are public at build time: never put credentials in them.

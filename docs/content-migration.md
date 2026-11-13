@@ -13,10 +13,10 @@ Read-only backup of the production Sanity dataset, exported at 2026-11-10T07:55:
 
 Two authenticated exports of the full dataset, byte-identical:
 
-| Pass | Lines | Bytes | SHA-256 |
-| --- | --- | --- | --- |
-| 1 | 27 | 14352 | `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb` |
-| 2 | 27 | 14352 | `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb` |
+| Pass | Lines | Bytes | SHA-256                                                            |
+| ---- | ----- | ----- | ------------------------------------------------------------------ |
+| 1    | 27    | 14352 | `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb` |
+| 2    | 27    | 14352 | `9e1b5417292e67429f53816bedfc75623f17647cdfd271f4cc226e781e0492eb` |
 
 Either pass is a restore input. Cite the selected file by that hash.
 
@@ -24,11 +24,11 @@ Either pass is a restore input. Cite the selected file by that hash.
 
 27 documents in total.
 
-| Class | Count | Contents |
-| --- | --- | --- |
-| Published application | 14 | `siteSettings` 2, `heroSection` 2, `service` 6, `aboutSection` 1, `contactSection` 1, `facebookBanner` 1, `sanity.imageAsset` 1 |
-| Preserved draft | 1 | `drafts.siteSettings` |
-| System | 12 | `system.group` 11, `system.retention` 1 |
+| Class                 | Count | Contents                                                                                                                        |
+| --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Published application | 14    | `siteSettings` 2, `heroSection` 2, `service` 6, `aboutSection` 1, `contactSection` 1, `facebookBanner` 1, `sanity.imageAsset` 1 |
+| Preserved draft       | 1     | `drafts.siteSettings`                                                                                                           |
+| System                | 12    | `system.group` 11, `system.retention` 1                                                                                         |
 
 ## Draft decision
 
@@ -43,8 +43,8 @@ Either pass is a restore input. Cite the selected file by that hash.
 
 One referenced asset, downloaded and checksum-verified.
 
-| Asset | MIME | Bytes | SHA-1 | SHA-256 |
-| --- | --- | --- | --- | --- |
+| Asset                                                          | MIME         | Bytes  | SHA-1                                      | SHA-256                                                            |
+| -------------------------------------------------------------- | ------------ | ------ | ------------------------------------------ | ------------------------------------------------------------------ |
 | `image-f6cfd0b3999aa71621f351eb2452a3c12d449c30-1024x1024-jpg` | `image/jpeg` | 116977 | `f6cfd0b3999aa71621f351eb2452a3c12d449c30` | `24e5f6dfd6f61923b33f8b051d9ea2a22d5e7ec77540a8358a0787179be4d401` |
 
 The SHA-1 matches the asset hash in the document ID. Referenced by `drafts.siteSettings` and `bd1513ac-353a-48d9-994f-26fa271164a8`.
@@ -56,13 +56,13 @@ The SHA-1 matches the asset hash in the document ID. Referenced by `drafts.siteS
 
 Active singleton resolution:
 
-| Query | Resolved ID |
-| --- | --- |
-| `*[_type == "siteSettings"][0]` | `bd1513ac-353a-48d9-994f-26fa271164a8` |
-| `*[_type == "heroSection"][0]` | `b57833e6-745f-47c3-9f9f-b5c3212a8918` |
-| `*[_type == "aboutSection"][0]` | `aboutSection` |
-| `*[_type == "contactSection"][0]` | `contactSection` |
-| `*[_type == "facebookBanner"][0]` | `facebookBanner` |
+| Query                             | Resolved ID                            |
+| --------------------------------- | -------------------------------------- |
+| `*[_type == "siteSettings"][0]`   | `bd1513ac-353a-48d9-994f-26fa271164a8` |
+| `*[_type == "heroSection"][0]`    | `b57833e6-745f-47c3-9f9f-b5c3212a8918` |
+| `*[_type == "aboutSection"][0]`   | `aboutSection`                         |
+| `*[_type == "contactSection"][0]` | `contactSection`                       |
+| `*[_type == "facebookBanner"][0]` | `facebookBanner`                       |
 
 `bd1513ac-353a-48d9-994f-26fa271164a8` is W4 canonical content. The seed-ID `siteSettings` record is historical and stays for the draft.
 
@@ -98,21 +98,21 @@ Scope is W4 (#6) under parent #2. The canonical live content is now typed local 
 
 ## What was materialized
 
-| Path | Contents |
-| --- | --- |
-| `src/content/types.ts` | Local TypeScript types mirroring the Sanity schemas and component query needs |
-| `src/content/site-settings.ts` | Canonical siteSettings `bd1513ac-353a-48d9-994f-26fa271164a8`, logo as `logoPath` |
-| `src/content/hero.ts` | Canonical heroSection `b57833e6-745f-47c3-9f9f-b5c3212a8918` |
-| `src/content/about.ts` | aboutSection |
-| `src/content/services.ts` | All six services, displayOrder ascending |
-| `src/content/projects.ts` | Empty collection, matching live |
-| `src/content/contact.ts` | contactSection |
-| `src/content/facebook-banner.ts` | facebookBanner |
-| `src/content/index.ts` | Single export surface for W5 |
-| `src/content/migration-manifest.json` | Source export hash, selected source IDs, counts, field coverage, draft decision |
-| `public/content/images/winzelle-logo.jpg` | Verified logo asset, byte-identical to the backup copy |
-| `public/content/media-manifest.json` | Asset source URL/ID, local path, bytes, SHA-1/SHA-256, approved omissions |
-| `scripts/verify-content-migration.mjs` | Node built-in verifier, see below |
+| Path                                      | Contents                                                                          |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/content/types.ts`                    | Local TypeScript types mirroring the Sanity schemas and component query needs     |
+| `src/content/site-settings.ts`            | Canonical siteSettings `bd1513ac-353a-48d9-994f-26fa271164a8`, logo as `logoPath` |
+| `src/content/hero.ts`                     | Canonical heroSection `b57833e6-745f-47c3-9f9f-b5c3212a8918`                      |
+| `src/content/about.ts`                    | aboutSection                                                                      |
+| `src/content/services.ts`                 | All six services, displayOrder ascending                                          |
+| `src/content/projects.ts`                 | Empty collection, matching live                                                   |
+| `src/content/contact.ts`                  | contactSection                                                                    |
+| `src/content/facebook-banner.ts`          | facebookBanner                                                                    |
+| `src/content/index.ts`                    | Single export surface for W5                                                      |
+| `src/content/migration-manifest.json`     | Source export hash, selected source IDs, counts, field coverage, draft decision   |
+| `public/content/images/winzelle-logo.jpg` | Verified logo asset, byte-identical to the backup copy                            |
+| `public/content/media-manifest.json`      | Asset source URL/ID, local path, bytes, SHA-1/SHA-256, approved omissions         |
+| `scripts/verify-content-migration.mjs`    | Node built-in verifier, see below                                                 |
 
 Raw exports, system documents, and seed-history records did not enter typed content. The `drafts.siteSettings` alternatives for `companyName` and `whatsappNumber` remain unselected; only the field names are recorded in the migration manifest, and only in the durable backup do the values survive.
 
