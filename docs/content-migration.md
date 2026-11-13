@@ -172,5 +172,5 @@ The root `.gitignore` carried no CMS-specific rules, so it is unchanged. The raw
 ## W5 boundaries
 
 - No CMS reads, writes, or mutations; the live dataset and its draft remain untouched in the backup only.
-- Visual comparison artifacts are retained under `docs/visual-evidence/w5/`. No form submission or external action was performed.
+- Visual comparison screenshots are in the PR #21 visual parity comment: https://github.com/wianvdm/winzelle-projects/pull/21#issuecomment-6767623811. No form submission or external action was performed.
 - Dependency upgrades, Oxc, and the test toolchain belong to W6; form submission behavior belongs to W7.

@@ -14,3 +14,10 @@ Thumbs.db
 .vinxi
 __unconfig*
 todos.json
+
+# Review evidence and scratch output; evidence belongs in PR comments
+.tmp/
+test-results/
+playwright-report/
+*.patch
+docs/visual-evidence/

@@ -4,15 +4,14 @@
 
 Report privately. Never open a public issue, pull request, or comment describing a vulnerability.
 
-1. Preferred: GitHub private vulnerability reporting at https://github.com/wianvdm/winzelle-projects/security/advisories/new. If that page reports the feature is unavailable, continue to step 2.
-2. Contact the maintainer `@WianVDM` through a private GitHub channel.
+Use GitHub private vulnerability reporting, the only reporting channel: https://github.com/wianvdm/winzelle-projects/security/advisories/new.
 
 Include: affected component (site, Worker, typed content, contact form), reproduction steps, impact, and whether the vulnerability is public or exploited.
 
 ## What to expect
 
 - Acknowledgement by the maintainer, targeting 72 hours.
-- Fixes are developed on a private branch and released at the maintainer's discretion.
+- Fixes are developed in a private security advisory fork and released at the maintainer's discretion.
 - Public disclosure happens only after a fix ships, coordinated with the reporter. There is no bounty program.
 
 ## Scope notes

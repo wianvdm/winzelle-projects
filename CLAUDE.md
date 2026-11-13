@@ -4,10 +4,10 @@ Single source of truth for how agents and contributors work in this repository. 
 
 ## Repository facts
 
-- Private repository `wianvdm/winzelle-projects`, one maintainer: `@WianVDM`.
+- Public repository `wianvdm/winzelle-projects` since 2026-11-13, one maintainer: `@WianVDM`.
 - npm is the package manager; `package-lock.json` is authoritative. Tests run with `npm run test` (Vitest); builds with `npm run build` (Vite).
-- Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in Sanity.
-- Branch protection and rulesets are unavailable on this repository's current plan. Every rule below is a convention enforced by human review, not by GitHub. Never claim enforcement exists.
+- Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in typed modules under `src/content/`.
+- GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. Required status checks arrive with W8 (#10).
 - Cloudflare credentials are deferred to W10 (#12). Do not request, create, or store them anywhere else.
 
 ## Issue-first workflow
@@ -34,6 +34,7 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 - Title: Conventional Commit, `<type>(<scope>): <short imperative summary>`.
 - Body: complete the PR template. Truthful verification only: mark a check executed solely when it ran and its result was observed; list everything relevant that did not run under Unexecuted Checks with the reason.
 - UI changes include screenshots or a recording; otherwise state N/A.
+- Screenshots, recordings and review evidence go in PR comments and are never committed.
 - Every PR states Deployment & Privacy Impact and a Rollback Plan.
 
 ## Merge authority and agent prohibitions

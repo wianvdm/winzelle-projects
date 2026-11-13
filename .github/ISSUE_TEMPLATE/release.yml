@@ -30,7 +30,7 @@ body:
     attributes:
       label: Rollback plan
       description: How to recover the previous production state, and its limits.
-      placeholder: Redeploy the previous tag via Wrangler; content changes in Sanity are not covered by a code rollback.
+      placeholder: Redeploy the previous tag via Wrangler; content in `src/content/` rolls back with the code.
     validations:
       required: true
   - type: textarea
