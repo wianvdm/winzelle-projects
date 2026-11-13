@@ -39,9 +39,9 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 
 ## Merge authority and agent prohibitions
 
-Humans alone merge. Agents never:
+The maintainer merges. An agent may squash-merge a pull request only when the maintainer approved agent merges earlier in the current session; approval ends with the session. Until W11 (#13) moves production to releases, a merge to `main` deploys production, and that approval covers the deploy. Agents never:
 
-- merge a pull request or push directly to `main`
+- merge without that approval, or push directly to `main`
 - approve their own work or request their own review
 - apply `no-issue` to themselves or otherwise exempt their own PR from the ticket requirement
 - create tags, cut releases, or deploy
