@@ -1,6 +1,6 @@
 name: Investigation
 description: Time-boxed research that ends in a recorded answer, not shipped code.
-labels: ["type:maintenance"]
+labels: ['type:maintenance']
 body:
   - type: markdown
     attributes:

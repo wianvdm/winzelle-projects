@@ -152,19 +152,13 @@
   "drafts": {
     "drafts.siteSettings": {
       "decision": "Not selected as canonical. Preserved unmodified in the durable backup only; its alternative values do not enter typed content.",
-      "unselectedFieldNames": [
-        "companyName",
-        "whatsappNumber"
-      ]
+      "unselectedFieldNames": ["companyName", "whatsappNumber"]
     }
   },
   "excluded": {
     "systemDocuments": 12,
     "draftDocuments": 1,
-    "historicalSeedDuplicates": [
-      "siteSettings",
-      "heroSection"
-    ],
+    "historicalSeedDuplicates": ["siteSettings", "heroSection"],
     "notes": "Historical seed-ID singletons remain published in Sanity but lose the frontend [0] queries to the selected UUID documents; they are not migrated."
   }
 }

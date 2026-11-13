@@ -56,10 +56,7 @@ export function About() {
                   key={badge.title}
                   className="rounded-xl border border-gray-200 bg-light p-5 text-center"
                 >
-                  <badge.icon
-                    size={24}
-                    className="mx-auto mb-2 text-primary"
-                  />
+                  <badge.icon size={24} className="mx-auto mb-2 text-primary" />
                   <p className="font-heading text-lg font-bold text-primary">
                     {badge.title}
                   </p>

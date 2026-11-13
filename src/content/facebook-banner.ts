@@ -5,6 +5,5 @@ import type { FacebookBanner } from './types.ts'
 // Facebook link comes from siteSettings.facebookUrl.
 export const facebookBanner: FacebookBanner = {
   heading: 'Follow Us on Facebook',
-  subtitle:
-    'Check out our Facebook page for more project photos and updates',
+  subtitle: 'Check out our Facebook page for more project photos and updates',
 }

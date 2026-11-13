@@ -1,6 +1,6 @@
 name: Maintenance
 description: Dependency updates, configuration drift, cleanup, and other repository upkeep.
-labels: ["type:maintenance"]
+labels: ['type:maintenance']
 body:
   - type: markdown
     attributes:

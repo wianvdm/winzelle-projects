@@ -25,7 +25,7 @@ export function Services() {
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const displayServices = [...services].sort(
-    (first, second) => first.displayOrder - second.displayOrder
+    (first, second) => first.displayOrder - second.displayOrder,
   )
 
   return (

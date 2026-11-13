@@ -32,21 +32,21 @@ Observed read-only at 2026-11-09T13:31:09Z. Starting state for the production-re
 
 ## Public service coordinates
 
-| Service | Coordinate | Source |
-| --- | --- | --- |
-| Web host | `winzelle.co.za`, `www.winzelle.co.za` | Public DNS |
-| Edge and DNS | Cloudflare | Public DNS and response headers |
-| Worker | `winzelle-projects`, assets from `./dist`, SPA fallback | `wrangler.toml` |
-| CMS | Sanity project `bvpp9gzg`, dataset `production`, API `2025-03-28` | Production bundle |
+| Service      | Coordinate                                                        | Source                          |
+| ------------ | ----------------------------------------------------------------- | ------------------------------- |
+| Web host     | `winzelle.co.za`, `www.winzelle.co.za`                            | Public DNS                      |
+| Edge and DNS | Cloudflare                                                        | Public DNS and response headers |
+| Worker       | `winzelle-projects`, assets from `./dist`, SPA fallback           | `wrangler.toml`                 |
+| CMS          | Sanity project `bvpp9gzg`, dataset `production`, API `2025-03-28` | Production bundle               |
 
 ## Deferred decisions
 
-| Decision | Owner | Ticket | Reason |
-| --- | --- | --- | --- |
-| GitHub Pro billing for branch protection and rulesets | Maintainer | W9 #11 | Remote enforcement needs a paid plan on a private repository |
-| Cloudflare account, Worker and deployment inventory, API token scope | Maintainer | W10 #12 | Needs authenticated API access |
-| Web3Forms recipient, allowed origins, spam and rate settings | Maintainer | W10 #12 | Needs dashboard confirmation |
-| Release Please identity | Maintainer | W10 #12 | W10 prefers a repository-scoped GitHub App with contents and pull-requests write; a fine-grained PAT is the fallback |
+| Decision                                                             | Owner      | Ticket  | Reason                                                                                                               |
+| -------------------------------------------------------------------- | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------- |
+| GitHub Pro billing for branch protection and rulesets                | Maintainer | W9 #11  | Remote enforcement needs a paid plan on a private repository                                                         |
+| Cloudflare account, Worker and deployment inventory, API token scope | Maintainer | W10 #12 | Needs authenticated API access                                                                                       |
+| Web3Forms recipient, allowed origins, spam and rate settings         | Maintainer | W10 #12 | Needs dashboard confirmation                                                                                         |
+| Release Please identity                                              | Maintainer | W10 #12 | W10 prefers a repository-scoped GitHub App with contents and pull-requests write; a fine-grained PAT is the fallback |
 
 ## Unknown
 
