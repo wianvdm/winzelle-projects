@@ -18,9 +18,9 @@ const serviceLinks = [
   'Structural Repairs',
 ]
 
-export function Footer() {
-  const currentYear = new Date().getFullYear()
+const currentYear = new Date().getFullYear()
 
+export function Footer() {
   const companyName = siteSettings.companyName
   const tagline = siteSettings.tagline
   const phone = siteSettings.phone
