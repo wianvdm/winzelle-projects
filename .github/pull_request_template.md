@@ -34,5 +34,5 @@ Closes #<issue-number>
 <limitations, known issues, follow-ups, prerequisite/follow-up PR links>
 
 <!--
-Rules: mark a check only when actually executed and observed. `Closes #N` references the child issue, never the parent. Merge is executed by a human maintainer only. The metadata checks behind these conventions arrive in a later ticket; until then reviewers enforce them.
+Rules: mark a check only when actually executed and observed. `Closes #N` references the child issue, never the parent. The maintainer merges, or an agent with the maintainer's approval for the current session. The metadata checks behind these conventions arrive in a later ticket; until then reviewers enforce them.
 -->
