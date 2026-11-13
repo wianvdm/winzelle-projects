@@ -1,0 +1,11 @@
+The MIT licence in LICENSE covers the source code of this repository.
+
+It does not cover the Winzelle brand assets and site content, which remain
+all rights reserved by Wian van der Merwe:
+
+- public/content/
+- public/images/
+- public/logo192.png
+- public/logo512.png
+- public/favicon.ico
+- src/content/

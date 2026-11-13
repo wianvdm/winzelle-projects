@@ -1,6 +1,6 @@
 # Contributing
 
-Winzelle is a private repository with one maintainer, `@WianVDM`. The canonical policy for humans and agents is [`CLAUDE.md`](CLAUDE.md); this guide is the human walkthrough of the same rules.
+Winzelle is a public repository with one maintainer, `@WianVDM`. The canonical policy for humans and agents is [`CLAUDE.md`](CLAUDE.md); this guide is the human walkthrough of the same rules.
 
 ## Filing issues
 
@@ -19,14 +19,14 @@ Winzelle is a private repository with one maintainer, `@WianVDM`. The canonical 
 ## Verification
 
 - Mark a check executed only when you ran it and observed the result. Everything relevant that did not run goes under Unexecuted Checks with the reason.
-- UI changes need screenshots or a recording; otherwise write N/A.
+- UI changes need screenshots or a recording, posted as PR comments and never committed; otherwise write N/A.
 - State Deployment & Privacy Impact and a Rollback Plan on every PR.
 
 ## Review and merge
 
 - CODEOWNERS routes review for governance, CI, release, package, deployment, and public environment files to the maintainer.
 - Humans alone merge. Agents never merge, self-approve, self-exempt, tag, deploy, or administer secrets and repository rules.
-- Branch protection is unavailable on this repository's current plan, so these rules rest on reviewer discipline rather than GitHub enforcement.
+- The `main` ruleset enforces pull requests on GitHub: squash merges only, linear history, resolved conversations, no force pushes and no deletion. Required approvals stay at 0 because a sole maintainer cannot approve their own PRs. Required status checks arrive with W8 (#10).
 
 ## Ticket exemptions
 

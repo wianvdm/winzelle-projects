@@ -1,6 +1,5 @@
-# Governance and ownership. CODEOWNERS review requests reviewer attention; branch
-# protection that makes review required is unavailable on this repository's current
-# plan, so this file records intent rather than enforcement.
+# Routes review requests to the maintainer. The `main` ruleset requires pull
+# requests but no approvals, so these requests do not gate merges.
 
 # This file
 /.github/CODEOWNERS @WianVDM
@@ -21,8 +20,6 @@
 # Package manifests and lockfiles
 /package.json @WianVDM
 /package-lock.json @WianVDM
-/studio/package.json @WianVDM
-/studio/package-lock.json @WianVDM
 
 # Deployment configuration
 /wrangler.toml @WianVDM
