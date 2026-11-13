@@ -11,7 +11,7 @@ body:
     attributes:
       label: Outcome
       description: The question to answer and the decision it feeds.
-      placeholder: Determine whether Sanity image CDN resizing covers all hero breakpoints, and decide if a build-time fallback is needed.
+      placeholder: Determine whether the images in `public/content/images/` cover all hero breakpoints, and decide if build-time resizing is needed.
     validations:
       required: true
   - type: textarea
