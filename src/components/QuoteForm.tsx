@@ -8,6 +8,7 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { contactSection, siteSettings } from '../content'
+import { getWeb3FormsAccessKey } from '../lib/public-env'
 
 const serviceOptions = [
   'Waterproofing',
@@ -30,6 +31,7 @@ export function QuoteForm() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const heading = contactSection.heading
   const subtitle = contactSection.subtitle
@@ -37,6 +39,7 @@ export function QuoteForm() {
   const waMessage = encodeURIComponent(contactSection.whatsappMessage)
 
   const phone = siteSettings.phone
+  const failureMessage = `Your request was not sent. Please call us on ${phone} instead.`
   const email = siteSettings.email
   const address = siteSettings.address
   const waNumber = siteSettings.whatsappNumber
@@ -45,12 +48,19 @@ export function QuoteForm() {
     e.preventDefault()
     setSubmitting(true)
 
+    const accessKey = getWeb3FormsAccessKey()
+    if (accessKey === undefined) {
+      setError(failureMessage)
+      setSubmitting(false)
+      return
+    }
+
     try {
       const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY,
+          access_key: accessKey,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -60,18 +70,29 @@ export function QuoteForm() {
         }),
       })
 
-      if (response.ok) {
-        setSubmitted(true)
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          projectType: '',
-          details: '',
-        })
+      const result: unknown = await response.json()
+      const success =
+        response.ok &&
+        typeof result === 'object' &&
+        result !== null &&
+        (result as { success?: unknown }).success === true
+
+      if (!success) {
+        setError(failureMessage)
+        return
       }
+
+      setSubmitted(true)
+      setError(null)
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        projectType: '',
+        details: '',
+      })
     } catch {
-      // Handle error silently for now
+      setError(failureMessage)
     } finally {
       setSubmitting(false)
     }
@@ -104,7 +125,7 @@ export function QuoteForm() {
             <p className="text-sm text-text-muted mb-6">{formSubtitle}</p>
 
             {submitted ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12" role="status">
                 <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                   <Send size={24} className="text-green-600" />
                 </div>
@@ -123,11 +144,23 @@ export function QuoteForm() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {error !== null && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
+                  >
+                    {error}
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-text-dark mb-1.5">
+                  <label
+                    htmlFor="quote-name"
+                    className="block text-sm font-medium text-text-dark mb-1.5"
+                  >
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="quote-name"
                     type="text"
                     required
                     placeholder="John Doe"
@@ -139,10 +172,14 @@ export function QuoteForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-dark mb-1.5">
+                  <label
+                    htmlFor="quote-email"
+                    className="block text-sm font-medium text-text-dark mb-1.5"
+                  >
                     Email Address <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="quote-email"
                     type="email"
                     required
                     placeholder="john@example.com"
@@ -154,10 +191,14 @@ export function QuoteForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-dark mb-1.5">
+                  <label
+                    htmlFor="quote-phone"
+                    className="block text-sm font-medium text-text-dark mb-1.5"
+                  >
                     Phone Number
                   </label>
                   <input
+                    id="quote-phone"
                     type="tel"
                     placeholder="+27 XX XXX XXXX"
                     value={formData.phone}
@@ -168,10 +209,14 @@ export function QuoteForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-dark mb-1.5">
+                  <label
+                    htmlFor="quote-project-type"
+                    className="block text-sm font-medium text-text-dark mb-1.5"
+                  >
                     Project Type <span className="text-red-500">*</span>
                   </label>
                   <select
+                    id="quote-project-type"
                     required
                     value={formData.projectType}
                     onChange={(e) =>
@@ -188,10 +233,14 @@ export function QuoteForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-dark mb-1.5">
+                  <label
+                    htmlFor="quote-details"
+                    className="block text-sm font-medium text-text-dark mb-1.5"
+                  >
                     Project Details <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                    id="quote-details"
                     required
                     rows={4}
                     placeholder="Please describe your project requirements..."
