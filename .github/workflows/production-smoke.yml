@@ -60,7 +60,7 @@ jobs:
         # smoke.mjs has no npm dependencies, so there is no npm ci.
         env:
           BASE_URL: ${{ inputs.base_url || 'https://winzelle.co.za' }}
-        run: node scripts/smoke.mjs "$BASE_URL"
+        run: node scripts/smoke.mjs "$BASE_URL" --expect-headers
       - name: Write the job summary
         if: always()
         shell: bash

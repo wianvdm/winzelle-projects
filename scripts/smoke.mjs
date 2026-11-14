@@ -127,15 +127,109 @@ async function tryText(response) {
   }
 }
 
-async function runAttempt({ baseUrl, expectedScript, fetchImpl }) {
+const MIN_HSTS_MAX_AGE_SECONDS = 31_536_000
+const MIN_ASSET_MAX_AGE_SECONDS = 31_536_000
+const MAX_AGE_DIRECTIVE = /(?:^|[,\s])max-age=(\d+)/gi
+const IMMUTABLE_DIRECTIVE = /(?:^|[,\s])immutable(?:$|[,\s])/i
+
+function maxAgeValues(headerValue) {
+  return [...headerValue.matchAll(MAX_AGE_DIRECTIVE)].map((match) =>
+    Number.parseInt(match[1], 10),
+  )
+}
+
+function isNosniff(headers) {
+  return headers.get('x-content-type-options')?.toLowerCase() === 'nosniff'
+}
+
+function checkSecurityHeaders(homeHeaders, fallbackHeaders) {
+  if (homeHeaders === null) {
+    return result('security-headers', false, 'homepage unavailable')
+  }
+  const problems = []
+  const csp = homeHeaders.get('content-security-policy') ?? ''
+  if (!csp.includes("default-src 'self'")) {
+    problems.push("content-security-policy lacks default-src 'self'")
+  }
+  if (!csp.includes("frame-ancestors 'none'")) {
+    problems.push("content-security-policy lacks frame-ancestors 'none'")
+  }
+  if (!isNosniff(homeHeaders)) {
+    problems.push('x-content-type-options is not nosniff')
+  }
+  if (
+    homeHeaders.get('referrer-policy') !== 'strict-origin-when-cross-origin'
+  ) {
+    problems.push('referrer-policy is not strict-origin-when-cross-origin')
+  }
+  const [hstsMaxAge] = maxAgeValues(
+    homeHeaders.get('strict-transport-security') ?? '',
+  )
+  if ((hstsMaxAge ?? 0) < MIN_HSTS_MAX_AGE_SECONDS) {
+    problems.push(
+      `strict-transport-security max-age is below ${MIN_HSTS_MAX_AGE_SECONDS}`,
+    )
+  }
+  if (fallbackHeaders === null) {
+    problems.push('spa fallback unavailable')
+  } else {
+    if (!fallbackHeaders.get('content-security-policy')) {
+      problems.push('spa fallback lacks content-security-policy')
+    }
+    if (!isNosniff(fallbackHeaders)) {
+      problems.push('spa fallback x-content-type-options is not nosniff')
+    }
+  }
+  if (problems.length > 0) {
+    return result('security-headers', false, problems.join('; '))
+  }
+  return result('security-headers', true, 'security headers present')
+}
+
+// Duplicate max-age directives are ambiguous (RFC 9111 section 4.2.1 lets a
+// cache keep the first or treat the response as stale), so exactly one counts.
+function checkAssetCache(scriptHeaders) {
+  if (scriptHeaders === null) {
+    return result('asset-cache', false, 'module script unavailable')
+  }
+  const cacheControl = scriptHeaders.get('cache-control') ?? ''
+  const maxAges = maxAgeValues(cacheControl)
+  if (maxAges.length !== 1) {
+    return result(
+      'asset-cache',
+      false,
+      `cache-control has ${maxAges.length} max-age directives, expected 1`,
+    )
+  }
+  if (maxAges[0] < MIN_ASSET_MAX_AGE_SECONDS) {
+    return result(
+      'asset-cache',
+      false,
+      `cache-control max-age is ${maxAges[0]}, expected at least ${MIN_ASSET_MAX_AGE_SECONDS}`,
+    )
+  }
+  if (!IMMUTABLE_DIRECTIVE.test(cacheControl)) {
+    return result('asset-cache', false, 'cache-control lacks immutable')
+  }
+  return result('asset-cache', true, 'module script is immutable and cached')
+}
+
+async function runAttempt({
+  baseUrl,
+  expectedScript,
+  expectHeaders,
+  fetchImpl,
+}) {
   const origin = baseUrl.replace(/\/+$/, '')
   const results = []
   let homepageHtml = null
   let moduleScript = null
   let stylesheet = null
   let moduleBody = null
+  let scriptHeaders = null
 
   const home = await safeFetch(fetchImpl, `${origin}/`)
+  const homeHeaders = home.response?.headers ?? null
   if (home.error) {
     results.push(result('homepage', false, `request failed: ${home.error}`))
   } else if (home.response.status !== 200) {
@@ -193,6 +287,8 @@ async function runAttempt({ baseUrl, expectedScript, fetchImpl }) {
     results.push(result('form-access-key', false, 'module script unavailable'))
   } else {
     const script = await safeFetch(fetchImpl, `${origin}${moduleScript}`)
+    scriptHeaders =
+      script.response?.status === 200 ? script.response.headers : null
     if (script.error) {
       results.push(
         result('module-script', false, `request failed: ${script.error}`),
@@ -311,6 +407,7 @@ async function runAttempt({ baseUrl, expectedScript, fetchImpl }) {
     fetchImpl,
     `${origin}/smoke-test-missing-page`,
   )
+  const fallbackHeaders = fallback.response?.headers ?? null
   if (fallback.error) {
     results.push(
       result('spa-fallback', false, `request failed: ${fallback.error}`),
@@ -392,6 +489,11 @@ async function runAttempt({ baseUrl, expectedScript, fetchImpl }) {
     )
   }
 
+  if (expectHeaders) {
+    results.push(checkSecurityHeaders(homeHeaders, fallbackHeaders))
+    results.push(checkAssetCache(scriptHeaders))
+  }
+
   return results
 }
 
@@ -404,6 +506,7 @@ function defaultSleep(ms) {
 export async function runSmoke({
   baseUrl,
   expectedScript = null,
+  expectHeaders = false,
   fetch: fetchImpl = globalThis.fetch,
   attempts = DEFAULT_ATTEMPTS,
   delayMs = DEFAULT_DELAY_MS,
@@ -411,7 +514,12 @@ export async function runSmoke({
 }) {
   let results = []
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    results = await runAttempt({ baseUrl, expectedScript, fetchImpl })
+    results = await runAttempt({
+      baseUrl,
+      expectedScript,
+      expectHeaders,
+      fetchImpl,
+    })
     const failed = results.filter((entry) => !entry.ok).length
     if (failed === 0) return { ok: true, results }
     if (attempt < attempts && delayMs > 0) await sleep(delayMs)
@@ -428,6 +536,7 @@ function positiveInt(value) {
 function parseArgs(argv) {
   const positional = []
   let expectDist = null
+  let expectHeaders = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--expect-dist') {
@@ -437,6 +546,8 @@ function parseArgs(argv) {
       }
       expectDist = value
       index += 1
+    } else if (arg === '--expect-headers') {
+      expectHeaders = true
     } else if (arg.startsWith('--')) {
       throw new Error(`unknown option: ${arg}`)
     } else {
@@ -445,17 +556,18 @@ function parseArgs(argv) {
   }
   if (positional.length !== 1) {
     throw new Error(
-      'usage: node scripts/smoke.mjs <baseUrl> [--expect-dist <dir>]',
+      'usage: node scripts/smoke.mjs <baseUrl> [--expect-dist <dir>] [--expect-headers]',
     )
   }
-  return { baseUrl: positional[0], expectDist }
+  return { baseUrl: positional[0], expectDist, expectHeaders }
 }
 
 async function main() {
   let baseUrl
   let expectDist
+  let expectHeaders
   try {
-    ;({ baseUrl, expectDist } = parseArgs(process.argv.slice(2)))
+    ;({ baseUrl, expectDist, expectHeaders } = parseArgs(process.argv.slice(2)))
   } catch (error) {
     console.error(error.message)
     process.exit(1)
@@ -488,6 +600,7 @@ async function main() {
   const { ok, results } = await runSmoke({
     baseUrl,
     expectedScript,
+    expectHeaders,
     attempts,
     delayMs,
   })
