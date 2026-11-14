@@ -102,6 +102,21 @@ Proportional and free (W13, #15): a daily smoke plus failure issues. No monitori
 - Residual risks: `Failure alert` does not monitor itself, so check Actions → Failure alert after the controlled tests and after any real failure. A prerelease deploy run is expected to conclude `skipped` (job-level `if`) and so be ignored, but that is unverified until observed.
 - Cloudflare Notifications, observed in the dashboard (Notifications → Add) on 2026-11-14. "Availability & performance" lists Health Checks status, Load Balancing health, Pool enablement, Failing Logpush Job Disabled, Network flow auto advertisement, Pages deployment updates, Stream live alerts, Passive Origin Monitoring, Tunnel creation/deletion and Tunnel health. "Certificates & access" lists Advanced Certificate, Expiring Access Service Token, Access mTLS certificate expiration, Hostname and Zone Authenticated Origin Pulls certificate expiration, mTLS Certificate Store expiration and SSL for SaaS custom hostnames. None covers Workers deploys or errors ("Pages deployment updates" is Pages only), and none covers API token expiry ("Expiring Access Service Token" is for Cloudflare Access service tokens). `CLOUDFLARE_API_TOKEN` expiry therefore stays a maintainer calendar reminder, and the failure-alert issues are the only alerting.
 
+## Agent access to Cloudflare
+
+Agents may read Cloudflare state through the official Cloudflare API MCP server (#63). Writes are out of policy (`CLAUDE.md`). `.mcp.json` names the server URL only; the OAuth grant stays in the maintainer's client and never enters the repository.
+
+- Connect: run `claude mcp login cloudflare` in a shell, or `/mcp` in an interactive `claude` session, after approving the project server. An SDK host such as T3 Code cannot complete OAuth, and whether it shows the approval prompt is unverified. Start a new session afterwards (whether a restart is needed is unverified).
+- Consent screen: select only the Winzelle account, open Edit Permissions and choose "Read only". That template covers optional scopes; required scopes cannot be deselected (Cloudflare docs, "Authorizing an application", and the 2026-04-14 and 2026-08-22 changelogs). Record every selected scope name verbatim, required ones included, and no identifiers.
+- Stop rule: if the consent screen offers no read-only selection, or a required scope is write-capable, do not authorize. The maintainer decides the next step.
+- Read-only evidence: the maintainer-observed scope list. No write is attempted, because one would be out of policy.
+- Contributors: a fresh clone gets an approval prompt and an unauthenticated server, so no access. Decline it, or reset the choice with `claude mcp reset-project-choices`. Agents other than Claude Code ignore `.mcp.json`. `claude -p`, SDK and cloud sessions load project servers without asking; headless runs that must not touch Cloudflare pass `--strict-mcp-config` or set `disabledMcpjsonServers`.
+- Revoke: at Cloudflare, Profile, Access Management, Connected Applications, then Revoke. Then clear local state with `/mcp` "Clear authentication" or `claude mcp logout cloudflare`. Removing the server locally does not revoke the grant at Cloudflare. The Cloudflare steps are unverified until the maintainer runs them.
+- Failure: on an auth error the agent stops and asks the maintainer, and never requests broader access. If the server is down, the check is listed as Unexecuted.
+- Use: agents verify settings such as #56, #43 and #58 (Always Use HTTPS, minimum TLS, the www redirect rule, zone TXT records, Workers Builds branch builds). Extra, outside #63's test plan: the Worker's `workers.dev` and preview URLs are disabled. Reports carry values and pass/fail only, with no hostnames, account IDs or binding values on GitHub.
+
+Server docs: https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/
+
 ## Line endings on Windows
 
 `.gitattributes` sets `* text=auto eol=lf`, so text files check out with LF on Windows and oxfmt's `endOfLine: "lf"` holds. The same file declares the binary media extensions under `public/`.
