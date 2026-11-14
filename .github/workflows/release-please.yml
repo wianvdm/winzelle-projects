@@ -20,7 +20,8 @@ jobs:
     steps:
       # The App token does the writing: PRs opened with GITHUB_TOKEN would not
       # trigger the required checks, and the tag ruleset lets only the App
-      # create v* tags. No deploy step lives here until W11 (#13).
+      # create v* tags. Releases it publishes trigger deploy-production.yml,
+      # which App-token events can do and GITHUB_TOKEN events cannot.
       - name: Mint release App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0

@@ -41,7 +41,7 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 
 ## Merge authority and agent prohibitions
 
-The maintainer merges. An agent may squash-merge a pull request only when the maintainer approved agent merges earlier in the current session; approval ends with the session. Until W11 (#13) moves production to releases, a merge to `main` deploys production, and that approval covers the deploy. Agents never:
+The maintainer merges. An agent may squash-merge a pull request only when the maintainer approved agent merges earlier in the current session; approval ends with the session. Production changes only when a release is published and the maintainer approves the `production` deployment (W11, #13). Merging a release PR publishes a release, so only the maintainer merges release PRs. Agents never:
 
 - merge without that approval, or push directly to `main`
 - approve their own work or request their own review

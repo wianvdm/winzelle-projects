@@ -1,0 +1,162 @@
+name: Deploy production
+
+# Publishing a release is the only production deploy path (W11, #13).
+# Re-running this workflow for the same release redeploys that tag; tags are
+# never created, moved or deleted here.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+# Shared with rollback.yml so a deploy and a rollback never overlap, and an
+# in-progress production change is never cancelled.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      # contents: write is only for appending the version mapping to the
+      # release notes with gh release edit; the deploy itself authenticates
+      # to Cloudflare with the environment secret.
+      contents: write
+    steps:
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
+      - name: Record the previous live version
+        id: previous
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # deployments list is ordered oldest first, so the live version is
+          # the last deployment's single version. The raw list is never
+          # printed: it contains author emails and the repo is public.
+          deployments=$(npx wrangler deployments list --json --name winzelle-projects)
+          count=$(jq 'length' <<<"$deployments")
+          if [ "$count" -eq 0 ]; then
+            echo "No existing deployments; there is nothing to roll back to."
+            echo "version_id=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version_count=$(jq '.[-1].versions | length' <<<"$deployments")
+          if [ "$version_count" -ne 1 ]; then
+            echo "::error::Latest deployment serves $version_count versions; refusing to guess the live one."
+            exit 1
+          fi
+          echo "version_id=$(jq -r '.[-1].versions[0].version_id' <<<"$deployments")" >> "$GITHUB_OUTPUT"
+      - name: Deploy the release tag
+        id: deploy
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: |
+          # wrangler appends one ND-JSON entry per command to
+          # WRANGLER_OUTPUT_FILE_PATH; the deploy entry carries the new
+          # version_id (workers-sdk packages/deploy-helpers/src/deploy/deploy.ts).
+          npx wrangler deploy --message "$RELEASE_TAG"
+          new_version=$(jq -sr '[.[] | select(.type == "deploy")] | last | .version_id' "$WRANGLER_OUTPUT_FILE_PATH")
+          if [ -z "$new_version" ] || [ "$new_version" = "null" ]; then
+            echo "::error::Deploy succeeded but no version_id found in the wrangler output file."
+            exit 1
+          fi
+          echo "version_id=$new_version" >> "$GITHUB_OUTPUT"
+      - name: Smoke test the deploy
+        id: smoke
+        run: node scripts/smoke.mjs https://winzelle.co.za --expect-dist dist
+      - name: Note a missing rollback target
+        if: always() && steps.smoke.outcome == 'failure' && steps.previous.outputs.version_id == ''
+        run: echo "::warning::Smoke failed and no previous version exists; nothing to roll back to."
+      - name: Roll back on smoke failure
+        id: rollback
+        if: always() && steps.smoke.outcome == 'failure' && steps.previous.outputs.version_id != ''
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          PREVIOUS_VERSION: ${{ steps.previous.outputs.version_id }}
+        run: |
+          # Non-interactive in CI: wrangler's prompt/confirm helpers take
+          # their defaults, so --message is used as-is and the 100% traffic
+          # confirmation is accepted (workers-sdk packages/wrangler/src/dialogs.ts).
+          npx wrangler rollback "$PREVIOUS_VERSION" \
+            --message "auto-rollback: smoke failed for $RELEASE_TAG"
+      - name: Smoke test the rollback
+        id: rollback-smoke
+        if: always() && steps.rollback.outcome == 'success'
+        # The job stays failed either way: the release deploy did not hold.
+        run: node scripts/smoke.mjs https://winzelle.co.za
+      - name: Append the deploy mapping to the release notes
+        if: steps.smoke.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          NEW_VERSION: ${{ steps.deploy.outputs.version_id }}
+          PREVIOUS_VERSION: ${{ steps.previous.outputs.version_id }}
+        run: |
+          # Keep the existing body; append the version mapping so version IDs
+          # for rollback.md are findable without opening the Actions log.
+          gh release view "$RELEASE_TAG" --repo "$GH_REPO" --json body --jq .body > "$RUNNER_TEMP/body.md"
+          {
+            cat "$RUNNER_TEMP/body.md"
+            printf '\n### Production deploy\n\n'
+            printf -- '- Tag: `%s`\n' "$RELEASE_TAG"
+            printf -- '- Commit: `%s`\n' "$(git rev-parse HEAD)"
+            printf -- '- Worker version: `%s`\n' "$NEW_VERSION"
+            printf -- '- Previous version: `%s`\n' "${PREVIOUS_VERSION:-none}"
+            printf -- '- Actor: `%s`\n' "$GITHUB_ACTOR"
+            printf -- '- Deployed: %s UTC, smoke passed\n' "$(date -u +'%Y-%m-%d %H:%M:%S')"
+          } > "$RUNNER_TEMP/notes.md"
+          gh release edit "$RELEASE_TAG" --repo "$GH_REPO" --notes-file "$RUNNER_TEMP/notes.md"
+      - name: Write the job summary
+        if: always()
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          NEW_VERSION: ${{ steps.deploy.outputs.version_id }}
+          PREVIOUS_VERSION: ${{ steps.previous.outputs.version_id }}
+          SMOKE_RESULT: ${{ steps.smoke.outcome }}
+          ROLLBACK_RESULT: ${{ steps.rollback.outcome }}
+          ROLLBACK_SMOKE_RESULT: ${{ steps.rollback-smoke.outcome }}
+        run: |
+          {
+            printf '## Production deploy\n\n'
+            printf '| Field | Value |\n| --- | --- |\n'
+            printf '| Tag | `%s` |\n' "$RELEASE_TAG"
+            printf '| Commit | `%s` |\n' "$(git rev-parse HEAD)"
+            printf '| New version | `%s` |\n' "${NEW_VERSION:-unknown}"
+            printf '| Previous version | `%s` |\n' "${PREVIOUS_VERSION:-none}"
+            printf '| Actor | `%s` |\n' "$GITHUB_ACTOR"
+            printf '| Time | %s UTC |\n' "$(date -u +'%Y-%m-%d %H:%M:%S')"
+            printf '| Smoke | %s |\n' "${SMOKE_RESULT:-not run}"
+            printf '| Rollback | %s |\n' "${ROLLBACK_RESULT:-not run}"
+            printf '| Post-rollback smoke | %s |\n' "${ROLLBACK_SMOKE_RESULT:-not run}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,149 @@
+name: Rollback production
+
+# Restores a previous Worker version without a redeploy (W11, #13). Runbook:
+# docs/rollback.md. Code recovery is a revert plus a new patch release; this
+# workflow only moves traffic back to a version Cloudflare still holds.
+on:
+  workflow_dispatch:
+    inputs:
+      version_id:
+        description: >-
+          Worker version ID to restore. Leave empty to restore the version
+          deployed before the current one.
+        required: false
+        type: string
+      reason:
+        description: >-
+          Why this rollback is needed. Recorded in the deployment message and
+          the run summary.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Shared with deploy-production.yml so a deploy and a rollback never overlap.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Rollback production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate inputs
+        shell: bash
+        env:
+          INPUT_VERSION_ID: ${{ inputs.version_id }}
+          INPUT_REASON: ${{ inputs.reason }}
+        run: |
+          if [ -z "${INPUT_REASON//[[:space:]]/}" ]; then
+            echo "::error::reason is required."
+            exit 1
+          fi
+          if [ -n "$INPUT_VERSION_ID" ] && ! grep -qxE '[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}' <<<"$INPUT_VERSION_ID"; then
+            echo "::error::version_id must be a UUID (or empty for the previous version)."
+            exit 1
+          fi
+      - name: Record the current version and resolve the target
+        id: target
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          INPUT_VERSION_ID: ${{ inputs.version_id }}
+        run: |
+          # deployments list is ordered oldest first, so the live version is
+          # the last deployment's single version. The raw list is never
+          # printed: it contains author emails and the repo is public.
+          deployments=$(npx wrangler deployments list --json --name winzelle-projects)
+          count=$(jq 'length' <<<"$deployments")
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No deployments found."
+            exit 1
+          fi
+          if [ "$(jq '.[-1].versions | length' <<<"$deployments")" -ne 1 ]; then
+            echo "::error::Latest deployment serves more than one version; refusing to guess the live one."
+            exit 1
+          fi
+          echo "current_version=$(jq -r '.[-1].versions[0].version_id' <<<"$deployments")" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_VERSION_ID" ]; then
+            echo "target_version=$INPUT_VERSION_ID" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$count" -lt 2 ]; then
+            echo "::error::No earlier deployment to roll back to; pass version_id explicitly."
+            exit 1
+          fi
+          if [ "$(jq '.[-2].versions | length' <<<"$deployments")" -ne 1 ]; then
+            echo "::error::Previous deployment serves more than one version; pass version_id explicitly."
+            exit 1
+          fi
+          echo "target_version=$(jq -r '.[-2].versions[0].version_id' <<<"$deployments")" >> "$GITHUB_OUTPUT"
+      - name: Roll back
+        id: rollback
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET_VERSION: ${{ steps.target.outputs.target_version }}
+          INPUT_REASON: ${{ inputs.reason }}
+        run: |
+          # The deployment message is capped at 120 characters; the full
+          # reason is in the job summary. Non-interactive in CI: wrangler's
+          # prompt/confirm helpers take their defaults (packages/wrangler/src/dialogs.ts).
+          npx wrangler rollback "$TARGET_VERSION" \
+            --message "manual rollback: ${INPUT_REASON:0:100}"
+      - name: Record the new live version
+        id: after
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          deployments=$(npx wrangler deployments list --json --name winzelle-projects)
+          if [ "$(jq '.[-1].versions | length' <<<"$deployments")" -ne 1 ]; then
+            echo "::error::Latest deployment serves more than one version; refusing to guess the live one."
+            exit 1
+          fi
+          echo "version_id=$(jq -r '.[-1].versions[0].version_id' <<<"$deployments")" >> "$GITHUB_OUTPUT"
+      - name: Smoke test the rollback
+        id: smoke
+        run: node scripts/smoke.mjs https://winzelle.co.za
+      - name: Write the job summary
+        if: always()
+        shell: bash
+        env:
+          BEFORE_VERSION: ${{ steps.target.outputs.current_version }}
+          TARGET_VERSION: ${{ steps.target.outputs.target_version }}
+          AFTER_VERSION: ${{ steps.after.outputs.version_id }}
+          ROLLBACK_RESULT: ${{ steps.rollback.outcome }}
+          SMOKE_RESULT: ${{ steps.smoke.outcome }}
+          INPUT_REASON: ${{ inputs.reason }}
+        run: |
+          {
+            printf '## Production rollback\n\n'
+            printf '| Field | Value |\n| --- | --- |\n'
+            printf '| Live version before | `%s` |\n' "${BEFORE_VERSION:-unknown}"
+            printf '| Rollback target | `%s` |\n' "${TARGET_VERSION:-unknown}"
+            printf '| Live version after | `%s` |\n' "${AFTER_VERSION:-unknown}"
+            printf '| Reason | %s |\n' "$INPUT_REASON"
+            printf '| Actor | `%s` |\n' "$GITHUB_ACTOR"
+            printf '| Time | %s UTC |\n' "$(date -u +'%Y-%m-%d %H:%M:%S')"
+            printf '| Rollback | %s |\n' "${ROLLBACK_RESULT:-not run}"
+            printf '| Smoke | %s |\n' "${SMOKE_RESULT:-not run}"
+          } >> "$GITHUB_STEP_SUMMARY"
