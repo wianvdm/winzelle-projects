@@ -22,6 +22,8 @@ tests that rollback, and leaves the run failed either way. A failed deploy run
 with a green post-rollback smoke means production is on the previous version
 and only the release needs attention. No previous version exists only when the
 Worker has never been deployed; in that case the run fails without a rollback.
+The automatic rollback is implemented but never observed in production. The
+manual rollback was observed (#13).
 
 A deploy or rollback run that ends `failure`, `timed_out`, `startup_failure` or
 `cancelled` opens (or comments on) an open `Production alert: <workflow name>`
@@ -69,10 +71,17 @@ the authoritative version ID.
 Open a revert PR for the broken change, then let Release Please cut a patch
 release. Publishing that release deploys the fix through the normal path.
 
-## Caveats
+## Limits
 
 - Re-running an older release's deploy workflow redeploys that older tag
   over whatever is live, including a newer release.
 - The Worker must already exist: the first-ever deploy path is not
   supported, because `wrangler deployments list` errors for a missing
   Worker. Create the Worker with a manual `wrangler deploy` first.
+- The rollback smokes (the "Smoke test the rollback" steps in
+  `deploy-production.yml` and `rollback.yml`) do not pass `--expect-headers`,
+  so they prove base health only, not headers or the www rule.
+- HSTS persists in browsers after a rollback; see
+  [development.md](development.md) Security headers.
+- Zone settings (the www rule, Always Use HTTPS, minimum TLS, routes) are not
+  part of a Worker version, so a rollback does not revert them.
