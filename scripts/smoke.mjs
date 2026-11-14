@@ -9,17 +9,36 @@ import { pathToFileURL } from 'node:url'
 export const PRODUCTION_ORIGIN = 'https://winzelle.co.za'
 export const DEFAULT_ATTEMPTS = 6
 export const DEFAULT_DELAY_MS = 10_000
+export const REQUEST_TIMEOUT_MS = 15_000
 export const PLACEHOLDER_ACCESS_KEY = 'your-web3forms-access-key'
 
-const UUID_PATTERN =
-  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
+// The key is wired into the Web3Forms payload as access_key, so only a UUID
+// bound to that field counts; a stray UUID elsewhere in the bundle is not a
+// form key. The first alternative mirrors the placeholder-as-key pattern
+// below (`access_key: "<uuid>"`); the second covers the minified shape, where
+// the literal sits in a helper and the payload passes a variable
+// (`access_key:r` beside `function ae(){return `<uuid>`}`), so the UUID may
+// sit a short distance before the access_key reference.
+const UUID_SOURCE =
+  '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const MAX_ACCESS_KEY_DISTANCE = 4096
+const ACCESS_KEY_UUID = new RegExp(
+  `access_key["']?\\s*[:=]\\s*["']${UUID_SOURCE}["']` +
+    `|${UUID_SOURCE}[\\s\\S]{0,${MAX_ACCESS_KEY_DISTANCE}}?access_key`,
+  'i',
+)
 // public-env.ts ships the placeholder as a guard constant in every build,
 // so presence alone is not a leak; it fails only when wired in as the key.
 const PLACEHOLDER_AS_KEY =
   /access_key["']?\s*[:=]\s*["']your-web3forms-access-key["']/
+// Anchored to the scheme and host boundary: a bare substring match would
+// also pass on lookalike hosts (CodeQL
+// js/incomplete-url-substring-sanitization).
+const FORM_ENDPOINT = /https:\/\/api\.web3forms\.com\//
 
 function tagAttribute(tag, name) {
-  const pattern = new RegExp(`\\b${name}\\s*=\\s*["']([^"']+)["']`, 'i')
+  // The lookbehind keeps `src` from matching `data-src` and friends.
+  const pattern = new RegExp(`(?<![\\w-])${name}\\s*=\\s*["']([^"']+)["']`, 'i')
   return pattern.exec(tag)?.[1] ?? null
 }
 
@@ -89,7 +108,12 @@ function mediaType(contentType) {
 
 async function safeFetch(fetchImpl, url) {
   try {
-    return { response: await fetchImpl(url, { method: 'GET' }) }
+    return {
+      response: await fetchImpl(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      }),
+    }
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) }
   }
@@ -228,17 +252,18 @@ async function runAttempt({ baseUrl, expectedScript, fetchImpl }) {
         results.push(result('form-endpoint', false, chunkError))
         results.push(result('form-access-key', false, chunkError))
       } else {
+        const endpointFound = FORM_ENDPOINT.test(bundle)
         results.push(
           result(
             'form-endpoint',
-            bundle.includes('api.web3forms.com'),
-            bundle.includes('api.web3forms.com')
+            endpointFound,
+            endpointFound
               ? 'references api.web3forms.com'
               : 'does not reference api.web3forms.com',
           ),
         )
         const placeholderAsKey = PLACEHOLDER_AS_KEY.test(bundle)
-        const keyPresent = UUID_PATTERN.test(bundle)
+        const keyPresent = ACCESS_KEY_UUID.test(bundle)
         if (placeholderAsKey) {
           results.push(
             result('form-access-key', false, 'placeholder used as access key'),
@@ -406,7 +431,11 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--expect-dist') {
-      expectDist = argv[index + 1] ?? null
+      const value = argv[index + 1]
+      if (value === undefined || value.startsWith('--')) {
+        throw new Error('--expect-dist requires a directory value')
+      }
+      expectDist = value
       index += 1
     } else if (arg.startsWith('--')) {
       throw new Error(`unknown option: ${arg}`)

@@ -1,6 +1,11 @@
+import { execFile } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 // @ts-expect-error the script ships no type declarations
 import * as smoke from './smoke.mjs'
@@ -49,7 +54,7 @@ function mainScriptBody() {
 function chunkBody(overrides: Record<string, unknown> = {}) {
   const { endpoint = 'https://api.web3forms.com/submit', key = ACCESS_KEY } =
     overrides
-  return `const endpoint = '${endpoint}'; const accessKey = '${key}';`
+  return `const endpoint = '${endpoint}'; const access_key = '${key}';`
 }
 
 type StubResponse = {
@@ -149,6 +154,14 @@ describe('extractMainModuleScript', () => {
     ).toBeNull()
     expect(
       extractMainModuleScript('<script type="module"></script>'),
+    ).toBeNull()
+  })
+
+  it('ignores data-src, which is not the script source', () => {
+    expect(
+      extractMainModuleScript(
+        '<script type="module" data-src="/assets/fake.js"></script>',
+      ),
     ).toBeNull()
   })
 
@@ -369,6 +382,28 @@ describe('runSmoke', () => {
     ).toMatchObject({ ok: false })
   })
 
+  it('fails the form-endpoint check when the host appears only as a substring', async () => {
+    const { fetchImpl } = serveRoutes(
+      passingRoutes({
+        [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+          contentType: 'application/javascript',
+          body: chunkBody({
+            endpoint: 'https://example.com/mirror/api.web3forms.com/submit',
+          }),
+        },
+      }),
+    )
+    const { results } = await runSmoke({
+      baseUrl: BASE_URL,
+      fetch: fetchImpl,
+      attempts: 1,
+      delayMs: 0,
+    })
+    expect(
+      results.find((entry: { name: string }) => entry.name === 'form-endpoint'),
+    ).toMatchObject({ ok: false })
+  })
+
   it('fails the form-access-key check when the placeholder is wired in as the key', async () => {
     const { fetchImpl } = serveRoutes(
       passingRoutes({
@@ -400,7 +435,7 @@ describe('runSmoke', () => {
           body:
             `const endpoint='https://api.web3forms.com/submit';` +
             `const guard="${PLACEHOLDER_ACCESS_KEY}";` +
-            `const accessKey='${ACCESS_KEY}';if(accessKey.trim()===guard);`,
+            `const access_key='${ACCESS_KEY}';if(access_key.trim()===guard);`,
         },
       }),
     )
@@ -424,6 +459,28 @@ describe('runSmoke', () => {
         [`${BASE_URL}${CHUNK_SCRIPT}`]: {
           contentType: 'application/javascript',
           body: chunkBody({ key: 'not-a-uuid' }),
+        },
+      }),
+    )
+    const { results } = await runSmoke({
+      baseUrl: BASE_URL,
+      fetch: fetchImpl,
+      attempts: 1,
+      delayMs: 0,
+    })
+    expect(
+      results.find(
+        (entry: { name: string }) => entry.name === 'form-access-key',
+      ),
+    ).toMatchObject({ ok: false, reason: 'key missing' })
+  })
+
+  it('fails the form-access-key check when a UUID is not bound to access_key', async () => {
+    const { fetchImpl } = serveRoutes(
+      passingRoutes({
+        [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+          contentType: 'application/javascript',
+          body: `const endpoint='https://api.web3forms.com/submit';const buildId='${ACCESS_KEY}';`,
         },
       }),
     )
@@ -667,5 +724,106 @@ describe('runSmoke', () => {
     })
     expect(sleep).toHaveBeenCalledTimes(1)
     expect(sleep).toHaveBeenCalledWith(5_000)
+  })
+})
+
+const execFileAsync = promisify(execFile)
+const SMOKE_SCRIPT = fileURLToPath(new URL('./smoke.mjs', import.meta.url))
+
+function passingPaths(): Record<string, StubResponse> {
+  return {
+    '/': { contentType: 'text/html', body: homeHtml() },
+    [MODULE_SCRIPT]: {
+      contentType: 'application/javascript',
+      body: mainScriptBody(),
+    },
+    [CHUNK_SCRIPT]: {
+      contentType: 'application/javascript',
+      body: chunkBody(),
+    },
+    [STYLESHEET]: { contentType: 'text/css', body: 'body{}' },
+    '/smoke-test-missing-page': { contentType: 'text/html', body: homeHtml() },
+    '/content/images/winzelle-logo.jpg': {
+      contentType: 'image/jpeg',
+      body: 'fake-jpeg',
+    },
+  }
+}
+
+async function serveSite(routes: Record<string, StubResponse>) {
+  const server = createServer((request, response) => {
+    const route = routes[request.url ?? '/']
+    if (!route) {
+      response.writeHead(404, { 'content-type': 'text/plain' })
+      response.end('not found')
+      return
+    }
+    response.writeHead(route.status ?? 200, {
+      'content-type': route.contentType ?? 'text/html',
+    })
+    response.end(route.body ?? '')
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const { port } = server.address() as AddressInfo
+  return {
+    url: `http://127.0.0.1:${port}`,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  }
+}
+
+// Attempts stay at 1 so the spawned CLI does not sleep between retries.
+function runCli(args: string[]) {
+  return execFileAsync(process.execPath, [SMOKE_SCRIPT, ...args], {
+    env: { ...process.env, SMOKE_ATTEMPTS: '1', SMOKE_DELAY_MS: '1' },
+  })
+}
+
+describe('CLI', () => {
+  it('exits 0 when every check passes', async () => {
+    const site = await serveSite(passingPaths())
+    try {
+      const { stdout } = await runCli([site.url])
+      expect(stdout).toContain('Smoke test passed')
+    } finally {
+      await site.close()
+    }
+  })
+
+  it('exits 1 when a check fails', async () => {
+    const site = await serveSite({ ...passingPaths(), '/': { status: 503 } })
+    try {
+      await expect(runCli([site.url])).rejects.toMatchObject({ code: 1 })
+    } finally {
+      await site.close()
+    }
+  })
+
+  it('exits 1 when --expect-dist has no value', async () => {
+    await expect(
+      runCli(['https://winzelle.co.za', '--expect-dist']),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining(
+        '--expect-dist requires a directory value',
+      ),
+    })
+  })
+
+  it('exits 1 when the dist directory is unreadable', async () => {
+    await expect(
+      runCli(['https://winzelle.co.za', '--expect-dist', 'no-such-dist']),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining('cannot read build manifest'),
+    })
+  })
+
+  it('exits 1 on an unknown option', async () => {
+    await expect(
+      runCli(['https://winzelle.co.za', '--bogus']),
+    ).rejects.toMatchObject({
+      code: 1,
+      stderr: expect.stringContaining('unknown option: --bogus'),
+    })
   })
 })

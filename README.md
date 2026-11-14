@@ -17,11 +17,11 @@ Copy `.env.example` to `.env` and set `VITE_WEB3FORMS_ACCESS_KEY` before buildin
 
 ## Where content lives
 
-Site content lives in typed modules under `src/content/`; media lives in `public/content/`. To change content, edit those modules and open a PR per [CONTRIBUTING.md](CONTRIBUTING.md); a merge to `main` deploys. The content was migrated from Sanity; see [docs/content-migration.md](docs/content-migration.md).
+Site content lives in typed modules under `src/content/`; media lives in `public/content/`. To change content, edit those modules and open a PR per [CONTRIBUTING.md](CONTRIBUTING.md); a merge to `main` reaches production with the next published release. The content was migrated from Sanity; see [docs/content-migration.md](docs/content-migration.md).
 
 ## Deployment
 
-A Cloudflare Worker serves `dist/` as static assets with an SPA fallback, configured in `wrangler.toml`. Cloudflare Workers Builds builds and deploys `main` today. Releases and rollback arrive in W10 (#12) and W11 (#13).
+A Cloudflare Worker serves `dist/` as static assets with an SPA fallback, configured in `wrangler.toml`. Publishing a GitHub release is the only production deploy path (W11, #13): the deploy workflow builds the tag, deploys it in the maintainer-approved `production` environment, smoke tests the result, and rolls back to the previous version automatically on failure. A known-good version is restorable in one maintainer action through the rollback workflow; see [docs/rollback.md](docs/rollback.md).
 
 ## Documentation
 

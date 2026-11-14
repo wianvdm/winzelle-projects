@@ -19,6 +19,8 @@ concurrency:
 jobs:
   deploy:
     name: Deploy production
+    # Prereleases never reach production; only full releases deploy.
+    if: github.event.release.prerelease == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
@@ -76,10 +78,19 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
         run: |
+          # Capture is a separate step below: if deploy moved traffic but a
+          # later line here failed, the smoke step would be skipped and an
+          # unsmoked version would stay live.
+          npx wrangler deploy --message "$RELEASE_TAG"
+      - name: Read the new version ID
+        id: capture
+        shell: bash
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.ndjson
+        run: |
           # wrangler appends one ND-JSON entry per command to
           # WRANGLER_OUTPUT_FILE_PATH; the deploy entry carries the new
           # version_id (workers-sdk packages/deploy-helpers/src/deploy/deploy.ts).
-          npx wrangler deploy --message "$RELEASE_TAG"
           new_version=$(jq -sr '[.[] | select(.type == "deploy")] | last | .version_id' "$WRANGLER_OUTPUT_FILE_PATH")
           if [ -z "$new_version" ] || [ "$new_version" = "null" ]; then
             echo "::error::Deploy succeeded but no version_id found in the wrangler output file."
@@ -88,13 +99,16 @@ jobs:
           echo "version_id=$new_version" >> "$GITHUB_OUTPUT"
       - name: Smoke test the deploy
         id: smoke
+        # Run even when the deploy step failed after moving traffic; without a
+        # recorded previous version there is nothing to roll back to, so skip.
+        if: always() && steps.previous.outcome == 'success' && steps.deploy.outcome != 'skipped'
         run: node scripts/smoke.mjs https://winzelle.co.za --expect-dist dist
       - name: Note a missing rollback target
-        if: always() && steps.smoke.outcome == 'failure' && steps.previous.outputs.version_id == ''
-        run: echo "::warning::Smoke failed and no previous version exists; nothing to roll back to."
-      - name: Roll back on smoke failure
+        if: always() && steps.previous.outcome == 'success' && steps.previous.outputs.version_id == '' && (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled' || steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled')
+        run: echo "::warning::Deploy or smoke failed and no previous version exists; nothing to roll back to."
+      - name: Roll back on deploy or smoke failure
         id: rollback
-        if: always() && steps.smoke.outcome == 'failure' && steps.previous.outputs.version_id != ''
+        if: always() && steps.previous.outputs.version_id != '' && (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled' || steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled')
         shell: bash
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -106,27 +120,30 @@ jobs:
           # their defaults, so --message is used as-is and the 100% traffic
           # confirmation is accepted (workers-sdk packages/wrangler/src/dialogs.ts).
           npx wrangler rollback "$PREVIOUS_VERSION" \
-            --message "auto-rollback: smoke failed for $RELEASE_TAG"
+            --message "auto-rollback: deploy or smoke failed for $RELEASE_TAG"
       - name: Smoke test the rollback
         id: rollback-smoke
         if: always() && steps.rollback.outcome == 'success'
         # The job stays failed either way: the release deploy did not hold.
         run: node scripts/smoke.mjs https://winzelle.co.za
       - name: Append the deploy mapping to the release notes
-        if: steps.smoke.outcome == 'success'
+        if: steps.smoke.outcome == 'success' && steps.capture.outcome == 'success'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-          NEW_VERSION: ${{ steps.deploy.outputs.version_id }}
+          NEW_VERSION: ${{ steps.capture.outputs.version_id }}
           PREVIOUS_VERSION: ${{ steps.previous.outputs.version_id }}
         run: |
           # Keep the existing body; append the version mapping so version IDs
-          # for rollback.md are findable without opening the Actions log.
+          # for rollback.md are findable without opening the Actions log. The
+          # append is idempotent: a re-run first drops the old section (it is
+          # always appended last), leaving one current block.
           gh release view "$RELEASE_TAG" --repo "$GH_REPO" --json body --jq .body > "$RUNNER_TEMP/body.md"
+          sed '/^### Production deploy\r\?$/,$d' "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/body-clean.md"
           {
-            cat "$RUNNER_TEMP/body.md"
+            cat "$RUNNER_TEMP/body-clean.md"
             printf '\n### Production deploy\n\n'
             printf -- '- Tag: `%s`\n' "$RELEASE_TAG"
             printf -- '- Commit: `%s`\n' "$(git rev-parse HEAD)"
@@ -141,8 +158,9 @@ jobs:
         shell: bash
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-          NEW_VERSION: ${{ steps.deploy.outputs.version_id }}
+          NEW_VERSION: ${{ steps.capture.outputs.version_id }}
           PREVIOUS_VERSION: ${{ steps.previous.outputs.version_id }}
+          DEPLOY_RESULT: ${{ steps.deploy.outcome }}
           SMOKE_RESULT: ${{ steps.smoke.outcome }}
           ROLLBACK_RESULT: ${{ steps.rollback.outcome }}
           ROLLBACK_SMOKE_RESULT: ${{ steps.rollback-smoke.outcome }}
@@ -156,6 +174,7 @@ jobs:
             printf '| Previous version | `%s` |\n' "${PREVIOUS_VERSION:-none}"
             printf '| Actor | `%s` |\n' "$GITHUB_ACTOR"
             printf '| Time | %s UTC |\n' "$(date -u +'%Y-%m-%d %H:%M:%S')"
+            printf '| Deploy | %s |\n' "${DEPLOY_RESULT:-not run}"
             printf '| Smoke | %s |\n' "${SMOKE_RESULT:-not run}"
             printf '| Rollback | %s |\n' "${ROLLBACK_RESULT:-not run}"
             printf '| Post-rollback smoke | %s |\n' "${ROLLBACK_SMOKE_RESULT:-not run}"
