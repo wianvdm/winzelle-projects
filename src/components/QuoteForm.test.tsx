@@ -178,6 +178,46 @@ describe('QuoteForm', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('re-announces the alert on a retry when the key is missing', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', '')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<QuoteForm />)
+    fillForm()
+    submitForm()
+    const firstAlert = await waitForAlert()
+
+    submitForm()
+    await waitFor(() => {
+      const alert = screen.queryByRole('alert')
+      expect(alert).not.toBeNull()
+      expect(alert).not.toBe(firstAlert)
+    })
+    expect(screen.getByRole('alert').textContent).toContain('not sent')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('re-announces the alert on a retry for the placeholder key', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', PLACEHOLDER_WEB3FORMS_ACCESS_KEY)
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<QuoteForm />)
+    fillForm()
+    submitForm()
+    const firstAlert = await waitForAlert()
+
+    submitForm()
+    await waitFor(() => {
+      const alert = screen.queryByRole('alert')
+      expect(alert).not.toBeNull()
+      expect(alert).not.toBe(firstAlert)
+    })
+    expect(screen.getByRole('alert').textContent).toContain('not sent')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('keeps input and shows an alert when fetch rejects', async () => {
     vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', VALID_KEY)
     const fetchMock = vi.fn().mockRejectedValue(new Error('network down'))

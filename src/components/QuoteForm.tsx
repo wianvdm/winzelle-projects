@@ -32,6 +32,7 @@ export function QuoteForm() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submitAttempt, setSubmitAttempt] = useState(0)
 
   const heading = contactSection.heading
   const subtitle = contactSection.subtitle
@@ -46,10 +47,11 @@ export function QuoteForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Clear any previous error so the alert unmounts and remounts (and is
-    // re-announced) when a retry fails again.
     setError(null)
     setSubmitting(true)
+    // Keys the alert, so every failed attempt mounts a new alert that screen
+    // readers announce, even when the same error repeats synchronously.
+    setSubmitAttempt((attempt) => attempt + 1)
 
     const accessKey = getWeb3FormsAccessKey()
     if (accessKey === undefined) {
@@ -149,6 +151,7 @@ export function QuoteForm() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {error !== null && (
                   <div
+                    key={submitAttempt}
                     role="alert"
                     className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700"
                   >
