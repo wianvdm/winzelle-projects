@@ -1,6 +1,6 @@
 # Architecture
 
-Winzelle is a React 19 single-page application built with Vite 7 and TanStack Router, styled with Tailwind 4.
+Winzelle is a React 19 single-page application built with Vite 8 and TanStack Router, styled with Tailwind 4.
 
 ## Components
 
