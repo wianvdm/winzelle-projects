@@ -37,8 +37,8 @@ export type ServiceIconName =
   | 'ShieldCheck'
   | 'Flame'
   | 'Wrench'
-  | 'Home'
-  | 'Building2'
+  | 'House'
+  | 'BuildingComplex'
 
 export interface Service {
   id: string

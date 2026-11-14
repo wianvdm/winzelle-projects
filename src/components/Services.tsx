@@ -4,8 +4,8 @@ import {
   ShieldCheck,
   Flame,
   Wrench,
-  Home,
-  Building2,
+  House,
+  BuildingComplex,
   ChevronDown,
   ChevronUp,
   type LucideIcon,
@@ -17,8 +17,8 @@ const iconMap: Record<ServiceIconName, LucideIcon> = {
   ShieldCheck,
   Flame,
   Wrench,
-  Home,
-  Building2,
+  House,
+  BuildingComplex,
 }
 
 export function Services() {
