@@ -27,8 +27,9 @@ A Cloudflare Worker serves `dist/` as static assets with an SPA fallback, config
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): issue, branch and PR workflow, plus local development.
 - [SECURITY.md](SECURITY.md): how to report security vulnerabilities.
-- [docs/development.md](docs/development.md): scripts, environment variables, tests, lint and format.
+- [docs/development.md](docs/development.md): setup, CI, releases, hosting, security headers, monitoring, agent access.
 - [docs/architecture.md](docs/architecture.md): components and data flow.
+- [docs/rollback.md](docs/rollback.md): restoring a previous production version.
 - [docs/content-migration.md](docs/content-migration.md): record of the Sanity content migration.
 - [docs/production-baseline.md](docs/production-baseline.md): the dated W1 production baseline.
 
