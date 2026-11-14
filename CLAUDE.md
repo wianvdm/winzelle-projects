@@ -8,7 +8,7 @@ Single source of truth for how agents and contributors work in this repository. 
 - npm is the package manager; `package-lock.json` is authoritative. Node 24.22.3 is pinned in `.nvmrc` and declared in `engines`. Install with `npm ci`; the verification gate is `npm run verify` (format:check, lint, typecheck, test, build).
 - Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in typed modules under `src/content/`.
 - GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. It also requires the `Verify` and `PR metadata` checks and up-to-date branches.
-- Cloudflare credentials live only in the `production` GitHub environment (W10, #12) and are used only by the Cloudflare check, deploy and rollback workflows. Do not request, create, or store them anywhere else.
+- Cloudflare credentials live only in the `production` GitHub environment (W10, #12) and are used only by the Cloudflare check, deploy and rollback workflows. Do not request, create, or store them anywhere else. Exception: agents may read Cloudflare state through the Cloudflare API MCP server (`https://mcp.cloudflare.com/mcp`) with a read-only OAuth grant that the maintainer approves and that stays in the maintainer's own client. The grant is never in the repository and is never requested from or handed to an agent. Agents use it only to read.
 
 ## Issue-first workflow
 
@@ -49,6 +49,7 @@ The maintainer merges. An agent may squash-merge a pull request only when the ma
 - apply `no-issue` to themselves or otherwise exempt their own PR from the ticket requirement
 - create tags, cut releases, or deploy
 - administer secrets, branch rules, repository settings, or labels
+- change Cloudflare settings directly (dashboard, API or MCP); repository changes such as `wrangler.toml` still go through PRs
 
 ## Ticket exemptions
 
