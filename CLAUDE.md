@@ -7,7 +7,7 @@ Single source of truth for how agents and contributors work in this repository. 
 - Public repository `wianvdm/winzelle-projects` since 2026-11-13, one maintainer: `@WianVDM`.
 - npm is the package manager; `package-lock.json` is authoritative. Node 24.22.3 is pinned in `.nvmrc` and declared in `engines`. Install with `npm ci`; the verification gate is `npm run verify` (format:check, lint, typecheck, test, build).
 - Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in typed modules under `src/content/`.
-- GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. The `Verify` and `PR metadata` checks run on every PR and become required once they have green runs.
+- GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. It also requires the `Verify` and `PR metadata` checks and up-to-date branches.
 - Cloudflare credentials are deferred to W10 (#12). Do not request, create, or store them anywhere else.
 
 ## Issue-first workflow
