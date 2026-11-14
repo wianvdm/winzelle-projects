@@ -4,17 +4,20 @@ Setup and tooling reference. The contribution workflow lives in [CONTRIBUTING.md
 
 ## Scripts
 
-| Script                 | What it runs                                                              |
-| ---------------------- | ------------------------------------------------------------------------- |
-| `npm run dev`          | Vite dev server on port 3000                                              |
-| `npm run build`        | `node scripts/check-public-env.mjs && vite build` (env check, then build) |
-| `npm run preview`      | Vite preview of the production build                                      |
-| `npm run typecheck`    | `tsc --noEmit`                                                            |
-| `npm run lint`         | oxlint                                                                    |
-| `npm run format`       | oxfmt (write)                                                             |
-| `npm run format:check` | oxfmt `--check`                                                           |
-| `npm run test`         | vitest run                                                                |
-| `npm run verify`       | format:check, lint, typecheck, test and build in sequence                 |
+| Script                  | What it runs                                                              |
+| ----------------------- | ------------------------------------------------------------------------- |
+| `npm run dev`           | Vite dev server on port 3000                                              |
+| `npm run build`         | `node scripts/check-public-env.mjs && vite build` (env check, then build) |
+| `npm run preview`       | Vite preview of the production build                                      |
+| `npm run typecheck`     | `tsc --noEmit`                                                            |
+| `npm run lint`          | oxlint                                                                    |
+| `npm run format`        | oxfmt (write)                                                             |
+| `npm run format:check`  | oxfmt `--check`                                                           |
+| `npm run test`          | vitest run                                                                |
+| `npm run verify`        | format:check, lint, typecheck, test and build in sequence                 |
+| `npm run deploy`        | `wrangler deploy` (manual; not the production deploy path)                |
+| `npm run versions:list` | `wrangler versions list`                                                  |
+| `npm run rollback`      | `wrangler rollback`                                                       |
 
 ## Environment variables
 
@@ -47,6 +50,23 @@ Two workflows run on every pull request to `main`, and CI also runs on pushes to
 The `main` ruleset requires both checks and up-to-date branches.
 
 Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm and GitHub Actions dependencies, limited to 5 open PRs each. Dependabot PRs carry the `dependencies`, `type:maintenance` and `area:dependencies` labels and `build(deps)` or `build(deps-dev)` title prefixes so they pass the `PR metadata` check under the bot exemption.
+
+## Releases
+
+Release Please (`.github/workflows/release-please.yml`) runs on every push to `main`. It mints a token for the `winzelle-release` GitHub App (repository variable `RELEASE_APP_ID`, repository secret `RELEASE_APP_PRIVATE_KEY`) and runs `googleapis/release-please-action` against `release-please-config.json` and `.release-please-manifest.json`. The App token does the writing; the workflow's own `GITHUB_TOKEN` stays read-only.
+
+- Release PRs come from `winzelle-release[bot]` and carry the labels `autorelease: pending`, `automated`, `type:maintenance` and `area:release`, so they pass the `PR metadata` check under the `automated` ticket exemption. Merging a release PR tags `v<version>` and relabels the PR `autorelease: tagged`. The tag ruleset allows only the App to create `v*` tags, and nobody to update or delete them. The labels must not be edited by hand: Release Please finds its PR by all four labels, and changing them would make it open a duplicate.
+- Versioning is pre-1.0: `bump-minor-pre-major` turns breaking changes into a minor bump. The manifest starts at `0.0.0` and `initial-version: "0.1.0"` in the config makes the first release PR propose exactly 0.1.0; the option is inert once a release exists, so nothing is pinned for later releases.
+- The first `PR metadata` run on a release PR can fail or be cancelled before the labels land; the `labeled` re-run settles it.
+- Release PRs stay open until W11 (#13) makes releases the production deploy path. Until then, a merge to `main` deploys production through Cloudflare Workers Builds. A release PR merge is a commit on `main`, so merging one also redeploys production with the same code; only the `v<version>` tag is new.
+- The `production` GitHub environment requires review by `@WianVDM` and limits deployments to `v*` tags and `main`. It holds the environment secret `CLOUDFLARE_API_TOKEN` (account-scoped, Workers Scripts write only) and the environment variable `CLOUDFLARE_ACCOUNT_ID`. Names only; values never enter the repository.
+- `.github/workflows/cloudflare-check.yml` runs on `workflow_dispatch` only, inside the `production` environment, and is read-only. It first fails fast if the token is missing, then calls the token verify API and fails unless the token is active, then lists deployments as JSON and prints only each deployment's ID, created-on time, source and version IDs. It prints no emails and no account names, because the repo is public. It collects W10 evidence; W11 (#13) reuses its environment wiring. Production deployment through Actions stays disabled until W11.
+
+### Hosting records (2026-11-14)
+
+Cloudflare Workers Builds: repository `WianVDM/winzelle-projects`, production branch `main`, non-production branch builds on, build command `npm run build`, deploy command `npx wrangler deploy`, non-production version command `npx wrangler versions upload`, root directory `/`, watch paths `*`, build token (Cloudflare-managed; the display name is not recorded here). Branch preview URLs are enabled. `winzelle.co.za`, `www.winzelle.co.za` and the account's `workers.dev` URL all serve the Worker with HTTP 200; the www redirect is tracked in #43.
+
+Web3Forms (free plan): captcha None, Spam Protection Level Basic, Advanced Spam Filter off (left off on purpose: server-side drops would be invisible), Restrict to Domains unsupported (Pro-only, excluded by the zero-paid rule). The recipient is the maintainer's test inbox and must switch to the business inbox before W14 (#16). The form code has no captcha; a missing public key fails the build via `scripts/check-public-env.mjs` (W7).
 
 ## Line endings on Windows
 

@@ -31,7 +31,7 @@ Winzelle is a public repository with one maintainer, `@WianVDM`. The canonical p
 
 ## Ticket exemptions
 
-A PR without `Closes #N` is valid in exactly three cases, detailed in `CLAUDE.md`: the maintainer applies `no-issue`, or the PR comes from the approved Dependabot (`dependencies`) or Release Please (`automated`) bot identity. Self-exemption is never valid.
+A PR without `Closes #N` is valid in exactly three cases, detailed in `CLAUDE.md`: the maintainer applies `no-issue`, or the PR comes from the approved Dependabot (`dependencies`) or Release Please (`automated`) bot identity. For Release Please that identity is `winzelle-release[bot]`. Self-exemption is never valid.
 
 ## Local development
 

@@ -8,7 +8,7 @@ Single source of truth for how agents and contributors work in this repository. 
 - npm is the package manager; `package-lock.json` is authoritative. Node 24.22.3 is pinned in `.nvmrc` and declared in `engines`. Install with `npm ci`; the verification gate is `npm run verify` (format:check, lint, typecheck, test, build).
 - Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in typed modules under `src/content/`.
 - GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. It also requires the `Verify` and `PR metadata` checks and up-to-date branches.
-- Cloudflare credentials are deferred to W10 (#12). Do not request, create, or store them anywhere else.
+- Cloudflare credentials live only in the `production` GitHub environment (W10, #12). Do not request, create, or store them anywhere else.
 
 ## Issue-first workflow
 
@@ -27,6 +27,7 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 - Priority (maintainer-assigned): `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`
 - Workflow state: `blocked`, `needs-info`
 - Automation: `dependencies`, `automated`, `no-issue` (see exemptions below)
+- Release-bot state: `autorelease: pending`, `autorelease: tagged`. Applied by Release Please only; humans never set them.
 
 ## Pull requests
 
@@ -54,6 +55,6 @@ Exactly three classes, each narrow:
 
 1. `no-issue`: maintainer-only ticket exemption. Valid only when the maintainer applies the label to the PR, and the maintainer re-applies it after any new commit or force-push.
 2. `dependencies`: dependency automation (Dependabot) from the approved bot identity.
-3. `automated`: release automation (Release Please) from the approved bot identity.
+3. `automated`: release automation (Release Please) from the approved bot identity, `winzelle-release[bot]`.
 
 Anything outside these three classes needs `Closes #N`. Bot exemptions bind to the exact bot author plus label; a human-applied `dependencies` or `automated` label is not an exemption.

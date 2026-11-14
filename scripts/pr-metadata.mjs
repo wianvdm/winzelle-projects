@@ -28,7 +28,8 @@ export const AREA_LABELS = [
 
 export const MAINTAINERS = ['WianVDM']
 export const DEPENDABOT_LOGIN = 'dependabot[bot]'
-export const AUTOMATION_LOGINS = []
+// Release Please opens release PRs under this GitHub App login.
+export const AUTOMATION_LOGINS = ['winzelle-release[bot]']
 
 const TIMELINE_PAGE_SIZE = 100
 
