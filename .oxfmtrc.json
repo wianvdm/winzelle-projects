@@ -7,5 +7,10 @@
   "singleQuote": true,
   "trailingComma": "all",
   "endOfLine": "lf",
-  "ignorePatterns": ["src/routeTree.gen.ts", "dist", "package-lock.json"]
+  "ignorePatterns": [
+    "src/routeTree.gen.ts",
+    "dist",
+    "package-lock.json",
+    "CHANGELOG.md"
+  ]
 }

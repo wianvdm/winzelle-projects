@@ -26,6 +26,9 @@ jobs:
     name: PR metadata
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Merging a release PR removes its label set, and each `unlabeled` event
+    # would re-run the validator on the now-closed PR and fail.
+    if: github.event.pull_request.state == 'open'
     steps:
       # Run the validator from the base commit so a PR cannot change the rules
       # it is checked against.
