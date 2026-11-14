@@ -27,7 +27,7 @@ Winzelle is a public repository with one maintainer, `@WianVDM`. The canonical p
 
 - CODEOWNERS routes review for governance, CI, release, package, deployment, and public environment files to the maintainer.
 - The maintainer merges. Agents merge only with the maintainer's approval given earlier in the same session (see `CLAUDE.md`), and never self-approve, self-exempt, tag, cut releases, or administer secrets and repository rules.
-- The `main` ruleset enforces pull requests on GitHub: squash merges only, linear history, resolved conversations, no force pushes and no deletion. Required approvals stay at 0 because a sole maintainer cannot approve their own PRs. The `Verify` and `PR metadata` checks run on every PR and become required once they have green runs.
+- The `main` ruleset enforces pull requests on GitHub: squash merges only, linear history, resolved conversations, no force pushes and no deletion. Required approvals stay at 0 because a sole maintainer cannot approve their own PRs. It also requires the `Verify` and `PR metadata` checks and up-to-date branches.
 
 ## Ticket exemptions
 
