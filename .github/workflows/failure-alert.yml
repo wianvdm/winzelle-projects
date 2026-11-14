@@ -1,6 +1,6 @@
 name: Failure alert
 
-# Turns a failed production workflow into a GitHub issue (W13, #15). Release
+# Turns a failed production or release workflow into a GitHub issue (W13, #15). Release
 # deploys are triggered by winzelle-release[bot], so GitHub's failed-run emails
 # go to the bot and never reach the maintainer; an issue notifies the repo
 # owner. One open issue per workflow: repeat failures become comments, and the
@@ -14,6 +14,7 @@ on:
       - Production smoke
       - Deploy production
       - Rollback production
+      - Release Please
     types: [completed]
 
 permissions:
@@ -77,6 +78,12 @@ jobs:
             failure | timed_out | startup_failure | cancelled)
               # cancelled alerts too: a cancelled deploy may have left an
               # auto-rollback in flight, and a queued rollback can be superseded.
+              # Release Please is the exception: its single concurrency group
+              # cancels a pending run when a newer push queues, which is not a
+              # failure.
+              if [ "$CONCLUSION" = "cancelled" ] && [ "$WORKFLOW_NAME" = "Release Please" ]; then
+                exit 0
+              fi
               ;;
             *)
               # action_required, stale, skipped, neutral: nothing to report.
@@ -100,10 +107,14 @@ jobs:
           {
             printf '`%s` did not succeed.\n\n' "$WORKFLOW_NAME"
             printf '%s\n\n' "$details"
-            printf 'Open the run for the failing step. If production is affected, follow [docs/rollback.md](https://github.com/%s/blob/main/docs/rollback.md). ' "$GH_REPO"
-            if [ "$WORKFLOW_NAME" = "Deploy production" ]; then
-              printf 'A deploy that failed its smoke test rolls back automatically; check the run summary to see whether the rollback held.'
+            if [ "$WORKFLOW_NAME" = "Release Please" ]; then
+              printf 'Open the run for the failing step; the next successful run closes this issue.\n'
+            else
+              printf 'Open the run for the failing step. If production is affected, follow [docs/rollback.md](https://github.com/%s/blob/main/docs/rollback.md). ' "$GH_REPO"
+              if [ "$WORKFLOW_NAME" = "Deploy production" ]; then
+                printf 'A deploy that failed its smoke test rolls back automatically; check the run summary to see whether the rollback held.'
+              fi
+              printf '\n\nThis issue closes itself when the workflow next succeeds against production. Further failures are added as comments.\n'
             fi
-            printf '\n\nThis issue closes itself when the workflow next succeeds against production. Further failures are added as comments.\n'
           } > "$body_file"
           gh issue create --title "$title" --label type:bug --label "area:$area" --assignee WianVDM --body-file "$body_file"

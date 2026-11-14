@@ -64,7 +64,11 @@ type StubResponse = {
   headers?: Record<string, string>
 }
 
-type StubRequest = { url: string; method: string | undefined }
+type StubRequest = {
+  url: string
+  method: string | undefined
+  redirect: string | undefined
+}
 
 function lookupHeader(headers: Record<string, string>, name: string) {
   const wanted = name.toLowerCase()
@@ -76,8 +80,11 @@ function lookupHeader(headers: Record<string, string>, name: string) {
 
 function stubFetch(handler: (url: string) => StubResponse) {
   const requests: StubRequest[] = []
-  const fetchImpl = async (url: string, init?: { method?: string }) => {
-    requests.push({ url, method: init?.method })
+  const fetchImpl = async (
+    url: string,
+    init?: { method?: string; redirect?: string },
+  ) => {
+    requests.push({ url, method: init?.method, redirect: init?.redirect })
     const {
       status = 200,
       contentType = 'text/html',
@@ -787,6 +794,132 @@ describe('runSmoke', () => {
   })
 })
 
+const WWW_PROBE_URL = 'https://www.winzelle.co.za/smoke-www-check?probe=1'
+const WWW_REDIRECT_TARGET = `${PRODUCTION_ORIGIN}/smoke-www-check?probe=1`
+
+function productionRoutes(
+  overrides: Record<string, StubResponse> = {},
+): Record<string, StubResponse> {
+  const routes = Object.fromEntries(
+    Object.entries(passingRoutes()).map(([url, response]) => [
+      url.replace(BASE_URL, PRODUCTION_ORIGIN),
+      response,
+    ]),
+  )
+  return {
+    ...routes,
+    [WWW_PROBE_URL]: {
+      status: 301,
+      headers: { Location: WWW_REDIRECT_TARGET },
+    },
+    ...overrides,
+  }
+}
+
+async function smokeWww(
+  routes: Record<string, StubResponse>,
+  options: { baseUrl?: string; expectWwwRedirect?: boolean } = {},
+) {
+  const { requests, fetchImpl } = serveRoutes(routes)
+  const { ok, results } = await runSmoke({
+    baseUrl: options.baseUrl ?? PRODUCTION_ORIGIN,
+    expectWwwRedirect: options.expectWwwRedirect ?? true,
+    fetch: fetchImpl,
+    attempts: 1,
+    delayMs: 0,
+  })
+  const find = (name: string) =>
+    results.find((entry: { name: string }) => entry.name === name)
+  return { ok, results, requests, find }
+}
+
+describe('runSmoke with expectWwwRedirect', () => {
+  it('passes on a 301 with the exact Location and probes with a manual GET', async () => {
+    const { ok, requests, find } = await smokeWww(productionRoutes())
+    expect(ok).toBe(true)
+    expect(find('www-redirect')).toMatchObject({ ok: true })
+    const probe = requests.find((request) => request.url === WWW_PROBE_URL)
+    expect(probe).toMatchObject({ method: 'GET', redirect: 'manual' })
+  })
+
+  it('fails on a wrong Location', async () => {
+    const { ok, find } = await smokeWww(
+      productionRoutes({
+        [WWW_PROBE_URL]: {
+          status: 301,
+          headers: { Location: `${PRODUCTION_ORIGIN}/` },
+        },
+      }),
+    )
+    expect(ok).toBe(false)
+    expect(find('www-redirect')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('location is'),
+    })
+  })
+
+  it('fails on a missing Location', async () => {
+    const { find } = await smokeWww(
+      productionRoutes({ [WWW_PROBE_URL]: { status: 301 } }),
+    )
+    expect(find('www-redirect')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('location is missing'),
+    })
+  })
+
+  it.each([200, 302, 307, 308])('fails on status %i', async (status) => {
+    const { find } = await smokeWww(
+      productionRoutes({
+        [WWW_PROBE_URL]: {
+          status,
+          headers: { Location: WWW_REDIRECT_TARGET },
+        },
+      }),
+    )
+    expect(find('www-redirect')).toMatchObject({
+      ok: false,
+      reason: `status ${status}, expected 301`,
+    })
+  })
+
+  it('fails when the www request errors', async () => {
+    const routes = productionRoutes()
+    delete routes[WWW_PROBE_URL]
+    const { find } = await smokeWww(routes)
+    expect(find('www-redirect')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('request failed'),
+    })
+  })
+
+  it('runs no www check when the flag is off', async () => {
+    const routes = productionRoutes()
+    delete routes[WWW_PROBE_URL]
+    const { ok, results } = await smokeWww(routes, {
+      expectWwwRedirect: false,
+    })
+    expect(ok).toBe(true)
+    expect(names(results)).not.toContain('www-redirect')
+  })
+
+  it('runs no www check for a non-production origin', async () => {
+    const { ok, results, requests } = await smokeWww(passingRoutes(), {
+      baseUrl: BASE_URL,
+    })
+    expect(ok).toBe(true)
+    expect(names(results)).not.toContain('www-redirect')
+    expect(requests.map((request) => request.url)).not.toContain(WWW_PROBE_URL)
+  })
+
+  it('treats a trailing slash on the production origin as production', async () => {
+    const { find } = await smokeWww(productionRoutes(), {
+      baseUrl: `${PRODUCTION_ORIGIN}/`,
+    })
+    expect(find('www-redirect')).toMatchObject({ ok: true })
+  })
+})
+
 describe('runSmoke with expectHeaders', () => {
   it('runs no header checks when the flag is off, even without headers', async () => {
     const { fetchImpl } = serveRoutes(passingRoutes())
@@ -1158,6 +1291,17 @@ describe('CLI', () => {
     } finally {
       await site.close()
       await rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts --expect-www-redirect and skips the check for a non-production origin', async () => {
+    const site = await serveSite(passingPaths())
+    try {
+      const { stdout } = await runCli([site.url, '--expect-www-redirect'])
+      expect(stdout).toContain('Smoke test passed')
+      expect(stdout).not.toContain('www-redirect')
+    } finally {
+      await site.close()
     }
   })
 

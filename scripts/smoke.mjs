@@ -1,12 +1,15 @@
 // Read-only production smoke test for the Winzelle static site. Used by the
-// release deploy workflow after `wrangler deploy` and by the rollback
-// workflow after `wrangler rollback`: GET/HEAD requests only, never submits
-// the quote form, never prints secrets or response bodies.
+// release deploy workflow after `wrangler deploy`, by the rollback workflow
+// after `wrangler rollback` and by the scheduled production smoke: GET/HEAD
+// requests only, never submits the quote form, never prints secrets or
+// response bodies.
 
 import { readFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 
 export const PRODUCTION_ORIGIN = 'https://winzelle.co.za'
+const WWW_ORIGIN = 'https://www.winzelle.co.za'
+const WWW_PROBE_PATH = '/smoke-www-check?probe=1'
 export const DEFAULT_ATTEMPTS = 6
 export const DEFAULT_DELAY_MS = 10_000
 export const REQUEST_TIMEOUT_MS = 15_000
@@ -106,12 +109,13 @@ function mediaType(contentType) {
   return (contentType ?? '').split(';')[0].trim()
 }
 
-async function safeFetch(fetchImpl, url) {
+async function safeFetch(fetchImpl, url, init = {}) {
   try {
     return {
       response: await fetchImpl(url, {
         method: 'GET',
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        ...init,
       }),
     }
   } catch (error) {
@@ -220,10 +224,37 @@ function checkAssetCache(scriptHeaders) {
   return result('asset-cache', true, 'module script is immutable and cached')
 }
 
+// The zone Redirect Rule from #43 sends www to the apex with a 301, so 302,
+// 307 and 308 fail on purpose. redirect: 'manual' keeps fetch from following
+// the redirect and hiding the status.
+async function checkWwwRedirect(fetchImpl) {
+  const expectedLocation = `${PRODUCTION_ORIGIN}${WWW_PROBE_PATH}`
+  const www = await safeFetch(fetchImpl, `${WWW_ORIGIN}${WWW_PROBE_PATH}`, {
+    redirect: 'manual',
+  })
+  if (www.error) {
+    return result('www-redirect', false, `request failed: ${www.error}`)
+  }
+  const { status } = www.response
+  const location = www.response.headers.get('location')
+  if (status !== 301) {
+    return result('www-redirect', false, `status ${status}, expected 301`)
+  }
+  if (location !== expectedLocation) {
+    return result(
+      'www-redirect',
+      false,
+      `location is ${location ?? 'missing'}, expected ${expectedLocation}`,
+    )
+  }
+  return result('www-redirect', true, `301 to ${expectedLocation}`)
+}
+
 async function runAttempt({
   baseUrl,
   expectedScript,
   expectHeaders,
+  expectWwwRedirect,
   fetchImpl,
 }) {
   const origin = baseUrl.replace(/\/+$/, '')
@@ -499,6 +530,11 @@ async function runAttempt({
     results.push(checkAssetCache(scriptHeaders))
   }
 
+  // Only production has the www rule; other origins skip the check.
+  if (expectWwwRedirect && origin === PRODUCTION_ORIGIN) {
+    results.push(await checkWwwRedirect(fetchImpl))
+  }
+
   return results
 }
 
@@ -512,6 +548,7 @@ export async function runSmoke({
   baseUrl,
   expectedScript = null,
   expectHeaders = false,
+  expectWwwRedirect = false,
   fetch: fetchImpl = globalThis.fetch,
   attempts = DEFAULT_ATTEMPTS,
   delayMs = DEFAULT_DELAY_MS,
@@ -523,6 +560,7 @@ export async function runSmoke({
       baseUrl,
       expectedScript,
       expectHeaders,
+      expectWwwRedirect,
       fetchImpl,
     })
     const failed = results.filter((entry) => !entry.ok).length
@@ -542,6 +580,7 @@ function parseArgs(argv) {
   const positional = []
   let expectDist = null
   let expectHeaders = false
+  let expectWwwRedirect = false
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--expect-dist') {
@@ -553,6 +592,8 @@ function parseArgs(argv) {
       index += 1
     } else if (arg === '--expect-headers') {
       expectHeaders = true
+    } else if (arg === '--expect-www-redirect') {
+      expectWwwRedirect = true
     } else if (arg.startsWith('--')) {
       throw new Error(`unknown option: ${arg}`)
     } else {
@@ -561,18 +602,26 @@ function parseArgs(argv) {
   }
   if (positional.length !== 1) {
     throw new Error(
-      'usage: node scripts/smoke.mjs <baseUrl> [--expect-dist <dir>] [--expect-headers]',
+      'usage: node scripts/smoke.mjs <baseUrl> [--expect-dist <dir>] [--expect-headers] [--expect-www-redirect]',
     )
   }
-  return { baseUrl: positional[0], expectDist, expectHeaders }
+  return {
+    baseUrl: positional[0],
+    expectDist,
+    expectHeaders,
+    expectWwwRedirect,
+  }
 }
 
 async function main() {
   let baseUrl
   let expectDist
   let expectHeaders
+  let expectWwwRedirect
   try {
-    ;({ baseUrl, expectDist, expectHeaders } = parseArgs(process.argv.slice(2)))
+    ;({ baseUrl, expectDist, expectHeaders, expectWwwRedirect } = parseArgs(
+      process.argv.slice(2),
+    ))
   } catch (error) {
     console.error(error.message)
     process.exit(1)
@@ -606,6 +655,7 @@ async function main() {
     baseUrl,
     expectedScript,
     expectHeaders,
+    expectWwwRedirect,
     attempts,
     delayMs,
   })

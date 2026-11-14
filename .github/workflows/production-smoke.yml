@@ -1,6 +1,6 @@
 name: Production smoke
 
-# Weekly read-only check of the live site (W13, #15). GET requests only: it
+# Daily read-only check of the live site (W13, #15). GET requests only: it
 # never submits the quote form and never touches the deployment or the form
 # recipient. A failure opens an alert issue via failure-alert.yml.
 #
@@ -11,9 +11,10 @@ run-name: Production smoke (${{ inputs.base_url || 'https://winzelle.co.za' }})
 
 on:
   schedule:
-    # Mondays 06:00 UTC (08:00 SAST). GitHub pauses scheduled workflows in a
+    # Daily 04:17 UTC (06:17 SAST), off the hour because GitHub delays or
+    # drops top-of-hour schedules. GitHub pauses scheduled workflows in a
     # public repo after 60 days without repository activity.
-    - cron: '0 6 * * 1'
+    - cron: '17 4 * * *'
   workflow_dispatch:
     inputs:
       base_url:
@@ -60,7 +61,7 @@ jobs:
         # smoke.mjs has no npm dependencies, so there is no npm ci.
         env:
           BASE_URL: ${{ inputs.base_url || 'https://winzelle.co.za' }}
-        run: node scripts/smoke.mjs "$BASE_URL" --expect-headers
+        run: node scripts/smoke.mjs "$BASE_URL" --expect-headers --expect-www-redirect
       - name: Write the job summary
         if: always()
         shell: bash
