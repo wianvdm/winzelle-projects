@@ -25,7 +25,7 @@ Closes #<issue-number>
 
 <None. Otherwise name exactly one class:>
 
-- `no-issue`: the maintainer applied this label to the PR. Maintainer-only ticket exemption; agents and contributors cannot apply it.
+- `no-issue`: the maintainer applied this label to the PR, and re-applies it after any new commit or force-push. Maintainer-only ticket exemption; agents and contributors cannot apply it.
 - `dependencies`: Dependabot dependency PR from the approved bot identity.
 - `automated`: Release Please release PR from the approved bot identity.
 
@@ -43,5 +43,5 @@ Closes #<issue-number>
 <limitations, known issues, follow-ups, prerequisite/follow-up PR links>
 
 <!--
-Rules: mark a check only when actually executed and observed. `Closes #N` references the child issue, never the parent. The maintainer merges, or an agent with the maintainer's approval for the current session. The metadata checks behind these conventions arrive in a later ticket; until then reviewers enforce them.
+Rules: mark a check only when actually executed and observed. `Closes #N` references the child issue, never the parent. The maintainer merges, or an agent with the maintainer's approval for the current session. The `PR metadata` check enforces these rules.
 -->

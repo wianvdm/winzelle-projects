@@ -19,14 +19,15 @@ Winzelle is a public repository with one maintainer, `@WianVDM`. The canonical p
 ## Verification
 
 - Mark a check executed only when you ran it and observed the result. Everything relevant that did not run goes under Unexecuted Checks with the reason.
-- UI changes need screenshots or a recording, posted as PR comments and never committed; otherwise write N/A.
+- UI changes need screenshots or a recording, posted in the PR description or comments and never committed; otherwise write N/A.
+- The `PR metadata` check enforces the issue, label, title and exemption rules in `CLAUDE.md`.
 - State Deployment & Privacy Impact and a Rollback Plan on every PR.
 
 ## Review and merge
 
 - CODEOWNERS routes review for governance, CI, release, package, deployment, and public environment files to the maintainer.
 - The maintainer merges. Agents merge only with the maintainer's approval given earlier in the same session (see `CLAUDE.md`), and never self-approve, self-exempt, tag, cut releases, or administer secrets and repository rules.
-- The `main` ruleset enforces pull requests on GitHub: squash merges only, linear history, resolved conversations, no force pushes and no deletion. Required approvals stay at 0 because a sole maintainer cannot approve their own PRs. Required status checks arrive with W8 (#10).
+- The `main` ruleset enforces pull requests on GitHub: squash merges only, linear history, resolved conversations, no force pushes and no deletion. Required approvals stay at 0 because a sole maintainer cannot approve their own PRs. The `Verify` and `PR metadata` checks run on every PR and become required once they have green runs.
 
 ## Ticket exemptions
 
