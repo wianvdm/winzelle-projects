@@ -1,0 +1,105 @@
+name: Failure alert
+
+# Turns a failed production workflow into a GitHub issue (W13, #15). Release
+# deploys are triggered by winzelle-release[bot], so GitHub's failed-run emails
+# go to the bot and never reach the maintainer; an issue notifies the repo
+# owner. One open issue per workflow: repeat failures become comments, and the
+# next success against production comments "recovered" and closes it.
+#
+# workflow_run always runs this file from the default branch, so a change here
+# takes effect only after it merges to main.
+on:
+  workflow_run:
+    workflows:
+      - Production smoke
+      - Deploy production
+      - Rollback production
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: failure-alert-${{ github.event.workflow_run.name }}
+  cancel-in-progress: false
+
+jobs:
+  alert:
+    name: Open or update alert issue
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the alert issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          DISPLAY_TITLE: ${{ github.event.workflow_run.display_title }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_CREATED_AT: ${{ github.event.workflow_run.created_at }}
+        run: |
+          # Must match production-smoke.yml's run-name with its default
+          # base_url, or recovery stops closing smoke alerts.
+          production_smoke_title='Production smoke (https://winzelle.co.za)'
+          title="Production alert: $WORKFLOW_NAME"
+          area=release
+          if [ "$WORKFLOW_NAME" = "Production smoke" ]; then
+            area=ci
+          fi
+          # Exact title match in jq: gh's search is fuzzy and would also hit
+          # alerts for the other workflows.
+          existing=$(gh issue list --state open --label type:bug --limit 100 --json number,title \
+            | jq -r --arg title "$title" '[.[] | select(.title == $title)] | first | .number // empty')
+
+          case "$CONCLUSION" in
+            success)
+              if [ -z "$existing" ]; then
+                exit 0
+              fi
+              # A smoke run against another origin proves nothing about production.
+              if [ "$WORKFLOW_NAME" = "Production smoke" ] && [ "$DISPLAY_TITLE" != "$production_smoke_title" ]; then
+                exit 0
+              fi
+              gh issue comment "$existing" --body "Recovered: [run #$RUN_NUMBER]($RUN_URL) of \`$WORKFLOW_NAME\` succeeded. Closing."
+              gh issue close "$existing"
+              exit 0
+              ;;
+            failure | timed_out | startup_failure | cancelled)
+              # cancelled alerts too: a cancelled deploy may have left an
+              # auto-rollback in flight, and a queued rollback can be superseded.
+              ;;
+            *)
+              # action_required, stale, skipped, neutral: nothing to report.
+              exit 0
+              ;;
+          esac
+
+          details=$(printf -- '- Workflow: `%s`\n- Target: `%s`\n- Conclusion: `%s`\n- Run: [#%s, attempt %s](%s)\n- Trigger: `%s`\n- Commit: `%s`\n- Started: %s' \
+            "$WORKFLOW_NAME" "$DISPLAY_TITLE" "$CONCLUSION" "$RUN_NUMBER" "$RUN_ATTEMPT" "$RUN_URL" "$RUN_EVENT" "$HEAD_SHA" "$RUN_CREATED_AT")
+
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "@WianVDM Failed again.
+
+          $details"
+            exit 0
+          fi
+
+          body_file="$RUNNER_TEMP/alert-body.md"
+          {
+            printf '`%s` did not succeed.\n\n' "$WORKFLOW_NAME"
+            printf '%s\n\n' "$details"
+            printf 'Open the run for the failing step. If production is affected, follow [docs/rollback.md](https://github.com/%s/blob/main/docs/rollback.md). ' "$GH_REPO"
+            if [ "$WORKFLOW_NAME" = "Deploy production" ]; then
+              printf 'A deploy that failed its smoke test rolls back automatically; check the run summary to see whether the rollback held.'
+            fi
+            printf '\n\nThis issue closes itself when the workflow next succeeds against production. Further failures are added as comments.\n'
+          } > "$body_file"
+          gh issue create --title "$title" --label type:bug --label "area:$area" --assignee WianVDM --body-file "$body_file"
