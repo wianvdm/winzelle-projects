@@ -3,8 +3,8 @@ import { loadEnv } from 'vite'
 const PLACEHOLDER_WEB3FORMS_ACCESS_KEY = 'your-web3forms-access-key'
 const KEY = 'VITE_WEB3FORMS_ACCESS_KEY'
 
-// Merge env the way Vite does for a production build: .env files for the
-// production mode on top of process.env.
+// Merge env the way Vite does for a production build: process.env VITE_
+// values override the .env files for the production mode.
 const fileEnv = loadEnv('production', process.cwd(), 'VITE_')
 const value = fileEnv[KEY] ?? process.env[KEY]
 

@@ -22,7 +22,7 @@ The site has one public build-time variable:
 
 - `VITE_WEB3FORMS_ACCESS_KEY`: access key for the Web3Forms quote form. It is invalid when missing, empty or whitespace-only, or equal to the `.env.example` placeholder `your-web3forms-access-key`.
 
-`scripts/check-public-env.mjs` runs first in `npm run build`. It loads env the way Vite does (Vite `loadEnv` for mode `production`, prefix `VITE_`, merged over `process.env`) and, when the key is invalid, exits 1 with a clear message if `CI` or `WORKERS_CI` is set; otherwise it prints a warning and exits 0. Local builds warn and continue; CI builds fail.
+`scripts/check-public-env.mjs` runs first in `npm run build`. It loads env the way Vite does (Vite `loadEnv` for mode `production`, prefix `VITE_`), so `process.env` values override `.env` files. When the key is invalid, it exits 1 with a clear message if `CI` or `WORKERS_CI` is set, and otherwise prints a warning and exits 0. Local builds warn and continue; CI builds fail. Cloudflare Workers Builds sets `CI=true` and `WORKERS_CI=1` by default: <https://developers.cloudflare.com/workers/ci-cd/builds/configuration/>.
 
 `src/lib/public-env.ts` exports `getWeb3FormsAccessKey(): string | undefined` (undefined when the key is invalid) and `PLACEHOLDER_WEB3FORMS_ACCESS_KEY`. Cloudflare Workers Builds sets the real key; the live bundle carries one.
 

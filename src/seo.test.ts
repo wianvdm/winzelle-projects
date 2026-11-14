@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { siteSettings } from './content/site-settings.ts'
+import { services } from './content/services.ts'
 
 function readJsonLd(): Record<string, unknown> {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
@@ -19,7 +20,7 @@ describe('index.html SEO metadata', () => {
   it('keeps the JSON-LD business details in sync with siteSettings', () => {
     const jsonLd = readJsonLd()
 
-    expect(jsonLd['url']).toBe('https://winzelle.co.za')
+    expect(jsonLd['url']).toBe('https://winzelle.co.za/')
     expect(jsonLd['telephone']).toBe(toE164(siteSettings.phone))
     expect(jsonLd['email']).toBe(siteSettings.email)
     expect(jsonLd['sameAs']).toEqual([siteSettings.facebookUrl])
@@ -35,6 +36,18 @@ describe('index.html SEO metadata', () => {
     expect(address['addressLocality']).toBe(city)
     expect(address['addressCountry']).toBe(country)
     expect(address['postalCode']).toBe(postalCode)
+  })
+
+  it('lists every service from src/content in the offer catalog', () => {
+    const jsonLd = readJsonLd()
+    const catalog = jsonLd['hasOfferCatalog'] as Record<string, unknown>
+    const offers = catalog['itemListElement'] as Record<string, unknown>[]
+    const offerNames = offers.map(
+      (offer) =>
+        (offer['itemOffered'] as Record<string, unknown>)['name'] as string,
+    )
+
+    expect(offerNames).toEqual(services.map((service) => service.title))
   })
 
   it('contains no obsolete domain or placeholder telephone', () => {
