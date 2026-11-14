@@ -14,4 +14,4 @@ Winzelle is a React 19 single-page application built with Vite 8 and TanStack Ro
 1. `npm run build` runs `scripts/check-public-env.mjs` first (see [docs/development.md](development.md)) and then emits the static bundle to `dist/`.
 2. The Cloudflare Worker serves `dist/`; client-side navigation stays in the browser via TanStack Router.
 3. The quote form posts to Web3Forms directly from the browser using `VITE_WEB3FORMS_ACCESS_KEY`; there is no server endpoint for it in the Worker.
-4. Cloudflare Workers Builds builds and deploys `main` today. Releases and rollback arrive in W10 (#12) and W11 (#13).
+4. Cloudflare Workers Builds builds and deploys `main` today. Release Please (W10, #12) maintains release PRs and `v*` tags, and `npm run rollback` wraps `wrangler rollback`, but releases are not the deploy path until W11 (#13).

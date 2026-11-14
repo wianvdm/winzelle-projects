@@ -59,7 +59,7 @@ describe('exported constants', () => {
     expect(AREA_LABELS).toHaveLength(9)
     expect(MAINTAINERS).toEqual(['WianVDM'])
     expect(DEPENDABOT_LOGIN).toBe('dependabot[bot]')
-    expect(AUTOMATION_LOGINS).toEqual([])
+    expect(AUTOMATION_LOGINS).toEqual(['winzelle-release[bot]'])
   })
 })
 
@@ -157,15 +157,36 @@ describe('evaluatePrMetadata decision matrix', () => {
     expect(result.errors[0]).toMatch(/dependencies/)
   })
 
-  it('fails when automated is used by an author not in AUTOMATION_LOGINS', () => {
+  it.each(['WianVDM', 'dependabot[bot]', 'winzelle-release'])(
+    'fails when automated is used by %s, who is not in AUTOMATION_LOGINS',
+    (authorLogin) => {
+      const result = evaluatePrMetadata(
+        validInput({
+          authorLogin,
+          labels: ['type:maintenance', 'area:ci', 'automated'],
+          closingIssues: [],
+        }),
+      )
+      expect(result.ok).toBe(false)
+      expect(result.errors[0]).toMatch(/automated/)
+    },
+  )
+
+  it('passes for a release PR authored by winzelle-release[bot]', () => {
     const result = evaluatePrMetadata(
       validInput({
-        labels: ['type:maintenance', 'area:ci', 'automated'],
+        title: 'chore(main): release 0.1.0',
+        authorLogin: 'winzelle-release[bot]',
+        labels: [
+          'autorelease: pending',
+          'automated',
+          'type:maintenance',
+          'area:release',
+        ],
         closingIssues: [],
       }),
     )
-    expect(result.ok).toBe(false)
-    expect(result.errors[0]).toMatch(/automated/)
+    expect(result).toEqual({ ok: true, errors: [] })
   })
 
   it('passes when no-issue is applied by WianVDM after the latest commit', () => {
