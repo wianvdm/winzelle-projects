@@ -3,7 +3,7 @@ import {
   MapPin,
   Phone,
   Mail,
-  AlertTriangle,
+  TriangleExclamationPoint,
   Send,
   MessageCircle,
 } from 'lucide-react'
@@ -364,7 +364,7 @@ export function QuoteForm() {
                 </div>
               </div>
               <div className="mt-4 flex items-start gap-2 rounded-lg bg-accent/10 px-4 py-3">
-                <AlertTriangle
+                <TriangleExclamationPoint
                   size={16}
                   className="mt-0.5 shrink-0 text-accent"
                 />

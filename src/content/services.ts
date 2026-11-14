@@ -66,7 +66,7 @@ export const services: Service[] = [
   {
     id: 'service-maintenance',
     title: 'Maintenance',
-    icon: 'Home',
+    icon: 'House',
     description:
       'Regular maintenance programs to keep your property in optimal condition and prevent costly repairs.',
     details: [
@@ -81,7 +81,7 @@ export const services: Service[] = [
   {
     id: 'service-structural',
     title: 'Structural Repairs',
-    icon: 'Building2',
+    icon: 'BuildingComplex',
     description:
       'Specialized structural repair services for foundation cracks, subsidence, and spalling damage.',
     details: [

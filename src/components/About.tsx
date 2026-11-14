@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  CheckCircle,
+  CircleCheckBig,
   Handshake,
   Award,
   Heart,
@@ -78,7 +78,7 @@ export function About() {
               <ul className="space-y-3">
                 {commitmentItems.map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <CheckCircle
+                    <CircleCheckBig
                       size={20}
                       className="mt-0.5 shrink-0 text-accent"
                     />
