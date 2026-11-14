@@ -7,7 +7,7 @@ Single source of truth for how agents and contributors work in this repository. 
 - Public repository `wianvdm/winzelle-projects` since 2026-11-13, one maintainer: `@WianVDM`.
 - npm is the package manager; `package-lock.json` is authoritative. Node 24.22.3 is pinned in `.nvmrc` and declared in `engines`. Install with `npm ci`; the verification gate is `npm run verify` (format:check, lint, typecheck, test, build).
 - Production deploys to a Cloudflare Worker (`wrangler.toml`); content lives in typed modules under `src/content/`.
-- GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. Required status checks arrive with W8 (#10).
+- GitHub enforces the `main` ruleset: changes require a pull request with 0 required approvals (a sole maintainer cannot approve their own PRs), squash merges only, linear history, resolved review conversations, no force pushes, no deletion, and no bypass actors. The `Verify` and `PR metadata` checks run on every PR and become required once they have green runs.
 - Cloudflare credentials are deferred to W10 (#12). Do not request, create, or store them anywhere else.
 
 ## Issue-first workflow
@@ -34,7 +34,8 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 - Title: Conventional Commit, `<type>(<scope>): <short imperative summary>`.
 - Body: complete the PR template. Truthful verification only: mark a check executed solely when it ran and its result was observed; list everything relevant that did not run under Unexecuted Checks with the reason.
 - UI changes include screenshots or a recording; otherwise state N/A.
-- Screenshots, recordings and review evidence go in PR comments and are never committed.
+- Screenshots, recordings and review evidence go in the PR description or comments and are never committed.
+- The `PR metadata` check enforces the issue, label, title and exemption rules in this file.
 - Every PR states Deployment & Privacy Impact and a Rollback Plan.
 
 ## Merge authority and agent prohibitions

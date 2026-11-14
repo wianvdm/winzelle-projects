@@ -37,6 +37,17 @@ Vitest 5.1.0 with the default environment `node` and globals off. Files that nee
 
 Both configs ignore `src/routeTree.gen.ts` and `dist`; the oxfmt config also ignores `package-lock.json`.
 
+## Continuous integration
+
+Two workflows run on every pull request to `main`, and CI also runs on pushes to `main`. Both live under `.github/workflows/` and pin their actions by full commit SHA.
+
+- `ci.yml` (`Verify`): installs with `npm ci` and runs `npm run verify` (format:check, lint, typecheck, test, build) on ubuntu-latest using the Node version from `.nvmrc`. It reads the public build variable from the `VITE_WEB3FORMS_ACCESS_KEY` repository variable, which the maintainer sets for CI builds; the build's env check fails in CI when the key is missing.
+- `pr-metadata.yml` (`PR metadata`): runs `scripts/pr-metadata.mjs` from the base commit, so a PR cannot change the rules it is checked against. It validates the PR title, labels, closing issue and ticket exemptions, and reports failures as annotations. A change to the validator takes effect for PRs opened after it merges.
+
+Both checks become required in the `main` ruleset once they have green runs.
+
+Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm and GitHub Actions dependencies, limited to 5 open PRs each. Dependabot PRs carry the `dependencies`, `type:maintenance` and `area:dependencies` labels and `build(deps)` or `build(deps-dev)` title prefixes so they pass the `PR metadata` check under the bot exemption.
+
 ## Line endings on Windows
 
 `.gitattributes` sets `* text=auto eol=lf`, so text files check out with LF on Windows and oxfmt's `endOfLine: "lf"` holds. The same file declares the binary media extensions under `public/`.
