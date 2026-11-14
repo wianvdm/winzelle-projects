@@ -820,17 +820,60 @@ describe('runSmoke with expectHeaders', () => {
     }
   })
 
-  it('reads header names case-insensitively', async () => {
-    const { ok } = await smokeWithHeaders(
+  it('fails when the SPA fallback lacks nosniff', async () => {
+    const fallback = passingRoutes()[`${BASE_URL}/smoke-test-missing-page`]
+    const { find } = await smokeWithHeaders(
       headerRoutes({
-        [`${BASE_URL}${MODULE_SCRIPT}`]: {
-          contentType: 'application/javascript',
-          body: mainScriptBody(),
-          headers: { 'CACHE-CONTROL': ASSET_CACHE_CONTROL },
+        [`${BASE_URL}/smoke-test-missing-page`]: {
+          ...fallback,
+          headers: {
+            'Content-Security-Policy':
+              SECURITY_HEADERS['Content-Security-Policy'],
+          },
         },
       }),
     )
-    expect(ok).toBe(true)
+    expect(find('security-headers')).toMatchObject({ ok: false })
+    expect(find('security-headers').reason).toMatch(
+      /spa fallback x-content-type-options/,
+    )
+  })
+
+  it('fails clearly when the SPA fallback is not 200', async () => {
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/smoke-test-missing-page`]: {
+          status: 404,
+          headers: SECURITY_HEADERS,
+        },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('spa fallback unavailable'),
+    })
+  })
+
+  it('fails clearly when the SPA fallback request errors', async () => {
+    const routes = headerRoutes()
+    delete routes[`${BASE_URL}/smoke-test-missing-page`]
+    const { find } = await smokeWithHeaders(routes)
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('spa fallback unavailable'),
+    })
+  })
+
+  it('reports an unavailable homepage instead of missing headers', async () => {
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: { status: 503, headers: SECURITY_HEADERS },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: 'homepage unavailable',
+    })
   })
 
   it.each([

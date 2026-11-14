@@ -127,6 +127,12 @@ async function tryText(response) {
   }
 }
 
+// Header checks read only 200 responses, so an error page reports through
+// the check that owns the URL instead of as a misleading header failure.
+function okHeaders(fetched) {
+  return fetched.response?.status === 200 ? fetched.response.headers : null
+}
+
 const MIN_HSTS_MAX_AGE_SECONDS = 31_536_000
 const MIN_ASSET_MAX_AGE_SECONDS = 31_536_000
 const MAX_AGE_DIRECTIVE = /(?:^|[,\s])max-age=(\d+)/gi
@@ -229,7 +235,7 @@ async function runAttempt({
   let scriptHeaders = null
 
   const home = await safeFetch(fetchImpl, `${origin}/`)
-  const homeHeaders = home.response?.headers ?? null
+  const homeHeaders = okHeaders(home)
   if (home.error) {
     results.push(result('homepage', false, `request failed: ${home.error}`))
   } else if (home.response.status !== 200) {
@@ -287,8 +293,7 @@ async function runAttempt({
     results.push(result('form-access-key', false, 'module script unavailable'))
   } else {
     const script = await safeFetch(fetchImpl, `${origin}${moduleScript}`)
-    scriptHeaders =
-      script.response?.status === 200 ? script.response.headers : null
+    scriptHeaders = okHeaders(script)
     if (script.error) {
       results.push(
         result('module-script', false, `request failed: ${script.error}`),
@@ -407,7 +412,7 @@ async function runAttempt({
     fetchImpl,
     `${origin}/smoke-test-missing-page`,
   )
-  const fallbackHeaders = fallback.response?.headers ?? null
+  const fallbackHeaders = okHeaders(fallback)
   if (fallback.error) {
     results.push(
       result('spa-fallback', false, `request failed: ${fallback.error}`),
