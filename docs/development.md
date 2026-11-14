@@ -43,14 +43,16 @@ Both configs ignore `src/routeTree.gen.ts` and `dist`; the oxfmt config also ign
 
 ## Continuous integration
 
-Two workflows run on every pull request to `main`, and CI also runs on pushes to `main`. Both live under `.github/workflows/` and pin their actions by full commit SHA.
+Two workflows run on every pull request to `main`, and CI also runs on pushes to `main`. Both live under `.github/workflows/` and pin their actions by full commit SHA. The one exception is actionlint in `ci.yml`, a version- and checksum-pinned binary that is bumped by hand from the release's `checksums.txt` (Dependabot cannot update it).
 
-- `ci.yml` (`Verify`): installs with `npm ci` and runs `npm run verify` (format:check, lint, typecheck, test, build) on ubuntu-latest using the Node version from `.nvmrc`. It reads the public build variable from the `VITE_WEB3FORMS_ACCESS_KEY` repository variable, which the maintainer sets for CI builds; the build's env check fails in CI when the key is missing. Dependabot runs receive the repository variable (observed on #30 to #34); fork PR runs are unverified and may not, in which case Verify fails at the env check.
+- `ci.yml` (`Verify`): reviews dependency changes (pull requests only), lints the workflow files with actionlint, then installs with `npm ci` and runs `npm run verify` (format:check, lint, typecheck, test, build) on ubuntu-latest using the Node version from `.nvmrc`. It reads the public build variable from the `VITE_WEB3FORMS_ACCESS_KEY` repository variable, which the maintainer sets for CI builds; the build's env check fails in CI when the key is missing. Dependabot runs receive the repository variable (observed on #30 to #34); fork PR runs are unverified and may not, in which case Verify fails at the env check.
+  - Dependency review blocks on advisories of any severity in runtime and development dependencies, because the build and deploy tooling (vite, wrangler, vitest, tailwind, jsdom) is development scope. There is no licence policy: an allow-list would fail on licence-string variants in transitive development dependencies and cost a sole maintainer upkeep, and the check exists to block vulnerabilities.
+  - actionlint runs shellcheck on every `run:` block. A shellcheck change on the runner image can surface new findings with no repo change. The `shellcheck disable=SC2016` comments in the other workflows cover literal markdown backticks inside `printf` formats.
 - `pr-metadata.yml` (`PR metadata`): runs `scripts/pr-metadata.mjs` from the base commit, so a PR cannot change the rules it is checked against. It validates the PR title, labels, closing issue and ticket exemptions, and reports failures as annotations. A validator change applies to each open PR on its next event after the change merges.
 
 The `main` ruleset requires both checks and up-to-date branches.
 
-Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm and GitHub Actions dependencies, limited to 5 open PRs each. Dependabot PRs carry the `dependencies`, `type:maintenance` and `area:dependencies` labels and `build(deps)` or `build(deps-dev)` title prefixes so they pass the `PR metadata` check under the bot exemption.
+Dependabot (`.github/dependabot.yml`) opens weekly update PRs for npm and GitHub Actions dependencies, limited to 5 open PRs each. A 7-day cooldown delays version updates after a release (security updates are not delayed). Minor and patch updates are grouped into one PR per ecosystem; major updates stay individual PRs, so one breaking major cannot hold back the safe updates. Because development scope is included, a grouped PR that brings in any advisory fails `Verify` and holds the whole group. Dependabot PRs carry the `dependencies`, `type:maintenance` and `area:dependencies` labels and a `build(...)` title prefix so they pass the `PR metadata` check under the bot exemption.
 
 ## Releases
 

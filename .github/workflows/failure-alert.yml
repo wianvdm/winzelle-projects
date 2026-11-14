@@ -84,6 +84,7 @@ jobs:
               ;;
           esac
 
+          # shellcheck disable=SC2016 # backticks are literal markdown
           details=$(printf -- '- Workflow: `%s`\n- Target: `%s`\n- Conclusion: `%s`\n- Run: [#%s, attempt %s](%s)\n- Trigger: `%s`\n- Commit: `%s`\n- Started: %s' \
             "$WORKFLOW_NAME" "$DISPLAY_TITLE" "$CONCLUSION" "$RUN_NUMBER" "$RUN_ATTEMPT" "$RUN_URL" "$RUN_EVENT" "$HEAD_SHA" "$RUN_CREATED_AT")
 
@@ -95,6 +96,7 @@ jobs:
           fi
 
           body_file="$RUNNER_TEMP/alert-body.md"
+          # shellcheck disable=SC2016 # backticks are literal markdown
           {
             printf '`%s` did not succeed.\n\n' "$WORKFLOW_NAME"
             printf '%s\n\n' "$details"

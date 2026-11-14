@@ -142,6 +142,7 @@ jobs:
           # always appended last), leaving one current block.
           gh release view "$RELEASE_TAG" --repo "$GH_REPO" --json body --jq .body > "$RUNNER_TEMP/body.md"
           sed '/^### Production deploy\r\?$/,$d' "$RUNNER_TEMP/body.md" > "$RUNNER_TEMP/body-clean.md"
+          # shellcheck disable=SC2016 # backticks are literal markdown
           {
             cat "$RUNNER_TEMP/body-clean.md"
             printf '\n### Production deploy\n\n'
@@ -165,6 +166,7 @@ jobs:
           ROLLBACK_RESULT: ${{ steps.rollback.outcome }}
           ROLLBACK_SMOKE_RESULT: ${{ steps.rollback-smoke.outcome }}
         run: |
+          # shellcheck disable=SC2016 # backticks are literal markdown
           {
             printf '## Production deploy\n\n'
             printf '| Field | Value |\n| --- | --- |\n'
