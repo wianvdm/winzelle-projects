@@ -163,6 +163,7 @@ jobs:
           SMOKE_RESULT: ${{ steps.smoke.outcome }}
           INPUT_REASON: ${{ inputs.reason }}
         run: |
+          # shellcheck disable=SC2016 # backticks are literal markdown
           {
             printf '## Production rollback\n\n'
             printf '| Field | Value |\n| --- | --- |\n'

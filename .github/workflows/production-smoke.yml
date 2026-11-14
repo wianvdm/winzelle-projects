@@ -68,6 +68,7 @@ jobs:
           BASE_URL: ${{ inputs.base_url || 'https://winzelle.co.za' }}
           SMOKE_RESULT: ${{ steps.smoke.outcome }}
         run: |
+          # shellcheck disable=SC2016 # backticks are literal markdown
           {
             printf '## Production smoke\n\n'
             printf '| Field | Value |\n| --- | --- |\n'
