@@ -1,6 +1,6 @@
 # Winzelle Projects
 
-Source for https://winzelle.co.za, the Winzelle Projects site: a React 19 SPA built with Vite 7 and TanStack Router, styled with Tailwind 4, served from a Cloudflare Worker.
+Source for https://winzelle.co.za, the Winzelle Projects site: a React 19 SPA built with Vite 8 and TanStack Router, styled with Tailwind 4, served from a Cloudflare Worker.
 
 ## Quick start
 
