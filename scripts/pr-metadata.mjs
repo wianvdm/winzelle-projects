@@ -35,12 +35,37 @@ const TIMELINE_PAGE_SIZE = 100
 const TITLE_PATTERN =
   /^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?!?: \S/
 const CLOSING_PATTERN =
-  /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)\b/gi
+  /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+#(\d+)\b/gi
+
+function sameLogin(a, b) {
+  return (
+    typeof a === 'string' &&
+    typeof b === 'string' &&
+    a.toLowerCase() === b.toLowerCase()
+  )
+}
+
+function includesLogin(logins, login) {
+  return logins.some((entry) => sameLogin(entry, login))
+}
+
+// GitHub does not link keywords inside HTML comment blocks or fenced code.
+// Only blocks that start a line are stripped: pairing mid-line markers or
+// inline code across paragraphs would hide references GitHub still links,
+// while over-counting fails safe.
+const HTML_COMMENT_BLOCK = /^ {0,3}<!--[\s\S]*?-->/gm
+const FENCED_CODE_BLOCK =
+  /^ {0,3}(`{3,}|~{3,})[^\n]*\n[\s\S]*?^ {0,3}\1[^\n]*$/gm
+
+function stripNonLinkableRegions(body) {
+  return body.replace(HTML_COMMENT_BLOCK, ' ').replace(FENCED_CODE_BLOCK, ' ')
+}
 
 export function parseClosingReferences(body) {
   if (typeof body !== 'string') return []
   const numbers = new Set()
-  for (const match of body.matchAll(CLOSING_PATTERN)) {
+  const linkable = stripNonLinkableRegions(body)
+  for (const match of linkable.matchAll(CLOSING_PATTERN)) {
     numbers.add(Number(match[1]))
   }
   return [...numbers].sort((a, b) => a - b)
@@ -73,7 +98,7 @@ function evaluateExemptions(labels, input) {
   const exempted = { dependencies: false, automated: false, 'no-issue': false }
 
   if (labels.has('dependencies')) {
-    if (input.authorLogin === DEPENDABOT_LOGIN) {
+    if (sameLogin(input.authorLogin, DEPENDABOT_LOGIN)) {
       exempted.dependencies = true
     } else {
       errors.push(
@@ -82,7 +107,7 @@ function evaluateExemptions(labels, input) {
     }
   }
   if (labels.has('automated')) {
-    if (AUTOMATION_LOGINS.includes(input.authorLogin)) {
+    if (includesLogin(AUTOMATION_LOGINS, input.authorLogin)) {
       exempted.automated = true
     } else {
       errors.push(
@@ -94,7 +119,7 @@ function evaluateExemptions(labels, input) {
     const { appliedBy, appliedAfterLatestCommit } = input.noIssue
     if (
       appliedBy !== null &&
-      MAINTAINERS.includes(appliedBy) &&
+      includesLogin(MAINTAINERS, appliedBy) &&
       appliedAfterLatestCommit
     ) {
       exempted['no-issue'] = true
@@ -122,6 +147,9 @@ function closingIssueErrors(closingIssues) {
     ]
   }
   const issue = closingIssues[0]
+  if (issue.missing) {
+    return [`closing issue #${issue.number} does not exist`]
+  }
   const errors = []
   if (issue.state !== 'open')
     errors.push(`closing issue #${issue.number} is not open`)
@@ -142,7 +170,7 @@ export function evaluatePrMetadata(input) {
 
   if (!TITLE_PATTERN.test(input.title)) {
     errors.push(
-      'title must follow Conventional Commits, e.g. "feat(forms): add contact form"',
+      'title must follow Conventional Commits with a type of build, chore, ci, docs, feat, fix, perf, refactor, revert, style or test, e.g. "feat(forms): add contact form"',
     )
   }
 
@@ -171,6 +199,13 @@ export function evaluatePrMetadata(input) {
   return { ok: errors.length === 0, errors }
 }
 
+class HttpError extends Error {
+  constructor(url, response) {
+    super(`GET ${url} failed with ${response.status} ${response.statusText}`)
+    this.status = response.status
+  }
+}
+
 async function fetchJson(url, token) {
   const response = await fetch(url, {
     headers: {
@@ -180,23 +215,42 @@ async function fetchJson(url, token) {
     },
   })
   if (!response.ok) {
-    throw new Error(
-      `GET ${url} failed with ${response.status} ${response.statusText}`,
-    )
+    throw new HttpError(url, response)
   }
   return response.json()
 }
 
-export async function fetchClosingIssue(repo, number, token) {
-  const issue = await fetchJson(
-    `https://api.github.com/repos/${repo}/issues/${number}`,
+export async function fetchPullRequest(repo, number, token) {
+  return fetchJson(
+    `https://api.github.com/repos/${repo}/pulls/${number}`,
     token,
   )
+}
+
+export async function fetchClosingIssue(repo, number, token) {
+  let issue
+  try {
+    issue = await fetchJson(
+      `https://api.github.com/repos/${repo}/issues/${number}`,
+      token,
+    )
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 404) {
+      return { number, missing: true }
+    }
+    throw error
+  }
+  if (issue.sub_issues_summary == null) {
+    throw new Error(
+      `issue #${number} response is missing sub_issues_summary; cannot determine whether it has sub-issues`,
+    )
+  }
   return {
     number,
+    missing: false,
     state: issue.state,
     isPullRequest: Boolean(issue.pull_request),
-    hasSubIssues: (issue.sub_issues_summary?.total ?? 0) > 0,
+    hasSubIssues: issue.sub_issues_summary.total > 0,
   }
 }
 
@@ -214,22 +268,29 @@ export async function fetchTimeline(repo, prNumber, token) {
   }
 }
 
-async function buildInput(event, token, repository) {
-  const pr = event.pull_request
-  const closingNumbers = parseClosingReferences(pr.body)
-  const closingIssues = await Promise.all(
-    closingNumbers.map((number) =>
-      fetchClosingIssue(repository, number, token),
-    ),
-  )
-  const timeline = await fetchTimeline(repository, pr.number, token)
-  return {
+export async function buildInput(event, token, repository) {
+  const number = event.pull_request.number
+  // Fetch the PR live: the event payload is stale on re-runs and when labels
+  // arrive after the opened event.
+  const pr = await fetchPullRequest(repository, number, token)
+  const labels = pr.labels.map((label) => label.name)
+  const timeline = await fetchTimeline(repository, number, token)
+  const input = {
     title: pr.title,
-    labels: pr.labels.map((label) => label.name),
+    labels,
     authorLogin: pr.user.login,
-    closingIssues,
+    closingIssues: [],
     noIssue: computeNoIssue(timeline),
   }
+  const { exempt } = evaluateExemptions(new Set(labels), input)
+  if (exempt) return input
+  const closingNumbers = parseClosingReferences(pr.body)
+  input.closingIssues = await Promise.all(
+    closingNumbers.map((closingNumber) =>
+      fetchClosingIssue(repository, closingNumber, token),
+    ),
+  )
+  return input
 }
 
 async function main() {
