@@ -102,7 +102,7 @@ jobs:
         # Run even when the deploy step failed after moving traffic; without a
         # recorded previous version there is nothing to roll back to, so skip.
         if: always() && steps.previous.outcome == 'success' && steps.deploy.outcome != 'skipped'
-        run: node scripts/smoke.mjs https://winzelle.co.za --expect-dist dist
+        run: node scripts/smoke.mjs https://winzelle.co.za --expect-dist dist --expect-headers
       - name: Note a missing rollback target
         if: always() && steps.previous.outcome == 'success' && steps.previous.outputs.version_id == '' && (steps.deploy.outcome == 'failure' || steps.deploy.outcome == 'cancelled' || steps.smoke.outcome == 'failure' || steps.smoke.outcome == 'cancelled')
         run: echo "::warning::Deploy or smoke failed and no previous version exists; nothing to roll back to."

@@ -61,21 +61,37 @@ type StubResponse = {
   status?: number
   contentType?: string
   body?: string
+  headers?: Record<string, string>
 }
 
 type StubRequest = { url: string; method: string | undefined }
+
+function lookupHeader(headers: Record<string, string>, name: string) {
+  const wanted = name.toLowerCase()
+  const key = Object.keys(headers).find(
+    (entry) => entry.toLowerCase() === wanted,
+  )
+  return key === undefined ? null : headers[key]
+}
 
 function stubFetch(handler: (url: string) => StubResponse) {
   const requests: StubRequest[] = []
   const fetchImpl = async (url: string, init?: { method?: string }) => {
     requests.push({ url, method: init?.method })
-    const { status = 200, contentType = 'text/html', body = '' } = handler(url)
+    const {
+      status = 200,
+      contentType = 'text/html',
+      body = '',
+      headers = {},
+    } = handler(url)
     return {
       status,
       ok: status >= 200 && status < 300,
       headers: {
         get: (name: string) =>
-          name.toLowerCase() === 'content-type' ? contentType : null,
+          name.toLowerCase() === 'content-type'
+            ? contentType
+            : lookupHeader(headers, name),
       },
       text: async () => body,
     }
@@ -115,6 +131,50 @@ function passingRoutes(
     },
     ...overrides,
   }
+}
+
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'",
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Strict-Transport-Security': 'max-age=31536000',
+}
+const ASSET_CACHE_CONTROL = 'public, max-age=31536000, immutable'
+
+function headerRoutes(
+  overrides: Record<string, StubResponse> = {},
+): Record<string, StubResponse> {
+  const routes = passingRoutes()
+  const home = routes[`${BASE_URL}/`]
+  const script = routes[`${BASE_URL}${MODULE_SCRIPT}`]
+  const fallback = routes[`${BASE_URL}/smoke-test-missing-page`]
+  return {
+    ...routes,
+    [`${BASE_URL}/`]: { ...home, headers: SECURITY_HEADERS },
+    [`${BASE_URL}${MODULE_SCRIPT}`]: {
+      ...script,
+      headers: { 'cache-control': ASSET_CACHE_CONTROL },
+    },
+    [`${BASE_URL}/smoke-test-missing-page`]: {
+      ...fallback,
+      headers: SECURITY_HEADERS,
+    },
+    ...overrides,
+  }
+}
+
+async function smokeWithHeaders(routes: Record<string, StubResponse>) {
+  const { fetchImpl } = serveRoutes(routes)
+  const { ok, results } = await runSmoke({
+    baseUrl: BASE_URL,
+    expectHeaders: true,
+    fetch: fetchImpl,
+    attempts: 1,
+    delayMs: 0,
+  })
+  const find = (name: string) =>
+    results.find((entry: { name: string }) => entry.name === name)
+  return { ok, results, find }
 }
 
 function names(results: { name: string; ok: boolean }[]) {
@@ -727,6 +787,238 @@ describe('runSmoke', () => {
   })
 })
 
+describe('runSmoke with expectHeaders', () => {
+  it('runs no header checks when the flag is off, even without headers', async () => {
+    const { fetchImpl } = serveRoutes(passingRoutes())
+    const { ok, results } = await runSmoke({
+      baseUrl: BASE_URL,
+      fetch: fetchImpl,
+      attempts: 1,
+      delayMs: 0,
+    })
+    expect(ok).toBe(true)
+    expect(names(results)).not.toContain('security-headers')
+    expect(names(results)).not.toContain('asset-cache')
+  })
+
+  it('passes with the full header set and only uses GET', async () => {
+    const { requests, fetchImpl } = serveRoutes(headerRoutes())
+    const { ok, results } = await runSmoke({
+      baseUrl: BASE_URL,
+      expectHeaders: true,
+      fetch: fetchImpl,
+      attempts: 1,
+      delayMs: 0,
+    })
+    expect(ok).toBe(true)
+    expect(names(results).slice(-2)).toEqual([
+      'security-headers',
+      'asset-cache',
+    ])
+    for (const request of requests) {
+      expect(request.method).toBe('GET')
+    }
+  })
+
+  it('fails when the SPA fallback lacks nosniff', async () => {
+    const fallback = passingRoutes()[`${BASE_URL}/smoke-test-missing-page`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/smoke-test-missing-page`]: {
+          ...fallback,
+          headers: {
+            'Content-Security-Policy':
+              SECURITY_HEADERS['Content-Security-Policy'],
+          },
+        },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({ ok: false })
+    expect(find('security-headers').reason).toMatch(
+      /spa fallback x-content-type-options/,
+    )
+  })
+
+  it('fails clearly when the SPA fallback is not 200', async () => {
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/smoke-test-missing-page`]: {
+          status: 404,
+          headers: SECURITY_HEADERS,
+        },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('spa fallback unavailable'),
+    })
+  })
+
+  it('fails clearly when the SPA fallback request errors', async () => {
+    const routes = headerRoutes()
+    delete routes[`${BASE_URL}/smoke-test-missing-page`]
+    const { find } = await smokeWithHeaders(routes)
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('spa fallback unavailable'),
+    })
+  })
+
+  it('reports an unavailable homepage instead of missing headers', async () => {
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: { status: 503, headers: SECURITY_HEADERS },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({
+      ok: false,
+      reason: 'homepage unavailable',
+    })
+  })
+
+  it.each([
+    ['Content-Security-Policy', /content-security-policy/],
+    ['X-Content-Type-Options', /x-content-type-options/],
+    ['Referrer-Policy', /referrer-policy/],
+    ['Strict-Transport-Security', /strict-transport-security/],
+  ])('names a missing %s on the homepage', async (header, pattern) => {
+    const { [header]: _removed, ...remaining } = SECURITY_HEADERS as Record<
+      string,
+      string
+    >
+    const home = passingRoutes()[`${BASE_URL}/`]
+    const { ok, find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: { ...home, headers: remaining },
+      }),
+    )
+    expect(ok).toBe(false)
+    expect(find('security-headers')).toMatchObject({ ok: false })
+    expect(find('security-headers').reason).toMatch(pattern)
+  })
+
+  it('fails when the CSP lacks frame-ancestors', async () => {
+    const home = passingRoutes()[`${BASE_URL}/`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: {
+          ...home,
+          headers: {
+            ...SECURITY_HEADERS,
+            'Content-Security-Policy': "default-src 'self'",
+          },
+        },
+      }),
+    )
+    expect(find('security-headers').reason).toMatch(/frame-ancestors/)
+  })
+
+  it('fails when the HSTS max-age is below the threshold', async () => {
+    const home = passingRoutes()[`${BASE_URL}/`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: {
+          ...home,
+          headers: {
+            ...SECURITY_HEADERS,
+            'Strict-Transport-Security': 'max-age=3600',
+          },
+        },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({ ok: false })
+    expect(find('security-headers').reason).toMatch(/strict-transport-security/)
+  })
+
+  it('fails when the SPA fallback lacks the CSP', async () => {
+    const fallback = passingRoutes()[`${BASE_URL}/smoke-test-missing-page`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/smoke-test-missing-page`]: {
+          ...fallback,
+          headers: { 'X-Content-Type-Options': 'nosniff' },
+        },
+      }),
+    )
+    expect(find('security-headers')).toMatchObject({ ok: false })
+    expect(find('security-headers').reason).toMatch(/spa fallback lacks/)
+  })
+
+  it('fails the asset check when the bundle has max-age=0', async () => {
+    const script = passingRoutes()[`${BASE_URL}${MODULE_SCRIPT}`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}${MODULE_SCRIPT}`]: {
+          ...script,
+          headers: { 'Cache-Control': 'public, max-age=0, must-revalidate' },
+        },
+      }),
+    )
+    expect(find('asset-cache')).toMatchObject({ ok: false })
+    expect(find('asset-cache').reason).toMatch(/max-age is 0/)
+  })
+
+  it('fails the asset check when immutable is missing', async () => {
+    const script = passingRoutes()[`${BASE_URL}${MODULE_SCRIPT}`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}${MODULE_SCRIPT}`]: {
+          ...script,
+          headers: { 'Cache-Control': 'public, max-age=31536000' },
+        },
+      }),
+    )
+    expect(find('asset-cache')).toMatchObject({
+      ok: false,
+      reason: 'cache-control lacks immutable',
+    })
+  })
+
+  it('fails the asset check on a joined Cache-Control with duplicate max-age', async () => {
+    const script = passingRoutes()[`${BASE_URL}${MODULE_SCRIPT}`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}${MODULE_SCRIPT}`]: {
+          ...script,
+          headers: {
+            'Cache-Control':
+              'public, max-age=0, must-revalidate, public, max-age=31536000, immutable',
+          },
+        },
+      }),
+    )
+    expect(find('asset-cache')).toMatchObject({ ok: false })
+    expect(find('asset-cache').reason).toMatch(/2 max-age directives/)
+  })
+
+  it('fails the asset check by name when the module script is unavailable', async () => {
+    const { find } = await smokeWithHeaders(
+      headerRoutes({ [`${BASE_URL}${MODULE_SCRIPT}`]: { status: 404 } }),
+    )
+    expect(find('asset-cache')).toMatchObject({
+      ok: false,
+      reason: 'module script unavailable',
+    })
+  })
+
+  it('fails the asset check by name when the homepage has no module script', async () => {
+    const home = passingRoutes()[`${BASE_URL}/`]
+    const { find } = await smokeWithHeaders(
+      headerRoutes({
+        [`${BASE_URL}/`]: {
+          ...home,
+          body: homeHtml({ script: '' }),
+          headers: SECURITY_HEADERS,
+        },
+      }),
+    )
+    expect(find('asset-cache')).toMatchObject({
+      ok: false,
+      reason: 'module script unavailable',
+    })
+  })
+})
+
 const execFileAsync = promisify(execFile)
 const SMOKE_SCRIPT = fileURLToPath(new URL('./smoke.mjs', import.meta.url))
 
@@ -750,6 +1042,22 @@ function passingPaths(): Record<string, StubResponse> {
   }
 }
 
+function headerPaths(): Record<string, StubResponse> {
+  const paths = passingPaths()
+  return {
+    ...paths,
+    '/': { ...paths['/'], headers: SECURITY_HEADERS },
+    [MODULE_SCRIPT]: {
+      ...paths[MODULE_SCRIPT],
+      headers: { 'cache-control': ASSET_CACHE_CONTROL },
+    },
+    '/smoke-test-missing-page': {
+      ...paths['/smoke-test-missing-page'],
+      headers: SECURITY_HEADERS,
+    },
+  }
+}
+
 async function serveSite(routes: Record<string, StubResponse>) {
   const server = createServer((request, response) => {
     const route = routes[request.url ?? '/']
@@ -759,6 +1067,7 @@ async function serveSite(routes: Record<string, StubResponse>) {
       return
     }
     response.writeHead(route.status ?? 200, {
+      ...route.headers,
       'content-type': route.contentType ?? 'text/html',
     })
     response.end(route.body ?? '')
@@ -795,6 +1104,60 @@ describe('CLI', () => {
       await expect(runCli([site.url])).rejects.toMatchObject({ code: 1 })
     } finally {
       await site.close()
+    }
+  })
+
+  it('exits 0 with --expect-headers when the headers are present', async () => {
+    const site = await serveSite(headerPaths())
+    try {
+      const { stdout } = await runCli([site.url, '--expect-headers'])
+      expect(stdout).toContain('PASS security-headers')
+      expect(stdout).toContain('PASS asset-cache')
+    } finally {
+      await site.close()
+    }
+  })
+
+  it('exits 1 with --expect-headers when the headers are absent', async () => {
+    const site = await serveSite(passingPaths())
+    try {
+      await expect(
+        runCli([site.url, '--expect-headers']),
+      ).rejects.toMatchObject({
+        code: 1,
+        stdout: expect.stringContaining('FAIL security-headers'),
+      })
+    } finally {
+      await site.close()
+    }
+  })
+
+  it('exits 0 without the flag when the headers are absent', async () => {
+    const site = await serveSite(passingPaths())
+    try {
+      const { stdout } = await runCli([site.url])
+      expect(stdout).not.toContain('security-headers')
+    } finally {
+      await site.close()
+    }
+  })
+
+  it('accepts --expect-headers together with --expect-dist', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'smoke-test-'))
+    const site = await serveSite(headerPaths())
+    try {
+      await writeFile(join(dir, 'index.html'), homeHtml())
+      const { stdout } = await runCli([
+        site.url,
+        '--expect-dist',
+        dir,
+        '--expect-headers',
+      ])
+      expect(stdout).toContain('PASS expected-script')
+      expect(stdout).toContain('PASS security-headers')
+    } finally {
+      await site.close()
+      await rm(dir, { recursive: true, force: true })
     }
   })
 
