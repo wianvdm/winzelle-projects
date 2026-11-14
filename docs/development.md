@@ -41,8 +41,8 @@ Both configs ignore `src/routeTree.gen.ts` and `dist`; the oxfmt config also ign
 
 Two workflows run on every pull request to `main`, and CI also runs on pushes to `main`. Both live under `.github/workflows/` and pin their actions by full commit SHA.
 
-- `ci.yml` (`Verify`): installs with `npm ci` and runs `npm run verify` (format:check, lint, typecheck, test, build) on ubuntu-latest using the Node version from `.nvmrc`. It reads the public build variable from the `VITE_WEB3FORMS_ACCESS_KEY` repository variable, which the maintainer sets for CI builds; the build's env check fails in CI when the key is missing.
-- `pr-metadata.yml` (`PR metadata`): runs `scripts/pr-metadata.mjs` from the base commit, so a PR cannot change the rules it is checked against. It validates the PR title, labels, closing issue and ticket exemptions, and reports failures as annotations. A change to the validator takes effect for PRs opened after it merges.
+- `ci.yml` (`Verify`): installs with `npm ci` and runs `npm run verify` (format:check, lint, typecheck, test, build) on ubuntu-latest using the Node version from `.nvmrc`. It reads the public build variable from the `VITE_WEB3FORMS_ACCESS_KEY` repository variable, which the maintainer sets for CI builds; the build's env check fails in CI when the key is missing. Dependabot and fork PR runs may not receive repository variables, in which case Verify fails at the env check (to be confirmed on the first Dependabot PR).
+- `pr-metadata.yml` (`PR metadata`): runs `scripts/pr-metadata.mjs` from the base commit, so a PR cannot change the rules it is checked against. It validates the PR title, labels, closing issue and ticket exemptions, and reports failures as annotations. A validator change applies to each open PR on its next event after the change merges.
 
 Both checks become required in the `main` ruleset once they have green runs.
 

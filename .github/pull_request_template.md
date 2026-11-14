@@ -25,7 +25,7 @@ Closes #<issue-number>
 
 <None. Otherwise name exactly one class:>
 
-- `no-issue`: the maintainer applied this label to the PR. Maintainer-only ticket exemption; agents and contributors cannot apply it.
+- `no-issue`: the maintainer applied this label to the PR, and re-applies it after any new commit or force-push. Maintainer-only ticket exemption; agents and contributors cannot apply it.
 - `dependencies`: Dependabot dependency PR from the approved bot identity.
 - `automated`: Release Please release PR from the approved bot identity.
 

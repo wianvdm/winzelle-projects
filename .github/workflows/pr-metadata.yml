@@ -17,10 +17,15 @@ permissions:
   issues: read
   pull-requests: read
 
+concurrency:
+  group: pr-metadata-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   pr-metadata:
     name: PR metadata
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Run the validator from the base commit so a PR cannot change the rules
       # it is checked against.

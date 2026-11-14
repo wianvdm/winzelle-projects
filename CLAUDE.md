@@ -31,7 +31,7 @@ Use only labels that already exist. The maintainer creates labels; agents and co
 ## Pull requests
 
 - Focused: one issue, one outcome. Split unrelated work into separate PRs.
-- Title: Conventional Commit, `<type>(<scope>): <short imperative summary>`.
+- Title: Conventional Commit, `<type>(<scope>): <short imperative summary>`. Allowed types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test. The scope is optional lowercase letters, digits and hyphens. A `!` after the type or scope marks a breaking change.
 - Body: complete the PR template. Truthful verification only: mark a check executed solely when it ran and its result was observed; list everything relevant that did not run under Unexecuted Checks with the reason.
 - UI changes include screenshots or a recording; otherwise state N/A.
 - Screenshots, recordings and review evidence go in the PR description or comments and are never committed.
@@ -52,7 +52,7 @@ The maintainer merges. An agent may squash-merge a pull request only when the ma
 
 Exactly three classes, each narrow:
 
-1. `no-issue`: maintainer-only ticket exemption. Valid only when the maintainer applies the label to the PR.
+1. `no-issue`: maintainer-only ticket exemption. Valid only when the maintainer applies the label to the PR, and the maintainer re-applies it after any new commit or force-push.
 2. `dependencies`: dependency automation (Dependabot) from the approved bot identity.
 3. `automated`: release automation (Release Please) from the approved bot identity.
 
