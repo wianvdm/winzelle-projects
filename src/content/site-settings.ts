@@ -10,6 +10,6 @@ export const siteSettings: SiteSettings = {
   email: 'info@winzelle.co.za',
   whatsappNumber: '27828781557',
   facebookUrl: 'https://www.facebook.com/winzelleprojects',
-  address: '10 King Place, Ben Kamma , Port Elizabeth, South Africa, 6025',
+  address: '10 King Place, Ben Kamma, Port Elizabeth, South Africa, 6025',
   logoPath: '/content/images/winzelle-logo.jpg',
 }
