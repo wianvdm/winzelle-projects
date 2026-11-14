@@ -23,9 +23,10 @@ with a green post-rollback smoke means production is on the previous version
 and only the release needs attention. No previous version exists only when the
 Worker has never been deployed; in that case the run fails without a rollback.
 
-A failed or cancelled deploy or rollback run opens (or comments on) an open
-`Production alert: <workflow name>` issue via `.github/workflows/failure-alert.yml`,
-and the next successful run closes it. That issue is how the maintainer hears
+A deploy or rollback run that ends `failure`, `timed_out`, `startup_failure` or
+`cancelled` opens (or comments on) an open `Production alert: <workflow name>`
+issue via `.github/workflows/failure-alert.yml`, and the next successful run
+closes it. That issue is how the maintainer hears
 about a failed bot-triggered release deploy.
 
 ## Running a manual rollback

@@ -3,6 +3,12 @@ name: Production smoke
 # Weekly read-only check of the live site (W13, #15). GET requests only: it
 # never submits the quote form and never touches the deployment or the form
 # recipient. A failure opens an alert issue via failure-alert.yml.
+#
+# run-name carries the target so failure-alert.yml can tell a production run
+# from a controlled test against another origin (inputs are empty on schedule,
+# so the default applies).
+run-name: Production smoke (${{ inputs.base_url || 'https://winzelle.co.za' }})
+
 on:
   schedule:
     # Mondays 06:00 UTC (08:00 SAST). GitHub pauses scheduled workflows in a
