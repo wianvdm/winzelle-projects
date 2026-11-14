@@ -69,7 +69,18 @@ Release Please (`.github/workflows/release-please.yml`) runs on every push to `m
 
 Cloudflare Workers Builds: repository `WianVDM/winzelle-projects`, production branch `main`, non-production branch builds on, build command `npm run build`, deploy command `npx wrangler deploy`, non-production version command `npx wrangler versions upload`, root directory `/`, watch paths `*`, build token (Cloudflare-managed; the display name is not recorded here). Branch preview URLs are enabled. `winzelle.co.za`, `www.winzelle.co.za` and the account's `workers.dev` URL all serve the Worker with HTTP 200; the www redirect is tracked in #43. The `npx wrangler deploy` production deploy command recorded here is superseded by the switch to `npx wrangler versions upload` described under Releases above.
 
-Web3Forms (free plan): captcha None, Spam Protection Level Basic, Advanced Spam Filter off (left off on purpose: server-side drops would be invisible), Restrict to Domains unsupported (Pro-only, excluded by the zero-paid rule). The recipient is the maintainer's test inbox and must switch to the business inbox before W14 (#16). The form code has no captcha; a missing public key fails the build via `scripts/check-public-env.mjs` (W7).
+Web3Forms (free plan): captcha None, Spam Protection Level Basic, Advanced Spam Filter off (left off on purpose: server-side drops would be invisible), Restrict to Domains unsupported (Pro-only, excluded by the zero-paid rule). The recipient stays the maintainer's private inbox while the site is pre-release (0.x); switching to a business inbox is a later maintainer decision, not part of W14 (#16). The form code has no captcha; a missing public key fails the build via `scripts/check-public-env.mjs` (W7).
+
+## Monitoring
+
+Proportional and free (W13, #15): a weekly smoke plus failure issues. No monitoring platform, and nothing submits the quote form.
+
+- `.github/workflows/production-smoke.yml` (`Production smoke`) runs `scripts/smoke.mjs` against `https://winzelle.co.za` every Monday at 06:00 UTC (08:00 SAST). It is read-only and touches neither the deployment nor the form recipient. Run it by hand from Actions → Production smoke → Run workflow.
+- `.github/workflows/failure-alert.yml` (`Failure alert`) watches `Production smoke`, `Deploy production` and `Rollback production`. Release deploys are triggered by `winzelle-release[bot]`, so GitHub's failed-run emails go to the bot; an issue notifies the maintainer instead. `workflow_run` runs the file from `main`, so edits apply only after they merge.
+- Alert lifecycle: a failed or cancelled run opens `Production alert: <workflow name>` (labels `type:bug`, `area:release`). While that issue is open, further failures of the same workflow add a comment. The next successful run comments "recovered" and closes it. Skipped and neutral runs (prerelease deploys) do nothing.
+- Schedule pause: GitHub disables scheduled workflows in a public repo after 60 days without repository activity. If the weekly smoke stops appearing in Actions, re-enable it there or run it by hand.
+- Controlled failure: run Production smoke with `base_url` set to an unreachable origin such as `https://smoke-failure.invalid`. The run fails and `Failure alert` opens the issue; run it again with the default URL to see the "recovered" comment and the close. The input accepts an https origin only, no path.
+- Cloudflare Notifications: the maintainer is checking which notification types the free plan offers. Unsupported types will be recorded here: _pending maintainer check, nothing assumed._
 
 ## Line endings on Windows
 
