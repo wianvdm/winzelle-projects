@@ -46,6 +46,9 @@ export function QuoteForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Clear any previous error so the alert unmounts and remounts (and is
+    // re-announced) when a retry fails again.
+    setError(null)
     setSubmitting(true)
 
     const accessKey = getWeb3FormsAccessKey()

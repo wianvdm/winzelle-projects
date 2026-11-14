@@ -69,6 +69,39 @@ describe('QuoteForm', () => {
     )
     expect(screen.queryByLabelText(/Full Name/)).toBeNull()
     expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Send another request/i }),
+    )
+    expect(inputValue(/Full Name/)).toBe('')
+    expect(inputValue(/Email Address/)).toBe('')
+    expect(inputValue(/Project Type/)).toBe('')
+    expect(inputValue(/Project Details/)).toBe('')
+  })
+
+  it('disables the submit button and shows the sending label while fetch is pending', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', VALID_KEY)
+    let resolveFetch: (response: Response) => void = () => {}
+    const fetchMock = vi.fn().mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<QuoteForm />)
+    fillForm()
+    submitForm()
+
+    const button = screen.getByRole('button', {
+      name: /Sending\.\.\./i,
+    }) as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+
+    resolveFetch(jsonResponse(200, { success: true }))
+    await waitFor(() => {
+      expect(screen.queryByRole('status')).not.toBeNull()
+    })
   })
 
   it('keeps input and shows an alert on HTTP 500', async () => {
@@ -102,6 +135,47 @@ describe('QuoteForm', () => {
     const alert = await waitForAlert()
     expect(alert.textContent).toContain('not sent')
     expect(inputValue(/Full Name/)).toBe('Jane Doe')
+  })
+
+  it('keeps input and shows an alert on HTTP 200 with a non-JSON body', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', VALID_KEY)
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('not json', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<QuoteForm />)
+    fillForm()
+    submitForm()
+
+    const alert = await waitForAlert()
+    expect(alert.textContent).toContain('not sent')
+    expect(inputValue(/Full Name/)).toBe('Jane Doe')
+  })
+
+  it('re-announces the alert when a retry fails with the same error', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', VALID_KEY)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(500, { success: false }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<QuoteForm />)
+    fillForm()
+    submitForm()
+    const firstAlert = await waitForAlert()
+
+    submitForm()
+    await waitFor(() => {
+      const alert = screen.queryByRole('alert')
+      expect(alert).not.toBeNull()
+      expect(alert).not.toBe(firstAlert)
+    })
+    expect(screen.getByRole('alert').textContent).toContain('not sent')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('keeps input and shows an alert when fetch rejects', async () => {
