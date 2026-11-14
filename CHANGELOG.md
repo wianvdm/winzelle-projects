@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/wianvdm/winzelle-projects/compare/v0.1.0...v0.2.0) (2026-11-14)
+
+
+### Features
+
+* **cloudflare:** serve security headers and immutable asset caching ([#68](https://github.com/wianvdm/winzelle-projects/issues/68)) ([4e2a808](https://github.com/wianvdm/winzelle-projects/commit/4e2a808f43a7c496d5fadee3839115f43feabec9))
+
+
+### Bug Fixes
+
+* **ci:** name failure alerts after the workflow, not the run ([#52](https://github.com/wianvdm/winzelle-projects/issues/52)) ([5c3bf3e](https://github.com/wianvdm/winzelle-projects/commit/5c3bf3ed56cd5360fb58bab3ff2946bd6ddbe460))
+
 ## 0.1.0 (2026-11-14)
 
 
