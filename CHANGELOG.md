@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/wianvdm/winzelle-projects/compare/v0.2.0...v0.2.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **cloudflare:** allow Cloudflare Web Analytics in the CSP ([#70](https://github.com/wianvdm/winzelle-projects/issues/70)) ([68698e4](https://github.com/wianvdm/winzelle-projects/commit/68698e47def9768d124246c233e4ad0bd2279df7))
+
 ## [0.2.0](https://github.com/wianvdm/winzelle-projects/compare/v0.1.0...v0.2.0) (2026-11-14)
 
 
