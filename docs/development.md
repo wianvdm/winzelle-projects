@@ -71,6 +71,8 @@ Release Please (`.github/workflows/release-please.yml`) runs on every push to `m
 
 Cloudflare Workers Builds: repository `WianVDM/winzelle-projects`, production branch `main`, non-production branch builds on, build command `npm run build`, deploy command `npx wrangler deploy`, non-production version command `npx wrangler versions upload`, root directory `/`, watch paths `*`, build token (Cloudflare-managed; the display name is not recorded here). Branch preview URLs are enabled. `winzelle.co.za`, `www.winzelle.co.za` and the account's `workers.dev` URL all serve the Worker with HTTP 200; the www redirect is tracked in #43. The `npx wrangler deploy` production deploy command recorded here is superseded by the switch to `npx wrangler versions upload` described under Releases above.
 
+From #58 (2026-11-14), `wrangler.toml` sets `workers_dev = false` and `preview_urls = false`; they take effect on the next `wrangler deploy` (the #53 release).
+
 Web3Forms (free plan): captcha None, Spam Protection Level Basic, Advanced Spam Filter off (left off on purpose: server-side drops would be invisible), Restrict to Domains unsupported (Pro-only, excluded by the zero-paid rule). The recipient stays the maintainer's private inbox while the site is pre-release (0.x); switching to a business inbox is a later maintainer decision, not part of W14 (#16). The form code has no captcha; a missing public key fails the build via `scripts/check-public-env.mjs` (W7).
 
 ## Monitoring
