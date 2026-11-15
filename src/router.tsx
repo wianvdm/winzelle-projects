@@ -11,19 +11,20 @@ const baseChildren = Array.isArray(generatedRouteTree.children)
   ? [...generatedRouteTree.children]
   : []
 
+const routeTree =
+  import.meta.env.VITE_HOME_NEXT === 'true'
+    ? generatedRouteTree.addChildren([
+        ...baseChildren,
+        createRoute({
+          getParentRoute: () => rootRoute,
+          path: '/next',
+          component: lazyRouteComponent(() => import('./next/NextPage')),
+        }),
+      ])
+    : generatedRouteTree
+
 export function getRouteTree() {
-  if (import.meta.env.VITE_HOME_NEXT !== 'true') {
-    generatedRouteTree.addChildren(baseChildren)
-    return generatedRouteTree
-  }
-
-  const nextRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/next',
-    component: lazyRouteComponent(() => import('./next/NextPage')),
-  })
-
-  return generatedRouteTree.addChildren([...baseChildren, nextRoute])
+  return routeTree
 }
 
 export function getRouter(history?: RouterHistory) {

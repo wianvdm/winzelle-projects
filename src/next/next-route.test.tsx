@@ -4,22 +4,24 @@ import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryHistory, RouterProvider } from '@tanstack/react-router'
-import { getRouteTree, getRouter } from '../router'
 
 beforeEach(() => {
+  vi.resetModules()
   vi.stubGlobal('scrollTo', vi.fn())
 })
 
 afterEach(() => {
   cleanup()
-  document.head.querySelectorAll('meta[name="robots"]').forEach((el) => {
-    el.remove()
-  })
+  document.head
+    .querySelectorAll('meta[name="robots"], link[href*="fonts.g"]')
+    .forEach((el) => {
+      el.remove()
+    })
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
 })
 
-function routePaths(tree: ReturnType<typeof getRouteTree>): string[] {
+function routePaths(tree: { children?: unknown }): string[] {
   const children = Array.isArray(tree.children)
     ? tree.children
     : Object.values(tree.children ?? {})
@@ -28,23 +30,23 @@ function routePaths(tree: ReturnType<typeof getRouteTree>): string[] {
     .filter((path): path is string => typeof path === 'string')
 }
 
-async function renderAtPath(path: string) {
+async function loadRouterAtPath(path: string) {
+  const { getRouteTree, getRouter } = await import('../router')
   const history = createMemoryHistory({ initialEntries: [path] })
   const router = getRouter(history)
   await router.load()
   render(<RouterProvider router={router} />)
-  return router
+  return { getRouteTree, router }
 }
 
 describe('/next route gating', () => {
   it('omits /next from the route tree and renders NotFound when VITE_HOME_NEXT is unset', async () => {
     vi.stubEnv('VITE_HOME_NEXT', undefined)
 
+    const { getRouteTree } = await loadRouterAtPath('/next')
     const paths = routePaths(getRouteTree())
     expect(paths).toContain('/')
     expect(paths).not.toContain('/next')
-
-    await renderAtPath('/next')
 
     await waitFor(() => {
       expect(screen.getByText('Page not found')).toBeDefined()
@@ -53,21 +55,23 @@ describe('/next route gating', () => {
     expect(screen.queryByRole('link', { name: 'Get a Quote' })).not.toBeNull()
   })
 
-  it('omits /next when VITE_HOME_NEXT is false', () => {
+  it('omits /next when VITE_HOME_NEXT is false and keeps getRouteTree stable across calls', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'false')
 
-    const paths = routePaths(getRouteTree())
-    expect(paths).not.toContain('/next')
+    const { getRouteTree } = await import('../router')
+    const first = getRouteTree()
+    const second = getRouteTree()
+    expect(second).toBe(first)
+    expect(routePaths(first)).not.toContain('/next')
   })
 
-  it('registers /next with noindex and without legacy chrome when VITE_HOME_NEXT is true', async () => {
+  it('registers /next with noindex, without legacy chrome, and without Google Fonts links when VITE_HOME_NEXT is true', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'true')
 
+    const { getRouteTree } = await loadRouterAtPath('/next')
     const paths = routePaths(getRouteTree())
     expect(paths).toContain('/')
     expect(paths).toContain('/next')
-
-    await renderAtPath('/next')
 
     await waitFor(() => {
       expect(
@@ -79,12 +83,18 @@ describe('/next route gating', () => {
     expect(robots?.getAttribute('content')).toBe('noindex')
     expect(screen.queryByRole('link', { name: 'Get a Quote' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Chat on WhatsApp' })).toBeNull()
+    expect(
+      document.head.querySelector('link[href*="fonts.googleapis.com"]'),
+    ).toBeNull()
+    expect(
+      document.head.querySelector('link[href*="fonts.gstatic.com"]'),
+    ).toBeNull()
   })
 
-  it('keeps the legacy / route and chrome unchanged when VITE_HOME_NEXT is true', async () => {
+  it('keeps the legacy / route, chrome, and Google Fonts links when VITE_HOME_NEXT is true', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'true')
 
-    await renderAtPath('/')
+    await loadRouterAtPath('/')
 
     await waitFor(() => {
       expect(screen.getByRole('link', { name: 'Get a Quote' })).toBeDefined()
@@ -92,10 +102,26 @@ describe('/next route gating', () => {
 
     expect(screen.getByRole('link', { name: 'Chat on WhatsApp' })).toBeDefined()
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull()
+    expect(
+      document.head.querySelector(
+        'link[rel="stylesheet"][href*="fonts.googleapis.com"]',
+      ),
+    ).not.toBeNull()
+    expect(
+      document.head.querySelector(
+        'link[rel="preconnect"][href="https://fonts.gstatic.com"]',
+      ),
+    ).not.toBeNull()
   })
 })
 
 describe('redesign tokens and self-hosted fonts', () => {
+  it('omits Google Fonts links from the shared index.html shell', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+    expect(html).not.toContain('fonts.googleapis.com')
+    expect(html).not.toContain('fonts.gstatic.com')
+  })
+
   it('defines wz- tokens alongside existing tokens in src/styles.css', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8')
     expect(css).toContain('--color-primary:')
