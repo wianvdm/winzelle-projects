@@ -18,8 +18,9 @@ export function WhatsAppButton() {
     const contactSectionElement = document.getElementById(CONTACT_SECTION_ID)
     if (!contactSectionElement) return
 
+    // One callback can queue several entries for the target, oldest first: the newest is current.
     const observer = new IntersectionObserver(
-      ([entry]) => setContactInView(entry.isIntersecting),
+      (entries) => setContactInView(entries[entries.length - 1].isIntersecting),
       { threshold: 0 },
     )
     observer.observe(contactSectionElement)

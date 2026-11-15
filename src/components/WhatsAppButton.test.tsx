@@ -29,13 +29,17 @@ function addQuoteSection(): HTMLElement {
   return section
 }
 
-function setIntersecting(target: Element, isIntersecting: boolean) {
+function fireEntries(entries: Array<{ isIntersecting: boolean }>) {
   act(() => {
     observerCallback(
-      [{ isIntersecting, target } as IntersectionObserverEntry],
+      entries as IntersectionObserverEntry[],
       {} as IntersectionObserver,
     )
   })
+}
+
+function setIntersecting(target: Element, isIntersecting: boolean) {
+  fireEntries([{ isIntersecting, target } as IntersectionObserverEntry])
 }
 
 function floatingLink(): HTMLElement {
@@ -43,6 +47,8 @@ function floatingLink(): HTMLElement {
 }
 
 afterEach(() => {
+  // Load-bearing: file hooks run before setup hooks, so without it clearAllMocks
+  // runs before unmount and leaks disconnect calls into the next test.
   cleanup()
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
@@ -85,6 +91,16 @@ describe('WhatsAppButton', () => {
     expect(floatingLink().classList.contains('invisible')).toBe(true)
 
     setIntersecting(section, false)
+    expect(floatingLink().classList.contains('invisible')).toBe(false)
+  })
+
+  it('uses the newest entry when one callback delivers several', () => {
+    vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver)
+    addQuoteSection()
+    render(<WhatsAppButton />)
+
+    fireEntries([{ isIntersecting: true }, { isIntersecting: false }])
+
     expect(floatingLink().classList.contains('invisible')).toBe(false)
   })
 
