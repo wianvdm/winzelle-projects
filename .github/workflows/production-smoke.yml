@@ -1,23 +1,16 @@
 name: Production smoke
 
-# Daily read-only check of the live site (W13, #15). GET requests only: it
-# never submits the quote form and never touches the deployment or the form
-# recipient. A failure opens an alert issue via failure-alert.yml.
+# Read-only check of the live site (W13, #15), run by hand from the Actions
+# tab. GitHub never fired this workflow's `schedule` trigger (#15), so the
+# schedule was removed (#81). GET requests only: it never submits the quote
+# form and never touches the deployment or the form recipient. A failure opens
+# an alert issue via failure-alert.yml.
 #
 # run-name carries the target so failure-alert.yml can tell a production run
-# from a controlled test against another origin (inputs are empty on schedule,
-# so the default applies).
+# from a controlled test against another origin.
 run-name: Production smoke (${{ inputs.base_url || 'https://winzelle.co.za' }})
 
 on:
-  schedule:
-    # Daily 04:17 UTC (06:17 SAST), off the hour because GitHub delays or
-    # drops top-of-hour schedules. GitHub pauses scheduled workflows in a
-    # public repo after 60 days without repository activity.
-    - cron: '17 4 * * *'
-    # Temporary one-shot test of the schedule trigger, 11:37 UTC on
-    # 2026-11-15 only (#80, retried in #83); removed by #81.
-    - cron: '37 11 15 11 *'
   workflow_dispatch:
     inputs:
       base_url:
