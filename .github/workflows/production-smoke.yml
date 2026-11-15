@@ -15,6 +15,9 @@ on:
     # drops top-of-hour schedules. GitHub pauses scheduled workflows in a
     # public repo after 60 days without repository activity.
     - cron: '17 4 * * *'
+    # Temporary one-shot test of the schedule trigger, 09:45 UTC on
+    # 2026-11-15 only (#80); removed by #81.
+    - cron: '45 9 15 11 *'
   workflow_dispatch:
     inputs:
       base_url:
