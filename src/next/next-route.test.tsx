@@ -113,13 +113,84 @@ describe('/next route gating', () => {
       ),
     ).not.toBeNull()
   })
+
+  it('does not inject duplicate LegacyFonts links on / when VITE_HOME_NEXT is unset', async () => {
+    vi.stubEnv('VITE_HOME_NEXT', undefined)
+
+    await loadRouterAtPath('/')
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Get a Quote' })).toBeDefined()
+    })
+
+    expect(
+      document.head.querySelector('link[href*="fonts.googleapis.com"]'),
+    ).toBeNull()
+    expect(
+      document.head.querySelector('link[href*="fonts.gstatic.com"]'),
+    ).toBeNull()
+  })
 })
 
 describe('redesign tokens and self-hosted fonts', () => {
-  it('omits Google Fonts links from the shared index.html shell', () => {
+  it('keeps Google Fonts tags in flag-off builds and strips them via transformIndexHtml when flag-on', async () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
-    expect(html).not.toContain('fonts.googleapis.com')
-    expect(html).not.toContain('fonts.gstatic.com')
+    const {
+      default: viteConfig,
+      resolveHomeNext,
+      stripGoogleFontsPlugin,
+    } = await import('../../vite.config')
+
+    vi.stubEnv('VITE_HOME_NEXT', undefined)
+    expect(resolveHomeNext('build', 'production')).toBe(false)
+    expect(resolveHomeNext('serve', 'development')).toBe(true)
+
+    const offConfig = await (
+      viteConfig as unknown as (env: {
+        command: 'build' | 'serve'
+        mode: string
+      }) => Promise<{
+        define?: Record<string, string>
+        plugins?: Array<{ name?: string }>
+      }>
+    )({ command: 'build', mode: 'production' })
+
+    expect(offConfig.define?.['import.meta.env.VITE_HOME_NEXT']).toBe('"false"')
+    expect(
+      offConfig.plugins?.some(
+        (plugin) => plugin?.name === 'strip-google-fonts',
+      ),
+    ).toBe(false)
+    expect(html).toContain('fonts.googleapis.com')
+    expect(html).toContain('fonts.gstatic.com')
+
+    vi.stubEnv('VITE_HOME_NEXT', 'true')
+    expect(resolveHomeNext('build', 'production')).toBe(true)
+
+    const onConfig = await (
+      viteConfig as unknown as (env: {
+        command: 'build' | 'serve'
+        mode: string
+      }) => Promise<{
+        define?: Record<string, string>
+        plugins?: Array<{ name?: string }>
+      }>
+    )({ command: 'build', mode: 'production' })
+
+    expect(onConfig.define?.['import.meta.env.VITE_HOME_NEXT']).toBe('"true"')
+    expect(
+      onConfig.plugins?.some((plugin) => plugin?.name === 'strip-google-fonts'),
+    ).toBe(true)
+
+    const plugin = stripGoogleFontsPlugin()
+    const transform = plugin.transformIndexHtml as (
+      input: string,
+    ) => string | undefined
+    const transformed = transform(html)
+    expect(transformed).toBeDefined()
+    expect(transformed).not.toContain('fonts.googleapis.com')
+    expect(transformed).not.toContain('fonts.gstatic.com')
+    expect(transformed).toContain('<div id="app"></div>')
   })
 
   it('defines wz- tokens alongside existing tokens in src/styles.css', () => {

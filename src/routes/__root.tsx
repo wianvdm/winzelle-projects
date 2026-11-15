@@ -59,9 +59,10 @@ function LegacyFonts() {
 }
 
 function RootComponent() {
+  const homeNextEnabled = import.meta.env.VITE_HOME_NEXT === 'true'
   const isNextRoute = useRouterState({
     select: (state) =>
-      import.meta.env.VITE_HOME_NEXT === 'true' &&
+      homeNextEnabled &&
       state.matches.some((match) => match.routeId === '/next'),
   })
 
@@ -71,7 +72,7 @@ function RootComponent() {
 
   return (
     <>
-      <LegacyFonts />
+      {homeNextEnabled && <LegacyFonts />}
       <Navbar />
       <Outlet />
       <Footer />
