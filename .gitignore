@@ -21,3 +21,6 @@ test-results/
 playwright-report/
 *.patch
 docs/visual-evidence/
+
+# Per-machine MCP config (#76)
+.mcp.json
