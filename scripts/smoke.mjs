@@ -1,6 +1,6 @@
 // Read-only production smoke test for the Winzelle static site. Used by the
 // release deploy workflow after `wrangler deploy`, by the rollback workflow
-// after `wrangler rollback` and by the scheduled production smoke: GET/HEAD
+// after `wrangler rollback` and by the Production smoke workflow: GET/HEAD
 // requests only, never submits the quote form, never prints secrets or
 // response bodies.
 
