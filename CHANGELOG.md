@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/wianvdm/winzelle-projects/compare/v0.2.1...v0.2.2) (2026-11-15)
+
+
+### Bug Fixes
+
+* **frontend:** keep the WhatsApp button off the contact section ([#88](https://github.com/wianvdm/winzelle-projects/issues/88)) ([14607d8](https://github.com/wianvdm/winzelle-projects/commit/14607d8112f5e9ab77ba92f1a9b3a434035f4498))
+
 ## [0.2.1](https://github.com/wianvdm/winzelle-projects/compare/v0.2.0...v0.2.1) (2026-11-14)
 
 
