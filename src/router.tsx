@@ -1,10 +1,35 @@
-import { createRouter as createTanStackRouter } from '@tanstack/react-router'
-import { routeTree } from './routeTree.gen'
+import {
+  createRoute,
+  createRouter as createTanStackRouter,
+  lazyRouteComponent,
+  type RouterHistory,
+} from '@tanstack/react-router'
+import { Route as rootRoute } from './routes/__root'
+import { routeTree as generatedRouteTree } from './routeTree.gen'
 
-export function getRouter() {
+const baseChildren = Array.isArray(generatedRouteTree.children)
+  ? [...generatedRouteTree.children]
+  : []
+
+export function getRouteTree() {
+  if (import.meta.env.VITE_HOME_NEXT !== 'true') {
+    generatedRouteTree.addChildren(baseChildren)
+    return generatedRouteTree
+  }
+
+  const nextRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/next',
+    component: lazyRouteComponent(() => import('./next/NextPage')),
+  })
+
+  return generatedRouteTree.addChildren([...baseChildren, nextRoute])
+}
+
+export function getRouter(history?: RouterHistory) {
   const router = createTanStackRouter({
-    routeTree,
-
+    routeTree: getRouteTree(),
+    history,
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,

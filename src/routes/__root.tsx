@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 import '../styles.css'
 import { Navbar } from '../components/Navbar'
 import { Footer } from '../components/Footer'
@@ -29,6 +29,16 @@ function NotFound() {
 }
 
 function RootComponent() {
+  const isNextRoute = useRouterState({
+    select: (state) =>
+      import.meta.env.VITE_HOME_NEXT === 'true' &&
+      state.matches.some((match) => match.routeId === '/next'),
+  })
+
+  if (isNextRoute) {
+    return <Outlet />
+  }
+
   return (
     <>
       <Navbar />

@@ -1,0 +1,155 @@
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/spectral-400.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Spectral';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/spectral-400-italic.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Spectral';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/spectral-600.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Spectral SC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/spectral-sc-500.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+html:has(.wz-page) {
+  scroll-behavior: auto;
+}
+
+body:has(.wz-page) {
+  color: var(--color-wz-navy);
+  font-family: var(--font-wz-serif);
+  background-color: var(--color-wz-field);
+}
+
+.wz-page {
+  min-height: 100vh;
+  padding: 64px 24px;
+  color: var(--color-wz-navy);
+  font: 400 var(--text-wz-body) / 1.6 var(--font-wz-serif);
+  background-color: var(--color-wz-field);
+  background-image:
+    radial-gradient(
+      ellipse at 30% 20%,
+      rgba(16, 38, 58, 0) 55%,
+      rgba(16, 38, 58, 0.1) 100%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(20, 44, 66, 0.05) 100%
+    );
+}
+
+.wz-shell-sheet {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 36px 40px 32px;
+  background-color: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-sheet);
+}
+
+.wz-shell-sheet::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 64px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 34% 30%,
+      rgba(255, 255, 255, 0.85) 0 1.6px,
+      rgba(255, 255, 255, 0) 4px
+    ),
+    var(--color-wz-pin-sheet);
+  box-shadow: 3px 5px 4px -1px rgba(10, 26, 40, 0.42);
+}
+
+.wz-shell-voice {
+  margin: 0 0 12px;
+  color: var(--color-wz-steel);
+  font-family: var(--font-wz-voice);
+  font-size: var(--text-wz-1);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wz-shell-title {
+  margin: 0;
+  font-family: var(--font-wz-serif);
+  font-size: var(--text-wz-h2);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.012em;
+}
+
+.wz-shell-lead {
+  margin: 16px 0 0;
+  color: var(--color-wz-steel);
+  font-size: var(--text-wz-3);
+  line-height: 1.38;
+}
+
+.wz-shell-note {
+  margin: 14px 0 0;
+  color: var(--color-wz-navy);
+  font-style: italic;
+  font-size: var(--text-wz-body);
+}
+
+@media (max-width: 600px) {
+  .wz-page {
+    padding: 32px 16px;
+  }
+
+  .wz-shell-sheet {
+    padding: 28px 20px 24px;
+  }
+
+  .wz-shell-title {
+    font-size: var(--text-wz-4);
+  }
+
+  .wz-shell-lead {
+    font-size: var(--text-wz-body);
+  }
+}
