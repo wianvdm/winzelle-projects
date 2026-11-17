@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { getTrade } from '../../content/next/trades'
 import { PavingDrawing } from './PavingDrawing'
+import { Note } from './primitives'
 import { RoofsDrawing } from './RoofsDrawing'
 
 afterEach(cleanup)
@@ -129,6 +130,18 @@ describe('several drawings on one page', () => {
     const ids = [...container.querySelectorAll('[id]')].map((el) => el.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Note', () => {
+  it('renders onFill notes without layout support (jsdom has no getBBox)', () => {
+    const { container } = render(
+      <svg>
+        <Note x={10} y={10} lines={['a note']} onFill />
+      </svg>,
+    )
+    expect(screen.getByText('a note')).toBeDefined()
+    expect(container.querySelector('.wz-note-back')).toBeNull()
   })
 })
 

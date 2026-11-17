@@ -417,13 +417,23 @@ export function Note({
     if (!group || typeof group.getBBox !== 'function') return
     const box = group.getBBox()
     if (!box.width) return
-    setBack({
+    const next = {
       x: box.x - NOTE_BACK_PADDING,
       y: box.y - NOTE_BACK_PADDING,
       width: box.width + 2 * NOTE_BACK_PADDING,
       height: box.height + 2 * NOTE_BACK_PADDING,
-    })
-  }, [onFill, x, y, lines])
+    }
+    setBack((prev) =>
+      prev &&
+      prev.x === next.x &&
+      prev.y === next.y &&
+      prev.width === next.width &&
+      prev.height === next.height
+        ? prev
+        : next,
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on line text, not array identity
+  }, [onFill, x, y, ...lines])
 
   return (
     <g ref={groupRef}>
