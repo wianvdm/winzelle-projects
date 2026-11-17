@@ -831,6 +831,8 @@ async function main() {
       parts.push(`failed: ${outcome.failed.join(', ')}`)
     if (outcome.unknown.length)
       parts.push(`unknown: ${outcome.unknown.join(', ')}`)
+    if (outcome.screenshots.length)
+      parts.push(`screenshots: ${outcome.screenshots.join('; ')}`)
     console.error(`Design gate FAILED (${parts.join('; ')})`)
     process.exit(4)
   }

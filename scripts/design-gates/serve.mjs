@@ -1,16 +1,18 @@
 #!/usr/bin/env node
 // Serves dist/ with the pinned wrangler in local dev mode (no Cloudflare login,
-// no secrets), confirms public/_headers applies by asserting the
-// Content-Security-Policy response header on the target page, then runs the
-// design-gate probe against it and forwards the probe's exit code.
+// no secrets), confirms public/_headers applies by comparing the
+// Content-Security-Policy response header on the target page against the value
+// in dist/_headers, then runs the design-gate probe against it and forwards
+// the probe's exit code.
 //
 // Usage: node serve.mjs [--url http://127.0.0.1:8787/next] [--out <dir>]
 //
 // Exit codes: probe exit codes pass through; 2 = bad arguments or missing
-// dist/; 3 = wrangler dev did not apply _headers (BLOCKED: do not switch
-// servers, fix the serving setup); 1 = serving failed.
+// dist/; 3 = wrangler dev did not apply _headers or served a different CSP
+// (BLOCKED: do not switch servers, fix the serving setup); 1 = serving failed.
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -69,6 +71,51 @@ async function waitForServer(url) {
   )
 }
 
+// Parses a Cloudflare _headers file into blocks of { pattern, headers }.
+// A block starts with an unindented path pattern; header lines are indented.
+function parseHeadersFile(text) {
+  const blocks = []
+  let current = null
+  for (const line of text.split('\n')) {
+    if (!line.trim()) continue
+    if (!/^\s/.test(line)) {
+      current = { pattern: line.trim(), headers: [] }
+      blocks.push(current)
+      continue
+    }
+    const match = line.trim().match(/^([^:]+):\s*(.*)$/)
+    if (current && match)
+      current.headers.push([match[1].toLowerCase(), match[2].trim()])
+  }
+  return blocks
+}
+
+// The headers for one URL path: the longest matching pattern wins, `*` is a
+// wildcard (Cloudflare's rule).
+function headersFor(blocks, pathname) {
+  const toRegex = (pattern) =>
+    new RegExp(
+      `^${pattern
+        .split('*')
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('.*')}$`,
+    )
+  const matching = blocks
+    .filter(({ pattern }) => toRegex(pattern).test(pathname))
+    .sort((a, b) => b.pattern.length - a.pattern.length)
+  return matching[0]?.headers || []
+}
+
+// The CSP the page must carry: the value dist/_headers declares for it.
+async function expectedCsp(url) {
+  const file = path.join(ROOT, 'dist', '_headers')
+  if (!existsSync(file))
+    throw new Error('dist/_headers is missing; build first (npm run build).')
+  const blocks = parseHeadersFile(await readFile(file, 'utf8'))
+  const headers = headersFor(blocks, new URL(url).pathname)
+  return headers.find(([name]) => name === 'content-security-policy')?.[1]
+}
+
 function stopServer(child) {
   return new Promise((resolve) => {
     if (child.exitCode !== null) return resolve()
@@ -116,17 +163,19 @@ async function main() {
     if (response.status !== 200)
       throw new Error(`${url} answered ${response.status}, expected 200`)
     const csp = response.headers.get('content-security-policy')
-    if (!csp) {
+    const expected = await expectedCsp(url)
+    if (!csp || csp.trim() !== (expected || '').trim()) {
       console.error(
-        `BLOCKED: ${url} is served without a Content-Security-Policy header, so this wrangler dev ` +
-          'does not apply dist/_headers. The design gate needs the real CSP; fix the serving setup ' +
-          'rather than switching servers.',
+        `BLOCKED: ${url} is served without the Content-Security-Policy from dist/_headers ` +
+          `(served: ${csp ? `"${csp.slice(0, 80)}..."` : 'none'}; expected: ${expected ? `"${expected.slice(0, 80)}..."` : 'none declared'}), ` +
+          'so this wrangler dev does not apply dist/_headers. The design gate needs the real CSP; ' +
+          'fix the serving setup rather than switching servers.',
       )
       process.exitCode = 3
       return
     }
     console.log(
-      `[serve] ${url} answers 200 with Content-Security-Policy: ${csp.slice(0, 60)}...`,
+      `[serve] ${url} answers 200 with the Content-Security-Policy from dist/_headers`,
     )
     const probe = spawn(
       process.execPath,

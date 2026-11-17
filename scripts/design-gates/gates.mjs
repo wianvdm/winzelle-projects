@@ -54,7 +54,8 @@ const EXTERNAL_ALLOWLIST = [
 ]
 
 // Classifies one request URL against the G11 allow-list. pageOrigin is the
-// origin of the page under test.
+// origin of the page under test. External hosts must use https:; an http
+// response can be rewritten in transit, so the hostname alone is not enough.
 export function classifyRequest(rawUrl, pageOrigin) {
   if (rawUrl.startsWith('data:') || rawUrl === 'about:blank')
     return { allowed: true, kind: 'inline' }
@@ -74,6 +75,12 @@ export function classifyRequest(rawUrl, pageOrigin) {
       url.hostname === entry.host ||
       url.hostname.endsWith(`.${entry.host}`)
     ) {
+      if (url.protocol !== 'https:')
+        return {
+          allowed: false,
+          kind: entry.name,
+          reason: `external hosts must use https: (got ${url.protocol})`,
+        }
       return entry.active
         ? { allowed: true, kind: entry.name }
         : { allowed: false, kind: entry.name, reason: entry.inactiveReason }
@@ -840,10 +847,20 @@ function g11(log) {
       text: `request ${request.url} (${request.kind || 'unknown'}: ${request.reason || 'not allowed'})`,
     })),
   ]
+  // A request-gate error means the probe could not vet that request, so the
+  // network rule was not fully measured: unknown, never pass.
+  const gateErrors = (log.probeNotes || []).filter((note) =>
+    note.startsWith('request gate:'),
+  )
+  const status = fails.length ? 'fail' : gateErrors.length ? 'unknown' : 'pass'
   return {
-    status: verdict(fails, []),
-    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)`,
-    measured: { console: log.console, requests: log.requests },
+    status,
+    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
+    measured: {
+      console: log.console,
+      requests: log.requests,
+      requestGateErrors: gateErrors,
+    },
     failures: fails,
   }
 }
@@ -853,8 +870,18 @@ function g12(parts, survey) {
   if (!data) return { status: 'unknown', summary: 'structure not read' }
   // Without a survey (unit tests) every rule applies. On the page, rules about
   // markup that exists always run; rules about pieces the redesign has not
-  // built yet are pending until the opening section lands (designReady).
-  const ready = !survey || survey.designReady
+  // built yet stay pending until their own section lands, so a partly built
+  // page is judged only on what exists. The h1, header and nav arrive with
+  // the opening screen (#96); the footer and the form arrive with story and
+  // contact (#99). main is part of the /next shell itself, so it is always
+  // required.
+  const sections = survey?.sections || {}
+  const ready = (section) => !survey || !!sections[section]
+  const LANDMARK_SECTION = {
+    banner: 'hero',
+    navigation: 'hero',
+    contentinfo: 'contact',
+  }
   const fails = []
   const pending = []
   if (!data.langValid)
@@ -866,7 +893,7 @@ function g12(parts, survey) {
   if (data.h1Count > 1)
     fails.push({ selector: 'h1', text: `${data.h1Count} h1 elements` })
   else if (data.h1Count === 0) {
-    ;(ready ? fails : pending).push({
+    ;(ready('hero') ? fails : pending).push({
       selector: 'h1',
       text: 'no h1',
       reason: 'exactly one h1 required',
@@ -888,7 +915,8 @@ function g12(parts, survey) {
     if (list.length > 1)
       fails.push({ selector: name, text: `${list.length} ${name} landmarks` })
     else if (!list.length) {
-      ;(ready ? fails : pending).push({
+      const section = LANDMARK_SECTION[name]
+      ;(section && !ready(section) ? pending : fails).push({
         selector: null,
         text: `no ${name} landmark`,
         reason: 'landmark not on the page yet',
@@ -903,7 +931,7 @@ function g12(parts, survey) {
     )
   const forms = parts.G12.forms
   if (!forms || !forms.length) {
-    ;(ready ? fails : pending).push({
+    ;(ready('contact') ? fails : pending).push({
       selector: null,
       text: 'no form on the page',
       reason: 'empty-submit error text not checked',
@@ -957,7 +985,7 @@ function g12(parts, survey) {
   return {
     status: verdict(fails, manual),
     summary: pending.length
-      ? `${summary}; pending while the page is empty: ${pending.map((item) => item.text).join(', ')}`
+      ? `${summary}; pending until their section lands: ${pending.map((item) => item.text).join(', ')}`
       : summary,
     pending,
     measured: {
@@ -1026,8 +1054,26 @@ function c61(parts) {
   return out
 }
 
-// The job outcome: the design gate fails the run on a failed gate or on an
-// unknown verdict (a probe crash). manual and skipped never fail the run.
+// Screenshot capture is not a gate, so its step errors land in probeErrors
+// under 'screenshots' and a failed capture would otherwise leave the job
+// green with files missing. The run fails on those errors and when an
+// expected set is absent. The sets mirror VIEWPORTS and REFLOW_WIDTHS in
+// probe.mjs.
+const EXPECTED_SCREENSHOTS = [
+  '1280x800',
+  '1440x900',
+  '390x844',
+  'reflow-320',
+  'reflow-390',
+  'reflow-768',
+  'reflow-1280',
+  'reflow-1440',
+  'reflow-1920',
+]
+
+// The job outcome: the design gate fails the run on a failed gate, on an
+// unknown verdict (a probe crash), or on missing or errored screenshots.
+// manual and skipped never fail the run.
 export function gateOutcome(result) {
   const gates = Object.values(result.gates)
   const byStatus = (status) =>
@@ -1036,12 +1082,22 @@ export function gateOutcome(result) {
       .map((gate) => `${gate.id} ${gate.title}`)
   const failed = byStatus('fail')
   const unknown = byStatus('unknown')
+  const captured = new Set(
+    (result.screenshots || []).map((set) => set.viewport),
+  )
+  const screenshots = [
+    ...(result.probeErrors?.screenshots || []),
+    ...EXPECTED_SCREENSHOTS.filter((viewport) => !captured.has(viewport)).map(
+      (viewport) => `no screenshot set for ${viewport}`,
+    ),
+  ]
   return {
-    ok: failed.length === 0 && unknown.length === 0,
+    ok: failed.length === 0 && unknown.length === 0 && screenshots.length === 0,
     failed,
     unknown,
     skipped: byStatus('skipped'),
     manual: byStatus('manual'),
+    screenshots,
   }
 }
 
@@ -1061,6 +1117,15 @@ export function finalise(data) {
     G11: g11(log),
     G12: g12(parts, survey),
   }
+  // A missing shell (no main or h1 at survey time) means the flag-off page
+  // rendered or the survey ran before React committed. A skip then measured
+  // nothing, so every skipped gate becomes unknown and fails the run.
+  if (survey && survey.shell === false)
+    for (const gate of Object.values(gates)) {
+      if (gate.status !== 'skipped') continue
+      gate.status = 'unknown'
+      gate.summary = `${gate.summary} · the /next shell (main and h1) is absent, so this skip is not trusted`
+    }
   for (const [id, gate] of Object.entries(gates)) {
     gate.id = id
     gate.title = TITLES[id]

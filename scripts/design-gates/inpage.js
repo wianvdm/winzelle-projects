@@ -46,6 +46,8 @@
     'picture',
   ])
   const SKIP_TEXT_PARENTS = 'script, style, noscript, template, title, desc'
+  const SHELL_WAIT_MS = 5000
+  const SHELL_POLL_MS = 100
 
   // ---------- identity and description ----------
   const ids = new WeakMap()
@@ -2092,9 +2094,28 @@
   // What the page already has, so gates.mjs can skip gates whose subject is not
   // built yet instead of passing or failing them. designReady flips when the
   // opening WhatsApp action (#wz-hero-wa, design spec S2) lands on /next.
-  function contentSurvey() {
+  // sections records which parts of the page exist, so G12 can judge only the
+  // sections that landed. shell is false when the app shell (main + h1) never
+  // rendered: the flag-off page or a survey taken before React committed. The
+  // shell renders right after load, so wait briefly before calling it absent.
+  async function contentSurvey() {
+    const deadline = performance.now() + SHELL_WAIT_MS
+    while (
+      !(document.querySelector('main') && document.querySelector('h1')) &&
+      performance.now() < deadline
+    )
+      await new Promise((resolve) => setTimeout(resolve, SHELL_POLL_MS))
+    const section = (id) => !!document.getElementById(id)
     return {
-      designReady: !!document.querySelector('#wz-hero-wa'),
+      shell: !!(document.querySelector('main') && document.querySelector('h1')),
+      designReady: section('wz-hero-wa'),
+      sections: {
+        hero: section('wz-hero-wa'),
+        what: section('wz-what'),
+        work: section('wz-work'),
+        story: section('wz-story'),
+        contact: section('wz-contact'),
+      },
       controls: tabbables().length,
       whatsappLinks: document.querySelectorAll(WHATSAPP_SELECTOR).length,
       telLinks: document.querySelectorAll('a[href^="tel:"]').length,

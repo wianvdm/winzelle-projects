@@ -15,9 +15,9 @@ node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/next --out desig
 ```
 
 `serve.mjs` starts the pinned wrangler in local dev mode (no Cloudflare login,
-no secrets), asserts the `Content-Security-Policy` response header from
-`public/_headers` is present on the page, then runs the probe and forwards its
-exit code. To probe an already-running server directly:
+no secrets), asserts the page's `Content-Security-Policy` response header
+equals the value `dist/_headers` declares for its path, then runs the probe
+and forwards its exit code. To probe an already-running server directly:
 
 ```
 node scripts/design-gates/probe.mjs http://127.0.0.1:8787/next design-gate-report
@@ -32,7 +32,10 @@ Every request is checked against the G11 allow-list: the site's own origin,
 `data:` URLs, the Cloudflare Web Analytics beacon and Web3Forms pass;
 OpenStreetMap tiles stay blocked until the map activates (#100); anything else
 is blocked by the probe and fails G11. CSP violations and console errors fail
-G11 too.
+G11 too. External hosts must use `https:`; a plain-http request to an
+allow-listed host is refused. Web3Forms is allow-listed outright today;
+narrowing it to submit-only belongs to #101. A request the probe itself failed
+to gate makes G11 `unknown` rather than passing unmeasured.
 
 ## Skip semantics
 
@@ -43,21 +46,30 @@ reports `skipped` with a reason, never `pass`:
 - G3, G4 and G5 wait for focusable controls.
 - G7 waits for `wa.me` links, G8 for `tel:`/`mailto:` links, G9 for either.
 - G12 runs its structural checks (lang, heading order, duplicate landmarks,
-  field labels) and keeps rules about pieces not yet built (one `h1`, the
-  `banner`/`navigation`/`contentinfo` landmarks, the form's error text) as
-  `pending` until design content lands.
+  field labels) and keeps rules about pieces not yet built as `pending` until
+  their own section lands: the `h1`, `banner` and `navigation` wait for the
+  opening screen (#96, `#wz-hero-wa`), the `contentinfo` landmark and the
+  form's error text wait for story and contact (#99, `#wz-contact`). `main` is
+  part of the `/next` shell itself and is always required.
 
 G6 (reflow) and G11 (console, network, CSP) always run. A skipped gate never
-fails the run.
+fails the run. If the `/next` shell itself (the `main` element and the `h1`)
+is absent at survey time, the page rendered nothing the probe can trust (the
+flag-off page, or the survey ran before React committed): every skip becomes
+`unknown` and fails the run. The run also fails when a screenshot step errored
+or an expected screenshot set is missing; screenshots are evidence, not a
+gate, so they are checked in the run outcome rather than under a gate id.
 
 ## Exit codes
 
 - `0`: every gate passed, was manual or was skipped.
 - `1`: the probe itself broke (Chrome launch, navigation, serving).
 - `2`: bad arguments or missing `dist/`.
-- `3`: the server did not apply `_headers` (no CSP on the page). BLOCKED: fix
-  the serving setup rather than switching servers.
-- `4`: at least one gate reported `fail` or `unknown`.
+- `3`: the served `Content-Security-Policy` does not match `dist/_headers`
+  (missing or different). BLOCKED: fix the serving setup rather than switching
+  servers.
+- `4`: at least one gate reported `fail` or `unknown`, or screenshots are
+  missing or errored.
 
 ## Output
 
@@ -100,7 +112,8 @@ fails the run.
 
 ## Files
 
-- `serve.mjs`: wrangler dev wrapper; asserts the CSP header, runs the probe.
+- `serve.mjs`: wrangler dev wrapper; compares the served CSP with
+  `dist/_headers`, runs the probe.
 - `probe.mjs`: run order, viewports, key and mouse input, screenshots, exit
   codes.
 - `inpage.js`: measurements evaluated inside the page (`window.__probe`).

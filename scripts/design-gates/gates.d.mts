@@ -31,6 +31,7 @@ export interface GateOutcome {
   unknown: string[]
   skipped: string[]
   manual: string[]
+  screenshots: string[]
 }
 
 export function classifyRequest(

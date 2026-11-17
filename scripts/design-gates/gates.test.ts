@@ -10,7 +10,15 @@ const PAGE = `${ORIGIN}/next`
 
 // The /next shell: no controls, no contact links, no design content.
 const SHELL_SURVEY = {
+  shell: true,
   designReady: false,
+  sections: {
+    hero: false,
+    what: false,
+    work: false,
+    story: false,
+    contact: false,
+  },
   controls: 0,
   whatsappLinks: 0,
   telLinks: 0,
@@ -19,7 +27,25 @@ const SHELL_SURVEY = {
   photoOpeners: 0,
 }
 
-const READY_SURVEY = { ...SHELL_SURVEY, designReady: true }
+// The opening section (hero, header, nav) has landed; the rest has not.
+const READY_SURVEY = {
+  ...SHELL_SURVEY,
+  designReady: true,
+  sections: { ...SHELL_SURVEY.sections, hero: true },
+}
+
+// The screenshot sets probe.mjs captures on a full run.
+const SCREENSHOT_SETS = [
+  '1280x800',
+  '1440x900',
+  '390x844',
+  'reflow-320',
+  'reflow-390',
+  'reflow-768',
+  'reflow-1280',
+  'reflow-1440',
+  'reflow-1920',
+].map((viewport) => ({ viewport, shots: [{}], widthVerified: true }))
 
 function structure(overrides = {}) {
   return {
@@ -79,7 +105,7 @@ function probeData(overrides: Partial<ProbeData> = {}): ProbeData {
     },
     errors: {},
     log: { console: [], requests: [], probeNotes: [] },
-    screenshots: [],
+    screenshots: SCREENSHOT_SETS.map((set) => ({ ...set })),
     ...overrides,
   }
 }
@@ -89,6 +115,9 @@ function gate(result: ProbeResult, id: string) {
   if (!found) throw new Error(`gate ${id} missing`)
   return found
 }
+
+const texts = (items: unknown[]) =>
+  (items as { text: string }[]).map((item) => item.text)
 
 describe('classifyRequest', () => {
   it('allows same-origin and data: requests', () => {
@@ -122,6 +151,21 @@ describe('classifyRequest', () => {
     expect(verdict.reason).toContain('#100')
   })
 
+  it('refuses http for allow-listed external hosts', () => {
+    const web3forms = classifyRequest('http://api.web3forms.com/submit', ORIGIN)
+    expect(web3forms.allowed).toBe(false)
+    expect(web3forms.reason).toContain('https:')
+    expect(
+      classifyRequest(
+        'http://static.cloudflareinsights.com/beacon.min.js',
+        ORIGIN,
+      ).allowed,
+    ).toBe(false)
+    expect(
+      classifyRequest('ftp://api.web3forms.com/submit', ORIGIN).allowed,
+    ).toBe(false)
+  })
+
   it('blocks everything else, including Google Fonts', () => {
     expect(
       classifyRequest('https://fonts.googleapis.com/css2?family=Inter', ORIGIN)
@@ -143,6 +187,15 @@ describe('finalise on the empty /next shell', () => {
     }
   })
 
+  it('turns skips into unknowns when the /next shell did not render', () => {
+    const result = finalise(
+      probeData({ survey: { ...SHELL_SURVEY, shell: false } }),
+    )
+    for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G7', 'G8', 'G9', 'G10'])
+      expect(gate(result, id).status, id).toBe('unknown')
+    expect(gateOutcome(result).ok).toBe(false)
+  })
+
   it('runs the structural gates', () => {
     const result = finalise(probeData())
     expect(gate(result, 'G6').status).toBe('pass')
@@ -156,6 +209,69 @@ describe('finalise on the empty /next shell', () => {
     expect(g12.pending?.length).toBeGreaterThan(0)
     expect(g12.failures).toEqual([])
     expect(gateOutcome(result).ok).toBe(true)
+  })
+})
+
+describe('finalise on a partly built page', () => {
+  it('passes G12 when every landed section is complete and the rest is pending', () => {
+    const data = probeData({ survey: READY_SURVEY })
+    data.parts.G12 = {
+      structure: structure({
+        landmarks: {
+          banner: [{}],
+          navigation: [{}],
+          main: [{}],
+          contentinfo: [],
+        },
+      }),
+      forms: [],
+    }
+    const g12 = gate(finalise(data), 'G12')
+    expect(g12.status).toBe('pass')
+    expect(texts(g12.pending ?? [])).toEqual([
+      'no contentinfo landmark',
+      'no form on the page',
+    ])
+  })
+
+  it('fails G12 for a missing header landmark once the hero has landed', () => {
+    const result = finalise(probeData({ survey: READY_SURVEY }))
+    const g12 = gate(result, 'G12')
+    expect(g12.status).toBe('fail')
+    expect(texts(g12.failures)).toContain('no banner landmark')
+    expect(texts(g12.pending ?? [])).toEqual([
+      'no contentinfo landmark',
+      'no form on the page',
+    ])
+  })
+
+  it('requires the footer and form once the contact section lands', () => {
+    const data = probeData({
+      survey: {
+        ...READY_SURVEY,
+        sections: { ...READY_SURVEY.sections, story: true, contact: true },
+      },
+    })
+    data.parts.G12 = {
+      structure: structure({
+        landmarks: {
+          banner: [{}],
+          navigation: [{}],
+          main: [{}],
+          contentinfo: [],
+        },
+      }),
+      forms: [],
+    }
+    const g12 = gate(finalise(data), 'G12')
+    expect(g12.status).toBe('fail')
+    expect(texts(g12.failures)).toEqual(
+      expect.arrayContaining([
+        'no contentinfo landmark',
+        'no form on the page',
+      ]),
+    )
+    expect(g12.pending).toEqual([])
   })
 })
 
@@ -239,6 +355,14 @@ describe('finalise verdicts', () => {
     data.errors = { G7: ['WhatsApp links: boom'] }
     expect(gate(finalise(data), 'G7').status).toBe('skipped')
   })
+
+  it('marks G11 unknown when the request gate errored', () => {
+    const data = probeData()
+    data.log.probeNotes = ['request gate: boom']
+    const result = finalise(data)
+    expect(gate(result, 'G11').status).toBe('unknown')
+    expect(gateOutcome(result).ok).toBe(false)
+  })
 })
 
 describe('gateOutcome', () => {
@@ -249,5 +373,23 @@ describe('gateOutcome', () => {
     expect(outcome.failed).toEqual([])
     expect(outcome.unknown).toEqual([])
     expect(outcome.skipped.length).toBeGreaterThan(0)
+  })
+
+  it('fails the run when a screenshot set is missing', () => {
+    const data = probeData()
+    data.screenshots = (data.screenshots as { viewport: string }[]).filter(
+      (set) => set.viewport !== '390x844',
+    )
+    const outcome = gateOutcome(finalise(data))
+    expect(outcome.ok).toBe(false)
+    expect(outcome.screenshots).toEqual(['no screenshot set for 390x844'])
+  })
+
+  it('fails the run when a screenshot step errored', () => {
+    const data = probeData()
+    data.errors = { screenshots: ['390: boom'] }
+    const outcome = gateOutcome(finalise(data))
+    expect(outcome.ok).toBe(false)
+    expect(outcome.screenshots).toEqual(['390: boom'])
   })
 })
