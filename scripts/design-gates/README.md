@@ -30,8 +30,9 @@ packages. About 60 to 90 s per run.
 
 Every request is checked against the G11 allow-list: the site's own origin,
 `data:` URLs, the Cloudflare Web Analytics beacon and Web3Forms pass;
-OpenStreetMap tiles stay blocked until the map activates (#100); anything else
-is blocked by the probe and fails G11. CSP violations and console errors fail
+OpenStreetMap tiles pass only from `https://tile.openstreetmap.org` and only
+after the probe has pressed the map's `Show the map` control (#100); anything
+else is blocked by the probe and fails G11. CSP violations and console errors fail
 G11 too. External hosts must use `https:`; a plain-http request to an
 allow-listed host is refused. Web3Forms is allow-listed outright today;
 narrowing it to submit-only belongs to #101. A request the probe itself failed
@@ -61,6 +62,13 @@ cutover child (#105) must therefore run with every structural rule required:
 by then every section id above is on the page, and a rule still pending
 there means an id is missing or renamed, which the cutover PR must fix
 rather than ship.
+
+The map phase runs last, on a fresh 1280 load: the probe presses
+`Show the map`, from that moment lets tile requests through, and waits up to
+20 s for the tiles. Every earlier phase, and every new load, keeps tiles
+blocked, so a tile requested before the press fails G11. Once the contact
+section (`#wz-contact`) is on the page, G11 also fails when it has no
+`Show the map` control or when no tile loads after the press.
 
 G6 (reflow) and G11 (console, network, CSP) always run. A skipped gate never
 fails the run. If the `/next` shell itself (the `main` element and the `h1`)
@@ -105,7 +113,7 @@ gate, so they are checked in the run outcome rather than under a gate id.
 | G8   | `tel:` normalises to 27828781557; `mailto:` address is valid; every visible occurrence of the number uses one textual format.                                                                                                                                                                                                                                                                                                                                                               |
 | G9   | 1280×800, every 50px to the bottom: a WhatsApp or `tel:` link at least half inside the viewport, visible, opacity ≥0.5, and hit-testable at its centre or quarter points.                                                                                                                                                                                                                                                                                                                   |
 | G10  | `prefers-reduced-motion: reduce` emulated. Records CSS transitions and animations (events plus `getAnimations()` every frame) and progressive scrolling while hovering a photo, picking a tile, picking a filter, opening, paging and closing the lightbox, and jumping via the nav. Anything over 1ms fails, as does `scroll-behavior: smooth`.                                                                                                                                            |
-| G11  | Console errors, CSP violations, exceptions and error log entries across the whole run; every request outside the allow-list (blocked and recorded).                                                                                                                                                                                                                                                                                                                                         |
+| G11  | Console errors, CSP violations, exceptions and error log entries across the whole run; every request outside the allow-list (blocked and recorded); OpenStreetMap tiles only after the probe presses `Show the map`, which must then load at least one tile.                                                                                                                                                                                                                                |
 | G12  | One h1; no level skips among visible headings; one banner, main and contentinfo landmark and at least one navigation landmark (several pass only when each has its own `aria-label` or `aria-labelledby` name); valid `html lang`; every field named by a label, `aria-label` or `aria-labelledby` (placeholder does not count); submitting the empty form must add visible error text (a browser bubble alone fails).                                                                      |
 
 ## Limits

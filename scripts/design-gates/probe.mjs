@@ -30,6 +30,7 @@ const MAX_TAB_STOPS = 400
 const DIALOG_TAB_PRESSES = 10
 const MAX_SINGLE_SHOT_PX = 16000
 const LOAD_TIMEOUT_MS = 60000
+const MAP_TILES_TIMEOUT_MS = 20000
 const KEYS = {
   Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 },
   Escape: { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 },
@@ -50,6 +51,9 @@ class Page {
     this.log = log
     this.phase = 'start'
     this.viewport = null
+    // OpenStreetMap tiles pass the request gate only while this is true: from
+    // the moment the probe presses "Show the map" until the next load.
+    this.mapActive = false
   }
 
   send(method, params) {
@@ -104,7 +108,9 @@ class Page {
 
   recordRequest(url, type) {
     if (url.startsWith('data:') || url === 'about:blank') return
-    const verdict = classifyRequest(url, this.pageOrigin)
+    const verdict = classifyRequest(url, this.pageOrigin, {
+      mapActive: this.mapActive,
+    })
     this.log.requests.push({
       phase: this.phase,
       url: url.slice(0, 200),
@@ -118,7 +124,9 @@ class Page {
   async gateRequest({ requestId, request }) {
     const allowed =
       request.url.startsWith('data:') ||
-      classifyRequest(request.url, this.pageOrigin).allowed
+      classifyRequest(request.url, this.pageOrigin, {
+        mapActive: this.mapActive,
+      }).allowed
     try {
       if (allowed) await this.send('Fetch.continueRequest', { requestId })
       else
@@ -153,6 +161,7 @@ class Page {
 
   async load(viewport, options = {}) {
     this.viewport = viewport
+    this.mapActive = false
     const { width, height, mobile } = viewport
     await this.send('Emulation.setDeviceMetricsOverride', {
       width,
@@ -485,6 +494,18 @@ async function keyboardOperation(page, item, key) {
   }
 }
 
+// The map phase (#100): before the probe presses "Show the map", every
+// OpenStreetMap request fails G11; from the press on, tiles from the one
+// allow-listed host pass. Runs last, so no later load can meet a stray tile.
+async function mapActivation(page) {
+  const control = await page.call('findMapControl')
+  if (!control) return { found: false, tilesLoaded: 0 }
+  page.mapActive = true
+  await page.clickElement(control.id)
+  const tilesLoaded = await page.call('waitForMapTiles', MAP_TILES_TIMEOUT_MS)
+  return { found: true, control: control.name, tilesLoaded }
+}
+
 async function tilePicks(page) {
   const atLoad = await page.call('whatsappLinks')
   const loadMessages = new Map(atLoad.map((link) => [link.id, link.message]))
@@ -791,6 +812,11 @@ async function run(targetUrl, outDir) {
     page.phase = '1280-reduced-motion'
     await page.load(desktop, { reducedMotion: true })
     parts.G10 = await step('G10', 'reduced motion', () => motionCheck(page))
+
+    // Map activation at 1280, last (see mapActivation)
+    page.phase = '1280-map'
+    await page.load(desktop)
+    parts.map = await step('G11', 'map activation', () => mapActivation(page))
   } finally {
     await browser.close()
   }

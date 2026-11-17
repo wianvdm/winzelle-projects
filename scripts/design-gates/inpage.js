@@ -48,6 +48,7 @@
   const SKIP_TEXT_PARENTS = 'script, style, noscript, template, title, desc'
   const SHELL_WAIT_MS = 5000
   const SHELL_POLL_MS = 100
+  const MAP_POLL_MS = 100
 
   // ---------- identity and description ----------
   const ids = new WeakMap()
@@ -1298,6 +1299,31 @@
       .filter(isShown)
       .map((el) => ({ ...describe(el), href: el.getAttribute('href') }))
   }
+  // The map's activation control (#100): the button named "Show the map".
+  function findMapControl() {
+    const control = [...document.querySelectorAll('button')].find(
+      (el) =>
+        isShown(el) &&
+        !el.closest(IGNORE) &&
+        /^show the map\b/i.test(nameOf(el)),
+    )
+    return control ? { ...describe(control), name: nameOf(control) } : null
+  }
+  // Resolves with the number of loaded map tiles once none is pending, or
+  // with whatever has loaded when the time runs out.
+  async function waitForMapTiles(timeoutMs) {
+    const deadline = performance.now() + timeoutMs
+    let loaded = 0
+    while (performance.now() < deadline) {
+      loaded = document.querySelectorAll('img.leaflet-tile-loaded').length
+      const pending = document.querySelector(
+        'img.leaflet-tile:not(.leaflet-tile-loaded)',
+      )
+      if (loaded && !pending) return loaded
+      await new Promise((resolve) => setTimeout(resolve, MAP_POLL_MS))
+    }
+    return loaded
+  }
   async function pointFor(id) {
     const el = byId.get(id)
     if (!el || !el.isConnected) return { error: `element ${id} is gone` }
@@ -2148,6 +2174,8 @@
     findFilters,
     findPhotoOpeners,
     findNavLinks,
+    findMapControl,
+    waitForMapTiles,
     pointFor,
     focusById,
     pressedState,
