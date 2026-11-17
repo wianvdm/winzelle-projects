@@ -75,7 +75,10 @@ describe('/next route gating', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Winzelle Projects' }),
+        screen.getByRole('heading', {
+          level: 1,
+          name: 'We fix, maintain and build in Port Elizabeth.',
+        }),
       ).toBeDefined()
     })
 

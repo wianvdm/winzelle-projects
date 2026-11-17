@@ -18,6 +18,8 @@ export interface WorkPhoto {
   month: Filler
   /** Trades this print belongs to (the board's data-kinds). */
   trades: TradeId[]
+  /** Width of the "<id>-<width>" derivative, for prints shown much smaller. */
+  smallWidth?: number
 }
 
 const WORK_IMAGES_BASE = '/content/images/work/'
@@ -73,6 +75,7 @@ export const workPhotos: WorkPhoto[] = [
     suburb: filler('Westering'),
     month: filler('August 2025'),
     trades: ['paving'],
+    smallWidth: 800,
   },
   {
     id: 'bathroom-basin',
@@ -123,6 +126,7 @@ export const workPhotos: WorkPhoto[] = [
     suburb: filler('Charlo'),
     month: filler('July 2025'),
     trades: ['roofs', 'painting'],
+    smallWidth: 800,
   },
   {
     id: 'paving-kerb',
@@ -198,6 +202,20 @@ export function photoImageUrls(photo: WorkPhoto): {
     avif: `${WORK_IMAGES_BASE}${photo.id}.avif`,
     webp: `${WORK_IMAGES_BASE}${photo.id}.webp`,
   }
+}
+
+/** srcset strings (w descriptors) listing the derivative before the full file. */
+export function photoSourceSets(photo: WorkPhoto): {
+  avif: string
+  webp: string
+} {
+  const base = `${WORK_IMAGES_BASE}${photo.id}`
+  const sourceSet = (extension: string) => {
+    const full = `${base}.${extension} ${photo.width}w`
+    if (!photo.smallWidth) return full
+    return `${base}-${photo.smallWidth}.${extension} ${photo.smallWidth}w, ${full}`
+  }
+  return { avif: sourceSet('avif'), webp: sourceSet('webp') }
 }
 
 export function getWorkPhoto(id: string): WorkPhoto {

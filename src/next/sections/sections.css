@@ -1,0 +1,461 @@
+/* Header, sticky contact bar and opening screen (spec S1, S2). No inline
+   styles: the CSP in public/_headers forbids them, so per-print placement
+   lives here under each photo id. */
+
+/* ===== Sticky contact bar: appears once the opening WhatsApp action
+   scrolls away. A paper strip inset to the board grid. ===== */
+.wz-sticky {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  left: max(24px, calc(50% - 616px));
+  right: max(24px, calc(50% - 616px));
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  border-top: 0;
+  box-shadow: var(--shadow-wz-note);
+  transform: translateY(-110%);
+  visibility: hidden;
+  transition:
+    transform 180ms ease,
+    visibility 0s linear 180ms;
+}
+
+.wz-sticky.wz-shown {
+  transform: none;
+  visibility: visible;
+  transition: transform 180ms ease;
+}
+
+.wz-sticky-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 64px;
+  padding: 0 24px;
+}
+
+.wz-sticky-name {
+  flex: none;
+  font: 600 var(--text-wz-body) / 1 var(--font-wz-serif);
+}
+
+.wz-sticky-nav {
+  display: flex;
+  flex: 1;
+  gap: 22px;
+  font-size: var(--text-wz-1);
+}
+
+.wz-sticky-nav a,
+.wz-nav a {
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-wz-mist);
+}
+
+@media (hover: hover) {
+  .wz-sticky-nav a:hover,
+  .wz-nav a:hover {
+    border-color: var(--color-wz-navy);
+  }
+}
+
+.wz-sticky-nav a[aria-current='true'],
+.wz-nav a[aria-current='true'] {
+  border-color: var(--color-wz-navy);
+  box-shadow: 0 1px 0 var(--color-wz-navy);
+}
+
+.wz-sticky-phone {
+  font-size: var(--text-wz-body);
+  text-decoration: none;
+}
+
+.wz-sticky .wz-whatsapp {
+  min-height: 44px;
+  padding: 9px 18px;
+  font-size: var(--text-wz-1);
+}
+
+/* Below 1100px the number gives way to a short call action beside
+   WhatsApp; navy, so WhatsApp stays the warm one. */
+.wz-sticky-call {
+  display: none;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  color: var(--color-wz-navy);
+  font-weight: 600;
+  font-size: var(--text-wz-1);
+  line-height: 1.2;
+  text-decoration: none;
+  background: var(--color-wz-sheet);
+  border: 1.5px solid var(--color-wz-navy);
+  border-radius: 3px;
+}
+
+@media (hover: hover) {
+  .wz-sticky-call:hover {
+    color: var(--color-wz-sheet);
+    background: var(--color-wz-navy);
+  }
+}
+
+/* ===== Opening board: headline sheet on the left, real work pinned on
+   the right, the header across the top ===== */
+.wz-opening,
+.wz-opening-board {
+  height: var(--spacing-wz-opening-h);
+}
+
+.wz-opening {
+  position: relative;
+}
+
+.wz-header {
+  position: absolute;
+  top: 0;
+  left: 48px;
+  right: 48px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 100px;
+}
+
+.wz-plate {
+  flex: none;
+  padding: 5px;
+  background: #ffffff;
+  box-shadow: var(--shadow-wz-note);
+}
+
+.wz-plate img {
+  display: block;
+  width: 66px;
+  height: 66px;
+}
+
+.wz-firm {
+  flex: 1;
+}
+
+.wz-firm-name {
+  display: block;
+  font: 600 var(--text-wz-3) / 1.1 var(--font-wz-serif);
+}
+
+.wz-firm-trade {
+  display: block;
+  font-size: var(--text-wz-1);
+}
+
+.wz-nav {
+  display: flex;
+  gap: 26px;
+  font-size: var(--text-wz-1);
+}
+
+.wz-header-phone {
+  margin-left: 8px;
+  font-size: var(--text-wz-body);
+  text-decoration: none;
+}
+
+.wz-headline {
+  position: absolute;
+  z-index: 4;
+  top: 108px;
+  left: 48px;
+  width: 600px;
+  padding: 34px 40px 26px;
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-sheet);
+}
+
+.wz-headline.wz-pin::before {
+  left: 64px;
+}
+
+.wz-title {
+  margin: 0;
+  font: 600 var(--text-wz-h1) / 1.02 var(--font-wz-serif);
+  letter-spacing: -0.02em;
+}
+
+.wz-title-sub {
+  max-width: 25em;
+  margin: 16px 0 0;
+  color: var(--color-wz-steel);
+  font-size: var(--text-wz-3);
+  line-height: 1.38;
+}
+
+.wz-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  margin-top: 24px;
+}
+
+.wz-act .wz-whatsapp {
+  min-height: 60px;
+  padding: 15px 30px;
+  font-size: var(--text-wz-3);
+}
+
+.wz-act-phone {
+  color: var(--color-wz-steel);
+  font-size: var(--text-wz-1);
+}
+
+.wz-act-phone a {
+  color: var(--color-wz-navy);
+  font-size: var(--text-wz-body);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-wz-mist);
+}
+
+.wz-act-free {
+  margin: 12px 0 0;
+  color: var(--color-wz-steel);
+  font-size: var(--text-wz-1);
+}
+
+/* On the sheet's top-right corner, clear of the headline. */
+.wz-seal {
+  position: absolute;
+  z-index: 5;
+  top: 46px;
+  left: 588px;
+  width: 112px;
+  height: 112px;
+  transform: rotate(-9deg);
+  filter: drop-shadow(1px 2px 2px rgba(16, 38, 58, 0.18));
+}
+
+.wz-seal-face {
+  fill: var(--color-wz-sheet);
+  fill-opacity: 0.94;
+  stroke: var(--color-wz-navy);
+  stroke-width: 2;
+}
+
+.wz-seal-ring {
+  fill: none;
+  stroke: var(--color-wz-navy);
+  stroke-width: 0.8;
+}
+
+.wz-seal-arc {
+  font: 500 var(--text-wz-1) var(--font-wz-voice);
+  letter-spacing: 0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+  fill: var(--color-wz-navy);
+}
+
+.wz-seal-mark {
+  font: 600 var(--text-wz-3) var(--font-wz-serif);
+  letter-spacing: 0.02em;
+  fill: var(--color-wz-navy);
+}
+
+.wz-cluster {
+  position: absolute;
+  top: 100px;
+  left: 48px;
+  right: 48px;
+  height: 700px;
+  pointer-events: none;
+}
+
+.wz-cluster > * {
+  pointer-events: auto;
+}
+
+/* Board position (x, y, width on the 1184px board), tilt, aspect and crop
+   per print. The roof crop keeps the lifted tile below the frame. */
+.wz-opening-paving-forecourt {
+  --x: 644;
+  --y: 24px;
+  --w: 318;
+  --r: -1.4deg;
+  --ar: 16 / 9;
+  --op: 50% 30%;
+}
+
+.wz-opening-roof-verge-paint {
+  --x: 966;
+  --y: 30px;
+  --w: 214;
+  --r: 2deg;
+  --ar: 8 / 5;
+  --op: 50% 0%;
+}
+
+.wz-opening-kitchenette-l {
+  --x: 640;
+  --y: 300px;
+  --w: 310;
+  --r: 1.2deg;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+
+.wz-opening-waterproof-curve {
+  --x: 930;
+  --y: 300px;
+  --w: 254;
+  --r: -1.8deg;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+
+/* Narrow desktops: the prints pin in two staggered columns in the space
+   right of the headline sheet. */
+@media (min-width: 1100px) and (max-width: 1279px) {
+  .wz-cluster {
+    left: 676px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 16px;
+    align-content: start;
+    padding-top: 84px;
+  }
+
+  .wz-cluster .wz-pinned {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+  }
+
+  .wz-cluster .wz-pinned:nth-child(even) {
+    margin-top: -40px;
+  }
+
+  /* The header nav reaches over the sheet's corner here, so the stamp sits
+     lower, between sheet and prints. */
+  .wz-seal {
+    top: 96px;
+  }
+}
+
+/* ===== Narrow windows and phones: everything unpins into one column ===== */
+@media (max-width: 1099px) {
+  .wz-sticky {
+    left: 6px;
+    right: 6px;
+  }
+
+  .wz-sticky-row {
+    gap: 12px;
+    height: 60px;
+    padding: 0 10px;
+  }
+
+  .wz-sticky-name {
+    flex: 1;
+  }
+
+  .wz-sticky-nav,
+  .wz-sticky-phone {
+    display: none;
+  }
+
+  .wz-sticky-call {
+    display: inline-flex;
+  }
+
+  .wz-sticky .wz-whatsapp {
+    min-height: 48px;
+  }
+
+  .wz-opening,
+  .wz-opening-board {
+    height: auto;
+  }
+
+  .wz-opening-board {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    padding-bottom: 8px;
+  }
+
+  .wz-header {
+    position: relative;
+    left: auto;
+    right: auto;
+    order: -1;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    height: auto;
+    padding: 14px 0 0;
+  }
+
+  .wz-nav {
+    order: 3;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    width: 100%;
+  }
+
+  .wz-header-phone {
+    margin-left: 0;
+  }
+
+  .wz-headline {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    padding: 28px 20px 24px;
+  }
+
+  .wz-title {
+    font-size: var(--text-wz-h2);
+  }
+
+  .wz-title-sub {
+    font-size: var(--text-wz-body);
+  }
+
+  .wz-seal {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: 92px;
+    height: 92px;
+    /* Overlaps the sheet's corner by its 24px bottom padding, no more, so
+       the stamp never sits on the last line of text. */
+    margin: -50px 10px -6px auto;
+  }
+
+  .wz-cluster {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 14px;
+    height: auto;
+  }
+
+  .wz-act-phone a,
+  .wz-header-phone {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+  }
+
+  .wz-act-phone a {
+    border-bottom: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--color-wz-steel);
+    text-underline-offset: 4px;
+  }
+}

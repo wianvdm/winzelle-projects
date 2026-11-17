@@ -1,21 +1,85 @@
+import { useEffect, useState } from 'react'
+
+import { getTrade, pageNavLinks } from '../content/next/index.ts'
+import { PickStateProvider, usePickState } from './pick-state.tsx'
+import { OpeningScreen } from './sections/OpeningScreen.tsx'
+import { StickyBar, STICKY_CLEARANCE_PX } from './sections/StickyBar.tsx'
+import { buildWhatsAppLink, defaultMessage, tradeMessage } from './whatsapp.ts'
 import './next.css'
+import './sections/sections.css'
+
+const SECTION_IDS = pageNavLinks.map((link) => link.href.slice(1))
+
+// A thin band just under the sticky bar: the section crossing it is the one
+// being read. Sections that have not landed yet are skipped.
+const SECTION_BAND_ROOT_MARGIN = `-${STICKY_CLEARANCE_PX}px 0px -70% 0px`
+
+function useCurrentSectionId(): string | null {
+  const [currentSectionId, setCurrentSectionId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const sections = SECTION_IDS.map((id) =>
+      document.getElementById(id),
+    ).filter((section) => section !== null)
+    if (!sections.length) return
+
+    const inBand = new Set<string>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) inBand.add(entry.target.id)
+          else inBand.delete(entry.target.id)
+        }
+        setCurrentSectionId(
+          SECTION_IDS.filter((id) => inBand.has(id)).at(-1) ?? null,
+        )
+      },
+      { rootMargin: SECTION_BAND_ROOT_MARGIN },
+    )
+    for (const section of sections) observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  return currentSectionId
+}
+
+/** General WhatsApp link: names the picked trade once a tile is picked. */
+function useGeneralWhatsAppHref(): string {
+  const { pickedTradeId } = usePickState()
+  const message = pickedTradeId
+    ? tradeMessage(getTrade(pickedTradeId))
+    : defaultMessage()
+  return buildWhatsAppLink(message)
+}
+
+/** The page inside its pick state; the trade tiles (#97) pick from in here. */
+export function HomeBoard() {
+  const whatsappHref = useGeneralWhatsAppHref()
+  const currentSectionId = useCurrentSectionId()
+
+  return (
+    <div className="wz-home">
+      <StickyBar
+        whatsappHref={whatsappHref}
+        currentSectionId={currentSectionId}
+      />
+      <main>
+        <OpeningScreen
+          whatsappHref={whatsappHref}
+          currentSectionId={currentSectionId}
+        />
+      </main>
+    </div>
+  )
+}
 
 export function NextPage() {
   return (
     <>
       <meta name="robots" content="noindex" />
-      <main className="wz-page">
-        <section className="wz-shell-sheet" aria-labelledby="wz-next-title">
-          <p className="wz-shell-voice">Port Elizabeth · Preview shell</p>
-          <h1 className="wz-shell-title" id="wz-next-title">
-            Winzelle Projects
-          </h1>
-          <p className="wz-shell-lead">
-            We fix, maintain and build in Port Elizabeth.
-          </p>
-          <p className="wz-shell-note">Wees sterk en vasberade.</p>
-        </section>
-      </main>
+      <PickStateProvider>
+        <HomeBoard />
+      </PickStateProvider>
     </>
   )
 }

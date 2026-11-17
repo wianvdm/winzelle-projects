@@ -706,11 +706,17 @@ function g7(parts) {
   }
 }
 
-function g8(parts) {
+function g8(parts, survey) {
   const data = parts.G8
   if (!data) return { status: 'unknown', summary: 'contact links not read' }
   if (!data.links.length)
     return skipped('no tel: or mailto: links on the page yet')
+  // #96 adds tel: links in the header and opening screen, but the email
+  // address belongs to the contact card that only lands in #99 (#wz-contact).
+  // The mailto rule stays pending until that section exists, like G12's
+  // per-section rules; the tel: and one-format rules always run.
+  const sections = survey?.sections || {}
+  const ready = (section) => !survey || !!sections[section]
   const fails = data.links
     .filter((link) => link.status === 'fail')
     .map((link) => failure(link, { href: link.href, reason: link.reason }))
@@ -724,13 +730,22 @@ function g8(parts) {
     })
   if (!data.links.some((link) => link.type === 'tel'))
     fails.push({ selector: null, text: 'no tel: link' })
-  if (!data.links.some((link) => link.type === 'mailto'))
-    fails.push({ selector: null, text: 'no mailto: link' })
+  const pending = []
+  if (!data.links.some((link) => link.type === 'mailto')) {
+    ;(ready('contact') ? fails : pending).push({
+      selector: null,
+      text: 'no mailto: link',
+    })
+  }
   const tel = data.links.filter((link) => link.type === 'tel')
   const mail = data.links.filter((link) => link.type === 'mailto')
+  const summary = `${tel.length} tel: (${[...new Set(tel.map((link) => link.href))].join(', ')}), ${mail.length} mailto: (${[...new Set(mail.map((link) => link.address))].join(', ')}); text formats: ${data.textFormats.map((entry) => `"${entry.format}" ×${entry.count}`).join(', ') || 'none'}`
   return {
     status: verdict(fails, []),
-    summary: `${tel.length} tel: (${[...new Set(tel.map((link) => link.href))].join(', ')}), ${mail.length} mailto: (${[...new Set(mail.map((link) => link.address))].join(', ')}); text formats: ${data.textFormats.map((entry) => `"${entry.format}" ×${entry.count}`).join(', ') || 'none'}`,
+    summary: pending.length
+      ? `${summary}; pending until #wz-contact lands: ${pending.map((item) => item.text).join(', ')}`
+      : summary,
+    pending,
     measured: data,
     failures: fails,
   }
@@ -1112,7 +1127,7 @@ export function finalise(data) {
     G5: g5(parts, survey),
     G6: g6(parts),
     G7: g7(parts),
-    G8: g8(parts),
+    G8: g8(parts, survey),
     G9: g9(parts, survey),
     G10: g10(parts, survey),
     G11: g11(log),

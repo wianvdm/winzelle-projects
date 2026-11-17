@@ -296,6 +296,37 @@ describe('finalise on a partly built page', () => {
     expect(texts(g12.pending ?? [])).toEqual(['no form on the page'])
   })
 
+  // #96 puts tel: links in the header and opening screen, but the email
+  // address only arrives with the contact card in #99 (#wz-contact).
+  it('keeps the G8 mailto rule pending while #wz-contact has not landed', () => {
+    const data = probeData({ survey: READY_SURVEY })
+    data.parts.G8 = {
+      links: [{ type: 'tel', href: 'tel:+27287281557', status: 'pass' }],
+      textFormats: [{ format: '028 728 1557', count: 1 }],
+    }
+    const g8 = gate(finalise(data), 'G8')
+    expect(g8.status).toBe('pass')
+    expect(texts(g8.pending ?? [])).toEqual(['no mailto: link'])
+    expect(g8.failures).toEqual([])
+  })
+
+  it('fails G8 for a missing mailto once #wz-contact has landed', () => {
+    const data = probeData({
+      survey: {
+        ...READY_SURVEY,
+        sections: { ...READY_SURVEY.sections, story: true, contact: true },
+      },
+    })
+    data.parts.G8 = {
+      links: [{ type: 'tel', href: 'tel:+27287281557', status: 'pass' }],
+      textFormats: [{ format: '028 728 1557', count: 1 }],
+    }
+    const g8 = gate(finalise(data), 'G8')
+    expect(g8.status).toBe('fail')
+    expect(texts(g8.failures)).toEqual(['no mailto: link'])
+    expect(g8.pending).toEqual([])
+  })
+
   it('fails G12 for a missing form once #wz-form has landed', () => {
     const data = probeData({
       survey: {

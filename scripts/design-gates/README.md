@@ -45,6 +45,8 @@ reports `skipped` with a reason, never `pass`:
 - G1, G2 and G10 wait for design content (the `#wz-hero-wa` opening action).
 - G3, G4 and G5 wait for focusable controls.
 - G7 waits for `wa.me` links, G8 for `tel:`/`mailto:` links, G9 for either.
+  Once `tel:` links exist, G8's `mailto:` rule stays `pending` until the
+  contact section lands (#99, `#wz-contact`), which owns the email address.
 - G12 runs its structural checks (lang, heading order, duplicate landmarks,
   field labels) and keeps rules about pieces not yet built as `pending` until
   their own section lands: the `h1`, `banner` and `navigation` wait for the
