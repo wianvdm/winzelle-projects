@@ -1309,20 +1309,41 @@
     )
     return control ? { ...describe(control), name: nameOf(control) } : null
   }
-  // Resolves with the number of loaded map tiles once none is pending, or
-  // with whatever has loaded when the time runs out.
-  async function waitForMapTiles(timeoutMs) {
+  // The live map's zoom-in control, as Leaflet names it.
+  function findMapZoomIn() {
+    const control = [
+      ...document.querySelectorAll('.leaflet-control-zoom-in'),
+    ].find(isShown)
+    return control ? { ...describe(control), name: nameOf(control) } : null
+  }
+  // A tile's zoom level, read from its /{z}/{x}/{y}.png address.
+  function tileZoom(tile) {
+    const match = /\/(\d+)\/\d+\/\d+\.png$/.exec(tile.getAttribute('src') || '')
+    return match ? Number(match[1]) : null
+  }
+  // Waits until the map shows one zoom level other than `previousZoom`, every
+  // tile on it decoded. Resolves with the decoded tile count and that level,
+  // or with what is on screen when the time runs out (zoom null while mixed).
+  async function waitForMapTiles(timeoutMs, previousZoom = null) {
     const deadline = performance.now() + timeoutMs
-    let loaded = 0
+    let state = { loaded: 0, zoom: null }
     while (performance.now() < deadline) {
-      loaded = document.querySelectorAll('img.leaflet-tile-loaded').length
-      const pending = document.querySelector(
-        'img.leaflet-tile:not(.leaflet-tile-loaded)',
-      )
-      if (loaded && !pending) return loaded
+      const tiles = [...document.querySelectorAll('img.leaflet-tile')]
+      const zooms = new Set(tiles.map(tileZoom))
+      const loaded = tiles.filter(
+        (tile) => tile.complete && tile.naturalWidth > 0,
+      ).length
+      const zoom = zooms.size === 1 ? [...zooms][0] : null
+      state = { loaded, zoom }
+      const settled =
+        tiles.length > 0 &&
+        loaded === tiles.length &&
+        zoom !== null &&
+        zoom !== previousZoom
+      if (settled) return state
       await new Promise((resolve) => setTimeout(resolve, MAP_POLL_MS))
     }
-    return loaded
+    return state
   }
   async function pointFor(id) {
     const el = byId.get(id)
@@ -2175,6 +2196,7 @@
     findPhotoOpeners,
     findNavLinks,
     findMapControl,
+    findMapZoomIn,
     waitForMapTiles,
     pointFor,
     focusById,

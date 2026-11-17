@@ -38,7 +38,9 @@ const STOP_WORDS = new Set([
 // The G11 network allow-list. Same-origin requests are always allowed; this
 // list covers external origins. OpenStreetMap tiles pass only after the probe
 // has pressed the map's "Show the map" control (#100), and only from the one
-// tile host the CSP names; before that a tile request fails the gate.
+// tile host the CSP names; before that a tile request fails the gate. A
+// stubbed entry never reaches its host: the probe answers it with a stand-in,
+// because OSM's tile policy forbids fetching tiles nobody is viewing.
 const EXTERNAL_ALLOWLIST = [
   {
     host: 'static.cloudflareinsights.com',
@@ -50,6 +52,7 @@ const EXTERNAL_ALLOWLIST = [
     name: 'OpenStreetMap tiles',
     exactHost: true,
     needsMapActive: true,
+    stubbed: true,
     inactiveReason: 'map tiles are allowed only after map activation (#100)',
   },
 ]
@@ -94,6 +97,7 @@ export function classifyRequest(rawUrl, pageOrigin, state = {}) {
     }
   if (entry.needsMapActive && !state.mapActive)
     return { allowed: false, kind: entry.name, reason: entry.inactiveReason }
+  if (entry.stubbed) return { allowed: true, kind: entry.name, stubbed: true }
   return { allowed: true, kind: entry.name }
 }
 
@@ -851,24 +855,35 @@ function g10(parts, survey) {
 }
 
 // The map phase (#100). Once the contact section is on the page, its map
-// must offer "Show the map", and pressing it must load at least one tile.
+// must offer "Show the map", pressing it must load at least one tile, and one
+// press of zoom-in must replace those tiles with the next level's, which runs
+// the tile-removal path under the real CSP.
 function mapActivationFailures(map, survey) {
   if (!survey?.sections?.contact || !map) return []
   if (!map.found)
     return [
-      {
-        selector: null,
-        text: 'the contact section has no "Show the map" control, so map activation was not exercised',
-      },
+      'the contact section has no "Show the map" control, so map activation was not exercised',
     ]
   if (!map.tilesLoaded)
+    return ['map activated but no OpenStreetMap tile loaded']
+  if (!map.zoomIn?.found)
     return [
-      {
-        selector: null,
-        text: 'map activated but no OpenStreetMap tile loaded',
-      },
+      'the live map has no zoom-in control, so tile removal was not exercised',
+    ]
+  if (!map.zoomIn.tilesLoaded || map.zoomIn.zoom !== map.zoom + 1)
+    return [
+      `zoom-in did not settle on the next level's tiles (zoom ${map.zoom} to ${map.zoomIn.zoom ?? 'mixed'})`,
     ]
   return []
+}
+
+function mapSummary(map, requests) {
+  if (!map?.found) return ''
+  const stubbed = requests.filter((request) => request.stubbed).length
+  const zoomIn = map.zoomIn?.found
+    ? `, then ${map.zoomIn.tilesLoaded} at zoom ${map.zoomIn.zoom}`
+    : ''
+  return `; map activated, ${map.tilesLoaded} tiles loaded at zoom ${map.zoom}${zoomIn}; ${stubbed} tile requests answered by the probe's stub`
 }
 
 function g11(log, map, survey) {
@@ -886,7 +901,10 @@ function g11(log, map, survey) {
       selector: null,
       text: `request ${request.url} (${request.kind || 'unknown'}: ${request.reason || 'not allowed'})`,
     })),
-    ...mapActivationFailures(map, survey),
+    ...mapActivationFailures(map, survey).map((text) => ({
+      selector: null,
+      text,
+    })),
   ]
   // A request-gate error means the probe could not vet that request, so the
   // network rule was not fully measured: unknown, never pass.
@@ -896,7 +914,7 @@ function g11(log, map, survey) {
   const status = fails.length ? 'fail' : gateErrors.length ? 'unknown' : 'pass'
   return {
     status,
-    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${map?.found ? `; map activated, ${map.tilesLoaded} tiles loaded` : ''}${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
+    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${mapSummary(map, log.requests)}${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
     measured: {
       console: log.console,
       requests: log.requests,

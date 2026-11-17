@@ -43,6 +43,15 @@ const CONTACT_SURVEY = {
 
 const OSM_TILE = 'https://tile.openstreetmap.org/16/37407/39347.png'
 
+// What the probe's map phase records when everything works.
+const ACTIVE_MAP = {
+  found: true,
+  control: 'Show the map',
+  tilesLoaded: 12,
+  zoom: 15,
+  zoomIn: { found: true, tilesLoaded: 9, zoom: 16 },
+}
+
 // The screenshot sets probe.mjs captures on a full run.
 const SCREENSHOT_SETS = [
   '1280x800',
@@ -160,11 +169,24 @@ describe('classifyRequest', () => {
     ).toBe(false)
   })
 
-  it('allows OpenStreetMap tiles once the map is active', () => {
+  it('allows OpenStreetMap tiles once the map is active, stubbed', () => {
     expect(classifyRequest(OSM_TILE, ORIGIN, { mapActive: true })).toEqual({
       allowed: true,
       kind: 'OpenStreetMap tiles',
+      stubbed: true,
     })
+  })
+
+  it('stubs no other allow-listed host', () => {
+    for (const url of [
+      `${ORIGIN}/next`,
+      'https://api.web3forms.com/submit',
+      'https://static.cloudflareinsights.com/beacon.min.js',
+    ])
+      expect(
+        classifyRequest(url, ORIGIN, { mapActive: true }).stubbed,
+        url,
+      ).toBeUndefined()
   })
 
   it('allows only https from the one tile host after activation', () => {
@@ -564,9 +586,9 @@ describe('finalise verdicts', () => {
     expect(gate(finalise(data), 'G11').status).toBe('fail')
   })
 
-  it('passes G11 when the activated map loaded tiles', () => {
+  it('passes G11 when the activated map loaded tiles and zoomed in', () => {
     const data = probeData({ survey: CONTACT_SURVEY })
-    data.parts.map = { found: true, control: 'Show the map', tilesLoaded: 12 }
+    data.parts.map = { ...ACTIVE_MAP }
     data.log.requests = [
       {
         phase: '1280-map',
@@ -576,16 +598,40 @@ describe('finalise verdicts', () => {
     ] as unknown[]
     const g11 = gate(finalise(data), 'G11')
     expect(g11.status).toBe('pass')
-    expect(g11.summary).toContain('map activated, 12 tiles loaded')
+    expect(g11.summary).toContain(
+      "map activated, 12 tiles loaded at zoom 15, then 9 at zoom 16; 1 tile requests answered by the probe's stub",
+    )
   })
 
   it('fails G11 when the activated map loaded no tile', () => {
     const data = probeData({ survey: CONTACT_SURVEY })
-    data.parts.map = { found: true, control: 'Show the map', tilesLoaded: 0 }
+    data.parts.map = { ...ACTIVE_MAP, tilesLoaded: 0 }
     const g11 = gate(finalise(data), 'G11')
     expect(g11.status).toBe('fail')
     expect(texts(g11.failures)).toEqual([
       'map activated but no OpenStreetMap tile loaded',
+    ])
+  })
+
+  it('fails G11 when the live map has no zoom-in control', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { ...ACTIVE_MAP, zoomIn: { found: false } }
+    const g11 = gate(finalise(data), 'G11')
+    expect(texts(g11.failures)).toEqual([
+      'the live map has no zoom-in control, so tile removal was not exercised',
+    ])
+  })
+
+  it('fails G11 when zoom-in does not settle on the next level', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = {
+      ...ACTIVE_MAP,
+      zoomIn: { found: true, tilesLoaded: 14, zoom: null },
+    }
+    const g11 = gate(finalise(data), 'G11')
+    expect(g11.status).toBe('fail')
+    expect(texts(g11.failures)).toEqual([
+      "zoom-in did not settle on the next level's tiles (zoom 15 to mixed)",
     ])
   })
 

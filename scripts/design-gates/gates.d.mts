@@ -17,6 +17,8 @@ export interface RequestVerdict {
   allowed: boolean
   kind: string
   reason?: string
+  /** The probe answers this request itself; it never reaches the host. */
+  stubbed?: boolean
 }
 
 export interface ProbeViewport {

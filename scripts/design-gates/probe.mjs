@@ -31,6 +31,9 @@ const DIALOG_TAB_PRESSES = 10
 const MAX_SINGLE_SHOT_PX = 16000
 const LOAD_TIMEOUT_MS = 60000
 const MAP_TILES_TIMEOUT_MS = 20000
+// A valid 1x1 PNG: the probe's stand-in for every OpenStreetMap tile.
+const STUB_TILE_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 const KEYS = {
   Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 },
   Escape: { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 },
@@ -120,20 +123,28 @@ class Page {
   }
 
   // Requests outside the G11 allow-list are refused, so the run stays offline
-  // apart from the allow-listed origins; every refusal is on record.
+  // apart from the allow-listed origins; every refusal is on record. Stubbed
+  // requests (map tiles) get a stand-in PNG and never leave the machine.
   async gateRequest({ requestId, request }) {
-    const allowed =
-      request.url.startsWith('data:') ||
-      classifyRequest(request.url, this.pageOrigin, {
-        mapActive: this.mapActive,
-      }).allowed
+    const verdict = request.url.startsWith('data:')
+      ? { allowed: true }
+      : classifyRequest(request.url, this.pageOrigin, {
+          mapActive: this.mapActive,
+        })
     try {
-      if (allowed) await this.send('Fetch.continueRequest', { requestId })
-      else
+      if (!verdict.allowed)
         await this.send('Fetch.failRequest', {
           requestId,
           errorReason: 'BlockedByClient',
         })
+      else if (verdict.stubbed)
+        await this.send('Fetch.fulfillRequest', {
+          requestId,
+          responseCode: 200,
+          responseHeaders: [{ name: 'Content-Type', value: 'image/png' }],
+          body: STUB_TILE_PNG_BASE64,
+        })
+      else await this.send('Fetch.continueRequest', { requestId })
     } catch (error) {
       this.log.probeNotes.push(`request gate: ${error.message}`)
     }
@@ -495,15 +506,35 @@ async function keyboardOperation(page, item, key) {
 }
 
 // The map phase (#100): before the probe presses "Show the map", every
-// OpenStreetMap request fails G11; from the press on, tiles from the one
-// allow-listed host pass. Runs last, so no later load can meet a stray tile.
+// OpenStreetMap request fails G11; from the press on, tile requests to the one
+// allow-listed host get the probe's stub. One press of zoom-in then swaps the
+// tiles for the next level's, so Leaflet removes the old ones under the real
+// CSP. Runs last, so no later load can meet a stray tile.
 async function mapActivation(page) {
   const control = await page.call('findMapControl')
   if (!control) return { found: false, tilesLoaded: 0 }
   page.mapActive = true
   await page.clickElement(control.id)
-  const tilesLoaded = await page.call('waitForMapTiles', MAP_TILES_TIMEOUT_MS)
-  return { found: true, control: control.name, tilesLoaded }
+  const shown = await page.call('waitForMapTiles', MAP_TILES_TIMEOUT_MS)
+  return {
+    found: true,
+    control: control.name,
+    tilesLoaded: shown.loaded,
+    zoom: shown.zoom,
+    zoomIn: await zoomInOnce(page, shown.zoom),
+  }
+}
+
+async function zoomInOnce(page, fromZoom) {
+  const control = await page.call('findMapZoomIn')
+  if (!control) return { found: false }
+  await page.clickElement(control.id)
+  const zoomed = await page.call(
+    'waitForMapTiles',
+    MAP_TILES_TIMEOUT_MS,
+    fromZoom,
+  )
+  return { found: true, tilesLoaded: zoomed.loaded, zoom: zoomed.zoom }
 }
 
 async function tilePicks(page) {
