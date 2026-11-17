@@ -24,7 +24,7 @@ import './map.css'
 // caches tiles as the server says; nothing here preloads beyond the view.
 export const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 const START_ZOOM = 15
-export const MIN_ZOOM = 11
+export const MIN_ZOOM = 12
 export const MAX_ZOOM = 18
 // Nelson Mandela Bay with a margin: no tile outside it is ever requested.
 export const BAY_BOUNDS: BoundsTuple = [
