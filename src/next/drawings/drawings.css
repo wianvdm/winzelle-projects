@@ -164,12 +164,40 @@ svg[data-state='problem'] .wz-if-fixed {
   display: none;
 }
 
-.wz-slip {
+/* Problem-view movements, about points in viewBox units: a slipped roof
+   tile, a leaning wall, a downpipe swung off its brackets and a dropped
+   cupboard door. */
+.wz-slip,
+.wz-lean,
+.wz-loose,
+.wz-hang {
   transition: transform 220ms ease;
 }
 
 svg[data-state='problem'] .wz-slip {
   transform: translate(14px, 0);
+}
+
+svg[data-state='problem'] .wz-lean {
+  transform: rotate(-3.5deg);
+  transform-origin: 300px 300px;
+}
+
+svg[data-state='problem'] .wz-loose {
+  transform: rotate(2.2deg);
+  transform-origin: 97px 100px;
+}
+
+svg[data-state='problem'] .wz-hang {
+  transform: rotate(3deg);
+  transform-origin: 182px 218px;
+}
+
+/* A repointed crack is near-invisible at tile size; the tile draws it bold
+   so the thumbnail still says "cracks". */
+.wz-drawing-tile .wz-crack {
+  stroke: var(--color-wz-navy);
+  stroke-width: 9;
 }
 
 /* Lettered markers: paper discs with the part letter, navy when held. They
@@ -231,7 +259,10 @@ svg[data-state='problem'] .wz-slip {
 @media (prefers-reduced-motion: reduce) {
   .wz-glow,
   .wz-glow-area,
-  .wz-slip {
+  .wz-slip,
+  .wz-lean,
+  .wz-loose,
+  .wz-hang {
     transition: none;
   }
 }
@@ -261,6 +292,16 @@ svg[data-state='problem'] .wz-slip {
 
 .wz-preview-case .wz-drawing {
   margin-top: 0;
+}
+
+.wz-preview-toggle {
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border: var(--wz-ink-line);
+  background: var(--color-wz-sheet);
+  color: var(--color-wz-navy);
+  font: inherit;
+  cursor: pointer;
 }
 
 .wz-preview-tile {

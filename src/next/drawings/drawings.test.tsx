@@ -2,10 +2,18 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getTrade } from '../../content/next/trades'
+import { getTrade, type TradeId } from '../../content/next/trades'
+import { CracksDrawing } from './CracksDrawing'
+import { DampDrawing } from './DampDrawing'
+import { KitchensDrawing } from './KitchensDrawing'
+import { OtherDrawing } from './OtherDrawing'
+import { PaintingDrawing } from './PaintingDrawing'
 import { PavingDrawing } from './PavingDrawing'
+import { PlumbingDrawing } from './PlumbingDrawing'
+import { PoolsDrawing } from './PoolsDrawing'
 import { MARKER_SIZE_NARROW, Note } from './primitives'
 import { RoofsDrawing } from './RoofsDrawing'
+import { WallsDrawing } from './WallsDrawing'
 
 afterEach(() => {
   cleanup()
@@ -121,6 +129,137 @@ describe('RoofsDrawing', () => {
   })
 })
 
+const REMAINING_DRAWINGS: {
+  id: TradeId
+  DrawingComponent: typeof PavingDrawing
+  cropViewBox: string
+}[] = [
+  {
+    id: 'walls',
+    DrawingComponent: WallsDrawing,
+    cropViewBox: '150 28 300 320',
+  },
+  { id: 'damp', DrawingComponent: DampDrawing, cropViewBox: '130 56 300 290' },
+  {
+    id: 'cracks',
+    DrawingComponent: CracksDrawing,
+    cropViewBox: '30 20 480 300',
+  },
+  {
+    id: 'painting',
+    DrawingComponent: PaintingDrawing,
+    cropViewBox: '20 20 580 320',
+  },
+  {
+    id: 'kitchens',
+    DrawingComponent: KitchensDrawing,
+    cropViewBox: '40 150 520 210',
+  },
+  {
+    id: 'plumbing',
+    DrawingComponent: PlumbingDrawing,
+    cropViewBox: '90 90 480 250',
+  },
+  {
+    id: 'pools',
+    DrawingComponent: PoolsDrawing,
+    cropViewBox: '100 92 500 268',
+  },
+  { id: 'other', DrawingComponent: OtherDrawing, cropViewBox: '90 70 460 270' },
+]
+
+/** The in-drawing note for one view, its lines joined as the spec reads it. */
+function noteFor(container: HTMLElement, view: 'problem' | 'fixed'): string {
+  return [...container.querySelectorAll(`.wz-if-${view} .wz-note`)]
+    .map((line) => line.textContent)
+    .join(' ')
+}
+
+describe.each(REMAINING_DRAWINGS)(
+  '$id drawing',
+  ({ id, DrawingComponent, cropViewBox }) => {
+    const drawing = getTrade(id).drawing
+
+    it('renders the problem view with the spec note, title and caption', () => {
+      const { container } = render(<DrawingComponent view="problem" />)
+      const svg = singleSvg(container)
+      expect(svg.getAttribute('data-state')).toBe('problem')
+      expect(svg.getAttribute('viewBox')).toBe('0 0 600 360')
+      expect(screen.getByText(drawing.title)).toBeDefined()
+      expect(noteFor(container, 'problem')).toBe(drawing.problemNote)
+      expect(screen.getByText(drawing.name)).toBeDefined()
+      expect(screen.getByText(`${drawing.view}, not to scale`)).toBeDefined()
+      expect(container.querySelector('.wz-drawing-note')?.textContent).toBe(
+        drawing.problemNote,
+      )
+    })
+
+    it('renders the fixed view with the spec note', () => {
+      const { container } = render(<DrawingComponent view="fixed" />)
+      expect(singleSvg(container).getAttribute('data-state')).toBe('fixed')
+      expect(noteFor(container, 'fixed')).toBe(drawing.fixedNote)
+      expect(container.querySelector('.wz-drawing-note')?.textContent).toBe(
+        drawing.fixedNote,
+      )
+    })
+
+    it('draws a glow, a marker and a leader for every lettered part', () => {
+      const { container } = render(<DrawingComponent view="problem" />)
+      expect(drawing.parts.length).toBeGreaterThanOrEqual(2)
+      for (const part of drawing.parts) {
+        expect(
+          container.querySelector(
+            `:is(.wz-glow, .wz-glow-area)[data-part="${part.key}"]`,
+          ),
+        ).not.toBeNull()
+        expect(
+          container.querySelector(`.wz-marker[data-part="${part.key}"]`),
+        ).not.toBeNull()
+      }
+      expect(container.querySelectorAll('.wz-marker')).toHaveLength(
+        drawing.parts.length,
+      )
+      expect(container.querySelectorAll('.wz-dot')).toHaveLength(
+        drawing.parts.length,
+      )
+    })
+
+    it('lights the held part', () => {
+      const { container } = render(
+        <DrawingComponent view="fixed" highlight="b" />,
+      )
+      const glow = container.querySelector(
+        ':is(.wz-glow, .wz-glow-area)[data-part="b"]',
+      )
+      expect(glow?.classList.contains('wz-held')).toBe(true)
+      expect(
+        container
+          .querySelector('.wz-marker[data-part="b"]')
+          ?.classList.contains('wz-held'),
+      ).toBe(true)
+    })
+
+    it('renders the tile crop as a fixed, aria-hidden thumbnail with no annotation', () => {
+      const { container } = render(
+        <DrawingComponent view="problem" crop="tile" />,
+      )
+      const svg = singleSvg(container)
+      expect(svg.getAttribute('viewBox')).toBe(cropViewBox)
+      expect(svg.getAttribute('data-state')).toBe('fixed')
+      expect(svg.getAttribute('aria-hidden')).toBe('true')
+      expect(container.querySelector('title')).toBeNull()
+      expect(container.querySelector('.wz-note')).toBeNull()
+      expect(container.querySelector('.wz-leader')).toBeNull()
+      expect(container.querySelector('.wz-dim')).toBeNull()
+      expect(container.querySelector('.wz-marker')).toBeNull()
+      expect(container.querySelector('.wz-if-problem')).toBeNull()
+      expect(container.querySelector('[data-part]')).toBeNull()
+      expect(container.querySelector('[filter]')).toBeNull()
+      expect(container.querySelector('figcaption')).toBeNull()
+    })
+  },
+)
+
 describe('several drawings on one page', () => {
   it('keeps every id unique across instances', () => {
     const { container } = render(
@@ -129,6 +268,13 @@ describe('several drawings on one page', () => {
         <PavingDrawing view="fixed" />
         <RoofsDrawing view="problem" />
         <RoofsDrawing view="fixed" crop="tile" />
+        {REMAINING_DRAWINGS.map(({ id, DrawingComponent }) => (
+          <div key={id}>
+            <DrawingComponent view="problem" />
+            <DrawingComponent view="fixed" />
+            <DrawingComponent view="fixed" crop="tile" />
+          </div>
+        ))}
       </>,
     )
     const ids = [...container.querySelectorAll('[id]')].map((el) => el.id)
@@ -304,6 +450,31 @@ describe('Note', () => {
     expect(labelWidths(container)).toEqual(['128', '128'])
   })
 
+  it('labels a note in the other view once the drawing switches to it', async () => {
+    // jsdom has no CSS layout: a note measures zero wide while its view
+    // group is the hidden one, as in a browser.
+    Object.defineProperty(SVGElement.prototype, 'getBBox', {
+      configurable: true,
+      value(this: SVGElement) {
+        const view = this.closest('svg')?.getAttribute('data-state')
+        const shown = this.closest(`.wz-if-${view}`) !== null
+        return { x: 10, y: 20, width: shown ? 100 : 0, height: 14 }
+      },
+    })
+    stubNotesShown(true)
+    const { container, rerender } = render(<CracksDrawing view="problem" />)
+    const labelsIn = (view: string) =>
+      container.querySelectorAll(`.wz-if-${view} .wz-note-back`)
+    expect(labelsIn('problem')).toHaveLength(1)
+    expect(labelsIn('fixed')).toHaveLength(0)
+
+    rerender(<CracksDrawing view="fixed" />)
+    // The observer reports the attribute change after React's commit.
+    await act(async () => {})
+    expect(labelsIn('fixed')).toHaveLength(1)
+    expect(labelsIn('fixed')[0].getAttribute('width')).toBe('108')
+  })
+
   it('measures again when webfonts finish loading', async () => {
     let width = 100
     stubTextWidth(() => width)
@@ -346,6 +517,13 @@ describe('CSP hygiene', () => {
         <PavingDrawing view="problem" />
         <RoofsDrawing view="fixed" />
         <PavingDrawing view="fixed" crop="tile" />
+        {REMAINING_DRAWINGS.map(({ id, DrawingComponent }) => (
+          <div key={id}>
+            <DrawingComponent view="problem" highlight="a" hot="b" />
+            <DrawingComponent view="fixed" />
+            <DrawingComponent view="fixed" crop="tile" />
+          </div>
+        ))}
       </>,
     )
     expect(container.querySelector('[style]')).toBeNull()
