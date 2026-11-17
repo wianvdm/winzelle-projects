@@ -369,6 +369,81 @@ describe('finalise verdicts', () => {
     expect(gateOutcome(result).ok).toBe(false)
   })
 
+  describe('G12 with more than one navigation landmark', () => {
+    const HEADER_NAV = {
+      selector: 'nav.wz-nav',
+      text: 'Sections',
+      label: 'Sections',
+    }
+    const FOOTER_NAV = {
+      selector: 'footer nav',
+      text: 'On this page',
+      label: 'On this page',
+    }
+
+    function withNavigation(navigation: unknown[]) {
+      const data = probeData()
+      data.parts.G12 = {
+        structure: structure({
+          landmarks: {
+            banner: [{}],
+            navigation,
+            main: [{}],
+            contentinfo: [{}],
+          },
+        }),
+        forms: [],
+      }
+      return gate(finalise(data), 'G12')
+    }
+
+    it('passes when each one has its own name', () => {
+      const g12 = withNavigation([HEADER_NAV, FOOTER_NAV])
+      expect(g12.failures).toEqual([])
+    })
+
+    it('fails an unnamed one', () => {
+      const unnamed = { selector: 'footer nav', text: 'Our work', label: null }
+      const g12 = withNavigation([HEADER_NAV, unnamed])
+      expect(g12.status).toBe('fail')
+      expect(g12.failures).toEqual([
+        {
+          selector: 'footer nav',
+          text: 'Our work',
+          reason: 'one of several navigation landmarks has no name',
+        },
+      ])
+    })
+
+    it('fails two that share a name', () => {
+      const g12 = withNavigation([
+        HEADER_NAV,
+        { ...FOOTER_NAV, label: 'Sections' },
+      ])
+      expect(g12.status).toBe('fail')
+      expect(texts(g12.failures)).toEqual([
+        '2 navigation landmarks named "Sections"',
+      ])
+    })
+
+    it('still fails a second banner landmark', () => {
+      const data = probeData()
+      data.parts.G12 = {
+        structure: structure({
+          landmarks: {
+            banner: [{}, {}],
+            navigation: [HEADER_NAV],
+            main: [{}],
+            contentinfo: [{}],
+          },
+        }),
+        forms: [],
+      }
+      const g12 = gate(finalise(data), 'G12')
+      expect(texts(g12.failures)).toEqual(['2 banner landmarks'])
+    })
+  })
+
   it('fails G12 for a missing landmark once the design content has landed', () => {
     const result = finalise(probeData({ survey: READY_SURVEY }))
     expect(gate(result, 'G12').status).toBe('fail')

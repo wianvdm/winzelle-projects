@@ -880,6 +880,31 @@ function g11(log) {
   }
 }
 
+// The page may carry more than one navigation landmark (the header's
+// section links and the footer's "On this page" list) when each has its own
+// name, so a screen reader's landmark list tells them apart (WCAG 1.3.1,
+// ARIA landmark naming). An unnamed one, or two sharing a name, fails.
+function navigationNameFailures(list) {
+  const fails = list
+    .filter((nav) => !nav.label)
+    .map((nav) =>
+      failure(nav, {
+        reason: 'one of several navigation landmarks has no name',
+      }),
+    )
+  const named = list.filter((nav) => nav.label)
+  for (const label of new Set(named.map((nav) => nav.label))) {
+    const sharing = named.filter((nav) => nav.label === label)
+    if (sharing.length > 1)
+      fails.push({
+        selector: 'navigation',
+        text: `${sharing.length} navigation landmarks named "${label}"`,
+        reason: 'navigation landmarks share a name',
+      })
+  }
+  return fails
+}
+
 function g12(parts, survey) {
   const data = parts.G12?.structure
   if (!data) return { status: 'unknown', summary: 'structure not read' }
@@ -927,7 +952,9 @@ function g12(parts, survey) {
       reason: 'headings before the h1',
     })
   for (const [name, list] of Object.entries(data.landmarks)) {
-    if (list.length > 1)
+    if (name === 'navigation' && list.length > 1)
+      fails.push(...navigationNameFailures(list))
+    else if (list.length > 1)
       fails.push({ selector: name, text: `${list.length} ${name} landmarks` })
     else if (!list.length) {
       const section = LANDMARK_SECTION[name]

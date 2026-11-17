@@ -48,7 +48,7 @@ reports `skipped` with a reason, never `pass`:
   Once `tel:` links exist, G8's `mailto:` rule stays `pending` until the
   contact section lands (#99, `#wz-contact`), which owns the email address.
 - G12 runs its structural checks (lang, heading order, duplicate landmarks,
-  field labels) and keeps rules about pieces not yet built as `pending` until
+  navigation landmark names, field labels) and keeps rules about pieces not yet built as `pending` until
   their own section lands: the `h1`, `banner` and `navigation` wait for the
   opening screen (#96, `#wz-hero-wa`), the `contentinfo` landmark waits for
   story and contact (#99, `#wz-contact`), and the form's error text waits for
@@ -106,7 +106,7 @@ gate, so they are checked in the run outcome rather than under a gate id.
 | G9   | 1280×800, every 50px to the bottom: a WhatsApp or `tel:` link at least half inside the viewport, visible, opacity ≥0.5, and hit-testable at its centre or quarter points.                                                                                                                                                                                                                                                                                                                   |
 | G10  | `prefers-reduced-motion: reduce` emulated. Records CSS transitions and animations (events plus `getAnimations()` every frame) and progressive scrolling while hovering a photo, picking a tile, picking a filter, opening, paging and closing the lightbox, and jumping via the nav. Anything over 1ms fails, as does `scroll-behavior: smooth`.                                                                                                                                            |
 | G11  | Console errors, CSP violations, exceptions and error log entries across the whole run; every request outside the allow-list (blocked and recorded).                                                                                                                                                                                                                                                                                                                                         |
-| G12  | One h1; no level skips among visible headings; banner, navigation, main and contentinfo landmarks; valid `html lang`; every field named by a label, `aria-label` or `aria-labelledby` (placeholder does not count); submitting the empty form must add visible error text (a browser bubble alone fails).                                                                                                                                                                                   |
+| G12  | One h1; no level skips among visible headings; one banner, main and contentinfo landmark and at least one navigation landmark (several pass only when each has its own `aria-label` or `aria-labelledby` name); valid `html lang`; every field named by a label, `aria-label` or `aria-labelledby` (placeholder does not count); submitting the empty form must add visible error text (a browser bubble alone fails).                                                                      |
 
 ## Limits
 
