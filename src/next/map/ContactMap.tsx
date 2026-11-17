@@ -118,8 +118,9 @@ export function ContactMap() {
     const mark = previewMarkRef.current
     if (activated || !frame || !mark) return
     pinOffsetRef.current = tipOffset(frame, mark)
-    // Keyboard users carry on inside the map; a pointer click leaves focus
-    // where the browser put it.
+    // Focus follows into the map when the button held it: after a keypress,
+    // and after a mouse click in Chrome. Where a click leaves the button
+    // unfocused, as in Safari, focus stays where it was.
     focusMapRef.current = frame.contains(document.activeElement)
     setPhase('loading')
   }
