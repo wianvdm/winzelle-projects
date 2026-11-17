@@ -1,0 +1,283 @@
+/* Drawing language for the surveyor kit (spec S3): cut materials, a
+   surveyor's line weights, notes in italic, lettered markers, and the
+   caption strip that carries the notes below 1220px. No inline styles: the
+   CSP in public/_headers forbids them, so every stroke and fill here is a
+   class or an SVG presentation attribute. */
+
+.wz-drawing {
+  position: relative;
+  margin-top: 16px;
+  border: var(--wz-ink-line);
+  background: var(--color-wz-sheet);
+}
+
+.wz-canvas {
+  position: relative;
+}
+
+.wz-canvas svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wz-drawing-tile {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.wz-drawing-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 14px 9px;
+  border-top: var(--wz-ink-line);
+  font-size: var(--text-wz-1);
+}
+
+.wz-drawing-view {
+  color: var(--color-wz-steel);
+  font-family: var(--font-wz-voice);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wz-drawing-note {
+  display: none;
+  flex-basis: 100%;
+  font-style: italic;
+}
+
+/* Below 1220px the canvas is too narrow for notes at reading size; the strip
+   under it carries them instead. */
+@media (max-width: 1219px) {
+  .wz-canvas .wz-note,
+  .wz-canvas .wz-dim,
+  .wz-canvas .wz-note-back {
+    display: none;
+  }
+  .wz-drawing-note {
+    display: block;
+  }
+}
+
+.wz-cut-edge {
+  fill: none;
+  stroke: #2b3238;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+.wz-cut-fine {
+  fill: none;
+  stroke: #525b63;
+  stroke-width: 0.75;
+}
+
+.wz-water {
+  fill: none;
+  stroke: var(--color-wz-river);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.wz-leader {
+  fill: none;
+  stroke: var(--color-wz-steel);
+  stroke-width: 0.9;
+}
+
+.wz-dot {
+  fill: var(--color-wz-steel);
+}
+
+.wz-note {
+  font: italic 400 var(--text-wz-1) var(--font-wz-serif);
+  fill: var(--color-wz-navy);
+}
+
+.wz-dim {
+  font: 500 var(--text-wz-1) var(--font-wz-voice);
+  letter-spacing: 0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+  fill: var(--color-wz-steel);
+}
+
+/* A small paper label behind notes that sit on a textured fill, and a paper
+   casing under every leader. */
+.wz-note-back {
+  fill: var(--color-wz-sheet);
+}
+
+.wz-leader-casing {
+  fill: none;
+  stroke: var(--color-wz-sheet);
+  stroke-width: 3.4;
+}
+
+.wz-glow {
+  fill: none;
+  stroke: var(--color-wz-river);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-opacity: 0;
+  pointer-events: none;
+  transition: stroke-opacity 140ms ease;
+}
+
+.wz-glow-area {
+  fill: var(--color-wz-river);
+  fill-opacity: 0;
+  stroke: var(--color-wz-river);
+  stroke-width: 6;
+  stroke-opacity: 0;
+  pointer-events: none;
+  transition:
+    fill-opacity 140ms ease,
+    stroke-opacity 140ms ease;
+}
+
+.wz-glow.wz-hot {
+  stroke-opacity: 0.32;
+}
+
+.wz-glow.wz-held {
+  stroke-opacity: 0.5;
+}
+
+.wz-glow-area.wz-hot {
+  fill-opacity: 0.12;
+  stroke-opacity: 0.4;
+}
+
+.wz-glow-area.wz-held {
+  fill-opacity: 0.2;
+  stroke-opacity: 0.65;
+}
+
+svg[data-state='fixed'] .wz-if-problem,
+svg[data-state='problem'] .wz-if-fixed {
+  display: none;
+}
+
+.wz-slip {
+  transition: transform 220ms ease;
+}
+
+svg[data-state='problem'] .wz-slip {
+  transform: translate(14px, 0);
+}
+
+/* Lettered markers: paper discs with the part letter, navy when held. They
+   are SVG shapes drawn in CSS px (Marker scales them out of the viewBox), so
+   they keep the prototype's 44px size, and 30px with 15px letters on narrow
+   windows, however wide the drawing is. */
+.wz-marker {
+  pointer-events: none;
+}
+
+.wz-marker-live {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.wz-marker-disc {
+  fill: var(--color-wz-sheet);
+  stroke: var(--color-wz-navy);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(16, 38, 58, 0.2))
+    drop-shadow(2px 4px 6px rgba(16, 38, 58, 0.3));
+}
+
+.wz-marker-letter {
+  fill: var(--color-wz-navy);
+  font: 500 var(--text-wz-body) var(--font-wz-voice);
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+@media (hover: hover) {
+  .wz-marker-live:hover .wz-marker-disc {
+    stroke-width: 3;
+  }
+}
+
+.wz-marker.wz-hot .wz-marker-disc {
+  stroke-width: 3;
+}
+
+.wz-marker.wz-held .wz-marker-disc {
+  fill: var(--color-wz-navy);
+  stroke: var(--color-wz-navy);
+  filter: drop-shadow(0 0 4px rgba(31, 94, 138, 0.4))
+    drop-shadow(2px 4px 6px rgba(16, 38, 58, 0.3));
+}
+
+.wz-marker.wz-held .wz-marker-letter {
+  fill: #ffffff;
+}
+
+@media (max-width: 1099px) {
+  .wz-marker-letter {
+    font-size: var(--text-wz-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-glow,
+  .wz-glow-area,
+  .wz-slip {
+    transition: none;
+  }
+}
+
+/* Dev-only kit preview page (/next/drawings, registered only in dev). */
+.wz-preview-section {
+  max-width: 1280px;
+  margin: 48px auto 0;
+}
+
+.wz-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.wz-preview-case > p {
+  margin: 0 0 6px;
+  color: var(--color-wz-steel);
+  font-family: var(--font-wz-voice);
+  font-size: var(--text-wz-1);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.wz-preview-case .wz-drawing {
+  margin-top: 0;
+}
+
+.wz-preview-tile {
+  max-width: 200px;
+  padding: 6px 7px 2px;
+  background: var(--color-wz-sheet);
+  border: 1px solid var(--color-wz-pin-sheet);
+  box-shadow: var(--shadow-wz-note);
+}
+
+@media (max-width: 760px) {
+  .wz-preview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.wz-preview-fill {
+  max-width: 640px;
+  border: var(--wz-ink-line);
+}

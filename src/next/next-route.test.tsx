@@ -130,6 +130,30 @@ describe('/next route gating', () => {
       document.head.querySelector('link[href*="fonts.gstatic.com"]'),
     ).toBeNull()
   })
+  it('registers the dev-only /next/drawings preview without legacy chrome when the flag is on', async () => {
+    vi.stubEnv('VITE_HOME_NEXT', 'true')
+
+    const { getRouteTree } = await loadRouterAtPath('/next/drawings')
+    expect(routePaths(getRouteTree())).toContain('/next/drawings')
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          level: 1,
+          name: 'Surveyor drawing kit preview',
+        }),
+      ).toBeDefined()
+    })
+    expect(screen.queryByRole('link', { name: 'Get a Quote' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Chat on WhatsApp' })).toBeNull()
+  })
+
+  it('omits /next/drawings when the flag is off', async () => {
+    vi.stubEnv('VITE_HOME_NEXT', 'false')
+
+    const { getRouteTree } = await import('../router')
+    expect(routePaths(getRouteTree())).not.toContain('/next/drawings')
+  })
 })
 
 describe('redesign tokens and self-hosted fonts', () => {
