@@ -14,7 +14,9 @@ import {
   panelPhotoIdByTrade,
   photoCaption,
   photoImageUrls,
+  photoSourceSets,
   workPhotos,
+  workPhotosFor,
 } from './photos.ts'
 import { getTrade, trades } from './trades.ts'
 
@@ -95,6 +97,19 @@ describe('work photos', () => {
     }
   })
 
+  it('lists a converted derivative for every photo much larger than its print', () => {
+    for (const photo of workPhotos) {
+      if (Math.max(photo.width, photo.height) < 1050) continue
+      expect(photo.smallWidth).toBe(800)
+      const sets = photoSourceSets(photo)
+      for (const set of [sets.avif, sets.webp]) {
+        const url = set.split(' ')[0]
+        expect(url).toMatch(/-800\.(avif|webp)$/)
+        expect(existsSync(join(process.cwd(), 'public', url))).toBe(true)
+      }
+    }
+  })
+
   it('composes captions as "Work, Suburb, Month Year"', () => {
     const captionShape = new RegExp(`^[^,]+, [^,]+, ${MONTHS} \\d{4}$`)
     for (const photo of workPhotos) {
@@ -126,6 +141,15 @@ describe('work photos', () => {
         expect(ids.has(tradeId)).toBe(true)
       }
     }
+  })
+
+  it('picks the board prints for a trade in board order, or all of them', () => {
+    expect(workPhotosFor(null)).toEqual(workPhotos)
+    expect(workPhotosFor('paving').map((photo) => photo.id)).toEqual([
+      'paving-forecourt',
+      'paving-kerb',
+    ])
+    expect(workPhotosFor('pools')).toEqual([])
   })
 
   it('pins the four opening prints and one panel print per trade with photos', () => {

@@ -5,9 +5,6 @@ import {
   getTrade,
   getWorkPhoto,
   panelPhotoIdByTrade,
-  photoCaption,
-  photoImageUrls,
-  photoSourceSets,
   whatNeedsDoing,
   whatsappLabels,
   type Trade,
@@ -17,6 +14,7 @@ import {
 import { drawingsByTrade, type DrawingView } from '../drawings/index.ts'
 import { usePickState } from '../pick-state.tsx'
 import { buildWhatsAppLink, tradeMessage } from '../whatsapp.ts'
+import { PhotoPrint } from './Lightbox.tsx'
 import { STICKY_CLEARANCE_PX } from './StickyBar.tsx'
 
 export const PANEL_ID = 'wz-panel'
@@ -123,10 +121,7 @@ function KeyButton({
   )
 }
 
-/**
- * The trade's photo print, or the pinned note for trades with none. A plain
- * figure for now; the lightbox (#98) turns the photo into its opener.
- */
+/** The trade's photo print, or the pinned note for trades with none. */
 function PanelMedia({ trade }: { trade: Trade }) {
   const photoId = panelPhotoIdByTrade[trade.id]
   if (!photoId) {
@@ -136,34 +131,13 @@ function PanelMedia({ trade }: { trade: Trade }) {
       </div>
     )
   }
-  const photo = getWorkPhoto(photoId)
-  const urls = photoImageUrls(photo)
-  const sourceSets = photoSourceSets(photo)
   return (
-    <figure
+    <PhotoPrint
+      photo={getWorkPhoto(photoId)}
       className={`wz-print wz-panel-print wz-pin wz-pin-print wz-panel-${trade.id}`}
-    >
-      <span className="wz-photo">
-        <picture>
-          <source
-            type="image/avif"
-            srcSet={sourceSets.avif}
-            sizes={PANEL_PRINT_SIZES}
-          />
-          <img
-            src={urls.webp}
-            srcSet={sourceSets.webp}
-            sizes={PANEL_PRINT_SIZES}
-            alt={photo.alt}
-            width={photo.width}
-            height={photo.height}
-            loading="lazy"
-            decoding="async"
-          />
-        </picture>
-      </span>
-      <figcaption className="wz-voice">{photoCaption(photo)}</figcaption>
-    </figure>
+      sizes={PANEL_PRINT_SIZES}
+      loading="lazy"
+    />
   )
 }
 
@@ -307,7 +281,7 @@ export function ExplorerSheet() {
           </h4>
           <p className="wz-involves">{trade.involves}</p>
         </div>
-        <div className="wz-panel-media">
+        <div className="wz-panel-media" data-wz-set="panel">
           <PanelMedia trade={trade} />
         </div>
       </div>

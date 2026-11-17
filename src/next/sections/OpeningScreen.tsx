@@ -3,13 +3,10 @@ import {
   getWorkPhoto,
   opening,
   openingPhotoIds,
-  photoCaption,
-  photoImageUrls,
-  photoSourceSets,
   whatsappLabels,
-  type WorkPhoto,
 } from '../../content/next/index.ts'
 import { Header, PHONE_HREF, type SectionLinksProps } from './Header.tsx'
+import { PhotoPrint } from './Lightbox.tsx'
 import { HERO_WHATSAPP_ID } from './StickyBar.tsx'
 
 interface OpeningScreenProps extends SectionLinksProps {
@@ -72,38 +69,6 @@ function NhbrcSeal() {
 // the two-column phone grid.
 const OPENING_PRINT_SIZES = '(max-width: 1099px) 50vw, 300px'
 
-// Placement, aspect and crop live in sections.css under the photo id: the
-// CSP forbids inline style attributes.
-function OpeningPrint({ photo }: { photo: WorkPhoto }) {
-  const urls = photoImageUrls(photo)
-  const sourceSets = photoSourceSets(photo)
-  return (
-    <figure
-      className={`wz-pinned wz-pin wz-pin-print wz-print wz-opening-${photo.id}`}
-    >
-      <span className="wz-photo">
-        <picture>
-          <source
-            type="image/avif"
-            srcSet={sourceSets.avif}
-            sizes={OPENING_PRINT_SIZES}
-          />
-          <img
-            src={urls.webp}
-            srcSet={sourceSets.webp}
-            sizes={OPENING_PRINT_SIZES}
-            alt={photo.alt}
-            width={photo.width}
-            height={photo.height}
-            decoding="async"
-          />
-        </picture>
-      </span>
-      <figcaption className="wz-voice">{photoCaption(photo)}</figcaption>
-    </figure>
-  )
-}
-
 /** Opening screen (spec S2): headline sheet, header, stamp, photo cluster. */
 export function OpeningScreen({
   whatsappHref,
@@ -142,9 +107,16 @@ export function OpeningScreen({
 
         <NhbrcSeal />
 
-        <div className="wz-cluster">
+        {/* Placement, aspect and crop live in sections.css under the photo
+            id: the CSP forbids inline style attributes. */}
+        <div className="wz-cluster" data-wz-set="opening">
           {openingPhotoIds.map((id) => (
-            <OpeningPrint key={id} photo={getWorkPhoto(id)} />
+            <PhotoPrint
+              key={id}
+              photo={getWorkPhoto(id)}
+              className={`wz-pinned wz-pin wz-pin-print wz-print wz-opening-${id}`}
+              sizes={OPENING_PRINT_SIZES}
+            />
           ))}
         </div>
       </div>

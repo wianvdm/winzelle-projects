@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 
 import { getTrade, pageNavLinks } from '../content/next/index.ts'
 import { PickStateProvider, usePickState } from './pick-state.tsx'
+import { LightboxProvider } from './sections/Lightbox.tsx'
 import { OpeningScreen } from './sections/OpeningScreen.tsx'
+import { OurWork } from './sections/OurWork.tsx'
 import { StickyBar, STICKY_CLEARANCE_PX } from './sections/StickyBar.tsx'
 import { TradeBoard } from './sections/TradeBoard.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from './whatsapp.ts'
@@ -61,17 +63,20 @@ export function HomeBoard() {
 
   return (
     <div className="wz-home">
-      <StickyBar
-        whatsappHref={whatsappHref}
-        currentSectionId={currentSectionId}
-      />
-      <main>
-        <OpeningScreen
+      <LightboxProvider>
+        <StickyBar
           whatsappHref={whatsappHref}
           currentSectionId={currentSectionId}
         />
-        <TradeBoard />
-      </main>
+        <main>
+          <OpeningScreen
+            whatsappHref={whatsappHref}
+            currentSectionId={currentSectionId}
+          />
+          <TradeBoard />
+          <OurWork />
+        </main>
+      </LightboxProvider>
     </div>
   )
 }

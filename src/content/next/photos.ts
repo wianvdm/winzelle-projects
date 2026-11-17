@@ -65,6 +65,7 @@ export const workPhotos: WorkPhoto[] = [
     suburb: filler('Kabega'),
     month: filler('April 2026'),
     trades: ['walls'],
+    smallWidth: 800,
   },
   {
     id: 'paving-forecourt',
@@ -96,6 +97,7 @@ export const workPhotos: WorkPhoto[] = [
     suburb: filler('Central'),
     month: filler('October 2025'),
     trades: ['cracks'],
+    smallWidth: 800,
   },
   {
     id: 'waterproof-curve',
@@ -137,6 +139,7 @@ export const workPhotos: WorkPhoto[] = [
     suburb: filler('Fairview'),
     month: filler('March 2026'),
     trades: ['paving'],
+    smallWidth: 800,
   },
   {
     id: 'bathroom-bath',
@@ -216,6 +219,12 @@ export function photoSourceSets(photo: WorkPhoto): {
     return `${base}-${photo.smallWidth}.${extension} ${photo.smallWidth}w, ${full}`
   }
   return { avif: sourceSet('avif'), webp: sourceSet('webp') }
+}
+
+/** The board's prints for one trade, in board order; null means all of them. */
+export function workPhotosFor(tradeId: TradeId | null): WorkPhoto[] {
+  if (!tradeId) return workPhotos
+  return workPhotos.filter((photo) => photo.trades.includes(tradeId))
 }
 
 export function getWorkPhoto(id: string): WorkPhoto {

@@ -8,6 +8,7 @@ import { getTrade } from '../../content/next/index.ts'
 import { HomeBoard, NextPage } from '../NextPage.tsx'
 import { PickStateProvider, usePickState } from '../pick-state.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from '../whatsapp.ts'
+import { LightboxProvider } from './Lightbox.tsx'
 import { OpeningScreen } from './OpeningScreen.tsx'
 
 afterEach(cleanup)
@@ -16,10 +17,12 @@ const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]'
 
 function renderOpening() {
   return render(
-    <OpeningScreen
-      whatsappHref={buildWhatsAppLink(defaultMessage())}
-      currentSectionId={null}
-    />,
+    <LightboxProvider>
+      <OpeningScreen
+        whatsappHref={buildWhatsAppLink(defaultMessage())}
+        currentSectionId={null}
+      />
+    </LightboxProvider>,
   )
 }
 
@@ -81,6 +84,12 @@ describe('OpeningScreen', () => {
       'Kitchenette fitted, Sunridge Park, January 2026',
       'Exterior waterproofing and paint, Newton Park, June 2025',
     ])
+    for (const print of prints) {
+      const caption = print.querySelector('figcaption')?.textContent
+      const opener = print.querySelector('button.wz-print-open')
+      expect(opener?.getAttribute('aria-label')).toBe(`Open photo: ${caption}`)
+      expect(opener?.querySelector('img')).not.toBeNull()
+    }
 
     const roof = prints[1]
     expect(roof.classList.contains('wz-opening-roof-verge-paint')).toBe(true)
