@@ -259,14 +259,17 @@ describe('Our work board', () => {
     const print = (id: string) =>
       board().querySelector(`.wz-work-${id}`) as HTMLElement
     const widthOf = (id: string) => print(id).style.width
+    // The AVIF <source> and the <img>: the browser picks from the source.
     const sizesOf = (id: string) =>
-      print(id).querySelector('img')?.getAttribute('sizes')
+      [...print(id).querySelectorAll('source, img')].map((candidate) =>
+        candidate.getAttribute('sizes'),
+      )
 
     fireEvent.click(tag('Walls and building'))
     // One print: the 560px cap, under the column and the pixel limit.
     expect(widthOf('wall-facebrick')).toBe('560px')
     // The enlarged print names its own width for the srcset pick.
-    expect(sizesOf('wall-facebrick')).toBe('560px')
+    expect(sizesOf('wall-facebrick')).toEqual(['560px', '560px'])
 
     fireEvent.click(tag('Roofs'))
     // Two to a row share 371px; the 268px ridge photo stops at 1.3x plus
@@ -279,7 +282,10 @@ describe('Our work board', () => {
     fireEvent.click(tag('All our work'))
     expect(widthOf('waterproof-roof')).toBe('')
     // Back on the full board the prints carry the board sizes again.
-    expect(sizesOf('waterproof-roof')).toBe('(max-width: 1099px) 50vw, 280px')
+    expect(sizesOf('waterproof-roof')).toEqual([
+      '(max-width: 1099px) 50vw, 280px',
+      '(max-width: 1099px) 50vw, 280px',
+    ])
   })
 
   it('scrolls the matches into view from a tag when they sit above the window', () => {
@@ -385,6 +391,18 @@ describe('Lightbox', () => {
     fireEvent.pointerDown(inner, { clientX: 200, pointerType: 'touch' })
     fireEvent.click(inner)
     expect(dialog().open).toBe(false)
+  })
+
+  it('cancels the click a touch tap on the backdrop would send to the page', () => {
+    renderPage()
+    fireEvent.click(openerFor(board(), photoCaption(workPhotos[0])))
+    const inner = dialog().querySelector('.wz-lb-inner') as HTMLElement
+
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.touchEnd(inner)).toBe(false)
+    expect(
+      fireEvent.touchEnd(dialog().querySelector('.wz-lb-photo') as HTMLElement),
+    ).toBe(true)
   })
 
   it('closes from the backdrop and the close button, returning focus to the print', () => {

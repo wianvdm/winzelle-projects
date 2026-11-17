@@ -10,6 +10,7 @@ import {
   type PointerEvent,
   type ReactNode,
   type RefObject,
+  type TouchEvent,
 } from 'react'
 
 import {
@@ -200,6 +201,12 @@ function LightboxDialog({
     onStep(moved < 0 ? 1 : -1)
   }
 
+  // The tap's click would land on the page under the dark area once
+  // endSwipe has closed the dialog, so a tap there sends no click.
+  const keepTapOnBackdrop = (event: TouchEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) event.preventDefault()
+  }
+
   const caption = item ? photoCaption(item.photo) : ''
   const urls = item ? photoImageUrls(item.photo) : null
 
@@ -217,6 +224,7 @@ function LightboxDialog({
         onClick={closeFromBackdrop}
         onPointerDown={startSwipe}
         onPointerUp={endSwipe}
+        onTouchEnd={keepTapOnBackdrop}
       >
         <div className="wz-lb-print">
           <div className="wz-lb-photo" ref={frameRef}>

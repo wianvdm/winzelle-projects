@@ -68,16 +68,24 @@ function boardPrints(board: HTMLElement): HTMLElement[] {
   return [...board.querySelectorAll<HTMLElement>('.wz-print')]
 }
 
+// The browser picks from the first matching <source>, so every candidate
+// list in the print carries the same sizes.
+function setPrintSizes(print: HTMLElement, sizes: string) {
+  for (const candidate of print.querySelectorAll('source, img')) {
+    candidate.setAttribute('sizes', sizes)
+  }
+}
+
 function clearPrintWidths(board: HTMLElement) {
   for (const print of boardPrints(board)) {
     print.style.removeProperty('width')
-    print.querySelector('img')?.setAttribute('sizes', BOARD_PRINT_SIZES)
+    setPrintSizes(print, BOARD_PRINT_SIZES)
   }
 }
 
 /**
  * Sizes a filtered board of few prints so they fill it, and names each
- * enlarged print's width in its sizes attribute so the srcset pick on a
+ * enlarged print's width in its sizes attributes so the srcset pick on a
  * high-density screen takes the larger file. CSSOM writes: the CSP forbids
  * style attributes in markup; sizes is a plain content attribute.
  */
@@ -91,7 +99,7 @@ function sizeFewPrints(board: HTMLElement) {
   for (const print of shown) {
     const width = Math.min(share, largestPrintWidth(print), LONE_PRINT_MAX_PX)
     print.style.width = `${Math.floor(width)}px`
-    print.querySelector('img')?.setAttribute('sizes', `${Math.floor(width)}px`)
+    setPrintSizes(print, `${Math.floor(width)}px`)
   }
 }
 
