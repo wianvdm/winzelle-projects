@@ -230,6 +230,8 @@ body:has(.wz-page, .wz-home) {
   padding: 8px 2px 10px;
   font-size: var(--text-wz-1);
   line-height: 1.35;
+  /* Long suburb names must not run past the print edge at 320px. */
+  overflow-wrap: anywhere;
 }
 
 /* Narrow windows and phones: everything unpins into one column. */
