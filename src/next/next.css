@@ -46,19 +46,25 @@
     U+2215, U+FEFF, U+FFFD;
 }
 
-html:has(.wz-page) {
+html:has(.wz-page, .wz-home) {
   scroll-behavior: auto;
 }
 
-body:has(.wz-page) {
+html:has(.wz-home) {
+  scroll-padding-top: 72px;
+}
+
+body:has(.wz-page, .wz-home) {
   color: var(--color-wz-navy);
   font-family: var(--font-wz-serif);
   background-color: var(--color-wz-field);
 }
 
-.wz-page {
+/* Depth only ever darkens the field, so sheets keep their contrast against
+   it: a corner falloff away from the top-left light and a slow diagonal. */
+.wz-page,
+.wz-home {
   min-height: 100vh;
-  padding: 64px 24px;
   color: var(--color-wz-navy);
   font: 400 var(--text-wz-body) / 1.6 var(--font-wz-serif);
   background-color: var(--color-wz-field);
@@ -73,44 +79,15 @@ body:has(.wz-page) {
       rgba(255, 255, 255, 0) 0%,
       rgba(20, 44, 66, 0.05) 100%
     );
+  -webkit-font-smoothing: antialiased;
 }
 
-.wz-shell-sheet {
-  position: relative;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 36px 40px 32px;
-  background-color: var(--color-wz-sheet);
-  border: var(--wz-ink-line);
-  box-shadow: var(--shadow-wz-sheet);
+.wz-page {
+  padding: 64px 24px;
 }
 
-.wz-shell-sheet::before {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 64px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background:
-    radial-gradient(
-      circle at 34% 30%,
-      rgba(255, 255, 255, 0.85) 0 1.6px,
-      rgba(255, 255, 255, 0) 4px
-    ),
-    var(--color-wz-pin-sheet);
-  box-shadow: 3px 5px 4px -1px rgba(10, 26, 40, 0.42);
-}
-
-.wz-shell-voice {
-  margin: 0 0 12px;
-  color: var(--color-wz-steel);
-  font-family: var(--font-wz-voice);
-  font-size: var(--text-wz-1);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  font-variant-numeric: lining-nums tabular-nums;
+.wz-home {
+  background-attachment: fixed, fixed;
 }
 
 .wz-shell-title {
@@ -122,34 +99,159 @@ body:has(.wz-page) {
   letter-spacing: -0.012em;
 }
 
-.wz-shell-lead {
-  margin: 16px 0 0;
-  color: var(--color-wz-steel);
-  font-size: var(--text-wz-3);
-  line-height: 1.38;
-}
-
-.wz-shell-note {
-  margin: 14px 0 0;
-  color: var(--color-wz-navy);
-  font-style: italic;
-  font-size: var(--text-wz-body);
-}
-
 @media (max-width: 600px) {
   .wz-page {
     padding: 32px 16px;
   }
 
-  .wz-shell-sheet {
-    padding: 28px 20px 24px;
-  }
-
   .wz-shell-title {
     font-size: var(--text-wz-4);
   }
+}
 
-  .wz-shell-lead {
-    font-size: var(--text-wz-body);
+/* ===== Shared pieces of the board, used by every section ===== */
+
+.wz-home :focus-visible {
+  outline: 3px solid var(--color-wz-river);
+  outline-offset: 3px;
+}
+
+.wz-wrap {
+  position: relative;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+.wz-voice {
+  font-family: var(--font-wz-voice);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.wz-nowrap {
+  white-space: nowrap;
+}
+
+/* Anything pinned: a pin with a highlight and a blurred cast shadow,
+   coloured by object type. Positions are in units of the 1184px board. */
+.wz-pinned {
+  position: absolute;
+  left: calc(var(--x) * 100% / 1184);
+  top: var(--y);
+  width: calc(var(--w) * 100% / 1184);
+  transform: rotate(var(--r, 0deg)) translateY(var(--lift, 0px));
+}
+
+.wz-pin::before {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  top: -8px;
+  left: calc(50% - 8px);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 34% 30%,
+      rgba(255, 255, 255, 0.85) 0 1.6px,
+      rgba(255, 255, 255, 0) 4px
+    ),
+    var(--wz-pin-colour, var(--color-wz-pin-sheet));
+  box-shadow: 3px 5px 4px -1px rgba(10, 26, 40, 0.42);
+}
+
+.wz-pin-print {
+  --wz-pin-colour: var(--color-wz-pin-print);
+}
+
+/* The WhatsApp action: the only place the warm accent appears. */
+.wz-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 22px;
+  color: #ffffff;
+  font: 600 var(--text-wz-body) / 1.15 var(--font-wz-serif);
+  text-decoration: none;
+  background: var(--color-wz-accent);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgba(60, 26, 14, 0.25),
+    3px 6px 12px -4px rgba(60, 26, 14, 0.4);
+}
+
+@media (hover: hover) {
+  .wz-whatsapp:hover {
+    background: var(--color-wz-accent-deep);
+  }
+}
+
+.wz-whatsapp svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+/* Photo prints: warm paper; the photo is trimmed at the bottom so phone
+   date stamps never show. */
+.wz-print {
+  margin: 0;
+  padding: 10px 10px 0;
+  background: var(--color-wz-print-paper);
+  box-shadow: var(--shadow-wz-print);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.wz-photo {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: var(--ar, 4 / 3);
+  background: var(--color-wz-mist);
+}
+
+.wz-photo img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--op, 50% 0%);
+}
+
+.wz-print figcaption {
+  padding: 8px 2px 10px;
+  font-size: var(--text-wz-1);
+  line-height: 1.35;
+}
+
+/* Narrow windows and phones: everything unpins into one column. */
+@media (max-width: 1099px) {
+  .wz-wrap {
+    padding: 0 16px;
+  }
+
+  .wz-pinned {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wz-home *,
+  .wz-home *::before,
+  .wz-home *::after {
+    transition: none !important;
+    animation: none !important;
   }
 }
