@@ -1,0 +1,50 @@
+name: Design gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: design-gate-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  design-gate:
+    name: Design gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build with the /next flag on
+        run: npm run build
+        env:
+          VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
+          VITE_HOME_NEXT: 'true'
+      - name: Run the design gates against /next
+        # serve.mjs serves dist/ with the pinned wrangler (local mode, no
+        # Cloudflare login), asserts the CSP from public/_headers is applied,
+        # then runs scripts/design-gates/probe.mjs with the runner's Chrome.
+        run: node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/next --out design-gate-report
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - name: Upload the report and screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: design-gate-report
+          path: design-gate-report
+          if-no-files-found: warn
