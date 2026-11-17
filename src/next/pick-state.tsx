@@ -1,7 +1,9 @@
 // Shared trade pick state for the /next sections (spec S3: one unified
 // picker updates the explorer sheet, WhatsApp links and the Our work filter).
-// Null means nothing picked: the explorer still shows its default trade
-// without marking the tile picked.
+// pickedTradeId is null until the visitor picks a tile, so the general
+// WhatsApp messages and the Our work filter stay at their defaults on load.
+// openTradeId is the trade on the explorer sheet: the picked one, or Paving
+// on load. Its tile shows as lifted onto the sheet either way.
 
 import {
   createContext,
@@ -14,8 +16,11 @@ import {
 
 import type { TradeId } from '../content/next/trades.ts'
 
+export const DEFAULT_OPEN_TRADE_ID: TradeId = 'paving'
+
 export interface PickState {
   pickedTradeId: TradeId | null
+  openTradeId: TradeId
   pick: (tradeId: TradeId) => void
   clear: () => void
 }
@@ -29,7 +34,12 @@ export function PickStateProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => setPickedTradeId(null), [])
 
   const value = useMemo(
-    () => ({ pickedTradeId, pick, clear }),
+    () => ({
+      pickedTradeId,
+      openTradeId: pickedTradeId ?? DEFAULT_OPEN_TRADE_ID,
+      pick,
+      clear,
+    }),
     [pickedTradeId, pick, clear],
   )
 

@@ -1,3 +1,15 @@
+import type { TradeId } from '../../content/next/trades'
+import { CracksDrawing } from './CracksDrawing'
+import { DampDrawing } from './DampDrawing'
+import { KitchensDrawing } from './KitchensDrawing'
+import { OtherDrawing } from './OtherDrawing'
+import { PaintingDrawing } from './PaintingDrawing'
+import { PavingDrawing } from './PavingDrawing'
+import { PlumbingDrawing } from './PlumbingDrawing'
+import { PoolsDrawing } from './PoolsDrawing'
+import { RoofsDrawing } from './RoofsDrawing'
+import { WallsDrawing } from './WallsDrawing'
+
 export { Drawing } from './Drawing'
 export type {
   DrawingCrop,
@@ -6,13 +18,31 @@ export type {
   DrawingView,
   PartMarker,
 } from './Drawing'
-export { CracksDrawing } from './CracksDrawing'
-export { DampDrawing } from './DampDrawing'
-export { KitchensDrawing } from './KitchensDrawing'
-export { OtherDrawing } from './OtherDrawing'
-export { PaintingDrawing } from './PaintingDrawing'
-export { PavingDrawing } from './PavingDrawing'
-export { PlumbingDrawing } from './PlumbingDrawing'
-export { PoolsDrawing } from './PoolsDrawing'
-export { RoofsDrawing } from './RoofsDrawing'
-export { WallsDrawing } from './WallsDrawing'
+export {
+  CracksDrawing,
+  DampDrawing,
+  KitchensDrawing,
+  OtherDrawing,
+  PaintingDrawing,
+  PavingDrawing,
+  PlumbingDrawing,
+  PoolsDrawing,
+  RoofsDrawing,
+  WallsDrawing,
+}
+
+export type TradeDrawingComponent = typeof PavingDrawing
+
+/** Each trade's drawing, for the tiles and the explorer sheet. */
+export const drawingsByTrade: Record<TradeId, TradeDrawingComponent> = {
+  paving: PavingDrawing,
+  walls: WallsDrawing,
+  roofs: RoofsDrawing,
+  damp: DampDrawing,
+  cracks: CracksDrawing,
+  painting: PaintingDrawing,
+  kitchens: KitchensDrawing,
+  plumbing: PlumbingDrawing,
+  pools: PoolsDrawing,
+  other: OtherDrawing,
+}

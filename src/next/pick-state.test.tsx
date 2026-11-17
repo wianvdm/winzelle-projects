@@ -7,10 +7,11 @@ import { PickStateProvider, usePickState } from './pick-state.tsx'
 afterEach(cleanup)
 
 function Probe() {
-  const { pickedTradeId, pick, clear } = usePickState()
+  const { pickedTradeId, openTradeId, pick, clear } = usePickState()
   return (
     <div>
       <output data-testid="picked">{pickedTradeId ?? 'none'}</output>
+      <output data-testid="open">{openTradeId}</output>
       <button type="button" onClick={() => pick('roofs')}>
         pick roofs
       </button>
@@ -32,6 +33,22 @@ describe('PickStateProvider', () => {
       </PickStateProvider>,
     )
     expect(screen.getByTestId('picked').textContent).toBe('none')
+  })
+
+  it('opens Paving on load and the picked trade after a pick', () => {
+    render(
+      <PickStateProvider>
+        <Probe />
+      </PickStateProvider>,
+    )
+    const open = screen.getByTestId('open')
+    expect(open.textContent).toBe('paving')
+
+    fireEvent.click(screen.getByRole('button', { name: 'pick pools' }))
+    expect(open.textContent).toBe('pools')
+
+    fireEvent.click(screen.getByRole('button', { name: 'clear' }))
+    expect(open.textContent).toBe('paving')
   })
 
   it('shares the picked trade across consumers and clears it', () => {

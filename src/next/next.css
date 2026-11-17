@@ -134,6 +134,17 @@ body:has(.wz-page, .wz-home) {
   white-space: nowrap;
 }
 
+.wz-h2 {
+  margin: 0;
+  font: 600 var(--text-wz-h2) / 1.08 var(--font-wz-serif);
+  letter-spacing: -0.012em;
+}
+
+.wz-h3 {
+  margin: 0;
+  font: 600 var(--text-wz-3) / 1.2 var(--font-wz-serif);
+}
+
 /* Anything pinned: a pin with a highlight and a blurred cast shadow,
    coloured by object type. Positions are in units of the 1184px board. */
 .wz-pinned {
@@ -238,6 +249,10 @@ body:has(.wz-page, .wz-home) {
 @media (max-width: 1099px) {
   .wz-wrap {
     padding: 0 16px;
+  }
+
+  .wz-h2 {
+    font-size: var(--text-wz-4);
   }
 
   .wz-pinned {

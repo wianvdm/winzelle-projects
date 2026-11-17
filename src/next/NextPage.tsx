@@ -4,6 +4,7 @@ import { getTrade, pageNavLinks } from '../content/next/index.ts'
 import { PickStateProvider, usePickState } from './pick-state.tsx'
 import { OpeningScreen } from './sections/OpeningScreen.tsx'
 import { StickyBar, STICKY_CLEARANCE_PX } from './sections/StickyBar.tsx'
+import { TradeBoard } from './sections/TradeBoard.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from './whatsapp.ts'
 import './next.css'
 import './sections/sections.css'
@@ -21,7 +22,8 @@ function useCurrentSectionId(): string | null {
     const sections = SECTION_IDS.map((id) =>
       document.getElementById(id),
     ).filter((section) => section !== null)
-    if (!sections.length) return
+    // jsdom has no IntersectionObserver; no link is marked current there.
+    if (!sections.length || typeof IntersectionObserver !== 'function') return
 
     const inBand = new Set<string>()
     const observer = new IntersectionObserver(
@@ -52,7 +54,7 @@ function useGeneralWhatsAppHref(): string {
   return buildWhatsAppLink(message)
 }
 
-/** The page inside its pick state; the trade tiles (#97) pick from in here. */
+/** The page inside its pick state, which the trade tiles set. */
 export function HomeBoard() {
   const whatsappHref = useGeneralWhatsAppHref()
   const currentSectionId = useCurrentSectionId()
@@ -68,6 +70,7 @@ export function HomeBoard() {
           whatsappHref={whatsappHref}
           currentSectionId={currentSectionId}
         />
+        <TradeBoard />
       </main>
     </div>
   )
