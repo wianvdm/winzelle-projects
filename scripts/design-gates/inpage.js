@@ -1857,6 +1857,14 @@
             .map((heading) => `h${heading.level} ${heading.text}`)
         : []
     const sectioning = 'article, aside, main, nav, section'
+    // A landmark's name comes from aria-labelledby or aria-label only; its
+    // text content never names it.
+    const landmarkName = (el) => {
+      const info = nameInfo(el)
+      return info.source === 'aria-labelledby' || info.source === 'aria-label'
+        ? info.name
+        : null
+    }
     const landmark = (selector, role, topLevelOnly) =>
       [...document.querySelectorAll(`${selector}, [role=${role}]`)]
         .filter((el) => {
@@ -1864,10 +1872,7 @@
           if (el.getAttribute('role') === role) return true
           return !topLevelOnly || !el.parentElement.closest(sectioning)
         })
-        .map((el) => ({
-          ...describe(el),
-          label: el.getAttribute('aria-label') || null,
-        }))
+        .map((el) => ({ ...describe(el), label: landmarkName(el) }))
     const landmarks = {
       banner: landmark('header', 'banner', true),
       navigation: landmark('nav', 'navigation', false),

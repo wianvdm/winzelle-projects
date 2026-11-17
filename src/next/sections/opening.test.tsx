@@ -144,7 +144,7 @@ describe('NextPage opening', () => {
     expect(firstOutsideSticky?.closest('main')).not.toBeNull()
   })
 
-  it('has one banner header, one navigation landmark and no inline styles', () => {
+  it('has one banner header, navigation landmarks with distinct names and no inline styles', () => {
     const { container } = render(<NextPage />)
 
     const topLevelHeaders = [...container.querySelectorAll('header')].filter(
@@ -152,7 +152,11 @@ describe('NextPage opening', () => {
         !header.parentElement?.closest('article, aside, main, nav, section'),
     )
     expect(topLevelHeaders.map((header) => header.id)).toEqual(['wz-sticky'])
-    expect(container.querySelectorAll('nav')).toHaveLength(1)
+    expect(screen.getAllByRole('navigation')).toHaveLength(2)
+    expect(screen.getByRole('navigation', { name: 'Sections' })).toBeDefined()
+    expect(
+      screen.getByRole('navigation', { name: 'On this page' }),
+    ).toBeDefined()
     expect(container.querySelector('[style]')).toBeNull()
   })
 

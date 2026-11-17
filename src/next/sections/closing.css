@@ -1,0 +1,365 @@
+/* ===== Our story (spec S5): short, after the work ===== */
+
+#wz-story {
+  padding-top: 110px;
+}
+
+.wz-story-board {
+  position: relative;
+}
+
+/* On narrow desktops the sheet moves left as the sign-off note comes in
+   from the right edge, so the note never covers its text and never runs
+   past the board (1100px to 1280px). */
+.wz-story-sheet {
+  position: relative;
+  width: 760px;
+  margin-left: max(0px, min(96px, calc(100% - 1000px)));
+  padding: 48px 56px;
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-sheet);
+}
+
+.wz-story-sheet .wz-h3 {
+  margin-top: 28px;
+}
+
+.wz-story-sheet p {
+  max-width: 31em;
+  margin-top: 8px;
+}
+
+.wz-story-sheet .wz-whatsapp {
+  margin-top: 28px;
+}
+
+.wz-signoff {
+  position: absolute;
+  top: 120px;
+  left: min(800px, calc(100% - 408px));
+  width: 360px;
+  padding: 28px 28px 24px;
+  background: var(--color-wz-sheet);
+  box-shadow: var(--shadow-wz-note);
+  transform: rotate(1.4deg);
+}
+
+.wz-signoff blockquote {
+  margin: 0;
+  font: italic 400 var(--text-wz-3) / 1.45 var(--font-wz-serif);
+}
+
+.wz-signoff p {
+  margin-top: 14px;
+  font-size: var(--text-wz-1);
+  color: var(--color-wz-steel);
+}
+
+/* ===== Contact (spec S6): the pinned WhatsApp card ===== */
+
+#wz-contact {
+  padding-top: 120px;
+  padding-bottom: 72px;
+}
+
+/* The card hangs over the map print (#100), which spans the first row;
+   the message note (#101) is pinned under the card's lower-right corner. */
+.wz-contact-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 440px minmax(0, 1fr);
+}
+
+.wz-card {
+  position: relative;
+  z-index: 2;
+  grid-area: 1 / 2 / 3 / 3;
+  align-self: start;
+  margin-top: 44px;
+  padding: 40px 36px 32px;
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-sheet);
+  transform: rotate(-0.8deg);
+}
+
+.wz-card-lead {
+  margin-top: 14px;
+}
+
+.wz-card .wz-whatsapp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin-top: 22px;
+  padding: 16px 24px;
+}
+
+.wz-card .wz-whatsapp-label {
+  font-size: var(--text-wz-4);
+  line-height: 1.1;
+}
+
+.wz-card .wz-whatsapp-number {
+  font-size: var(--text-wz-1);
+}
+
+.wz-other {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 8px 14px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: var(--wz-hairline);
+}
+
+.wz-other dt {
+  padding-top: 2px;
+  font-size: var(--text-wz-1);
+  color: var(--color-wz-steel);
+}
+
+.wz-other dd {
+  overflow-wrap: anywhere;
+}
+
+.wz-other a,
+.wz-ft a {
+  text-decoration: underline;
+}
+
+/* ===== Footer (spec S7): the title block along the foot of the page,
+   ruled like a drawing sheet's ===== */
+
+.wz-ft {
+  margin-top: 32px;
+  font-size: var(--text-wz-1);
+  background: var(--color-wz-sheet);
+  border-top: var(--wz-ink-line);
+}
+
+.wz-ft-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.2fr) minmax(0, 1.5fr) minmax(0, 1.15fr)
+    minmax(0, 0.95fr);
+}
+
+.wz-ft-grid > * {
+  padding: 20px 22px 22px;
+}
+
+.wz-ft-grid > * + * {
+  border-left: 1px solid var(--color-wz-navy);
+}
+
+.wz-ft-grid > :first-child {
+  padding-left: 0;
+}
+
+.wz-ft-grid > :last-child {
+  padding-right: 0;
+}
+
+.wz-ft-firm {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.wz-ft-logo {
+  display: block;
+  flex: none;
+  width: 60px;
+  height: 60px;
+}
+
+.wz-ft-name {
+  font: 600 var(--text-wz-3) / 1.2 var(--font-wz-serif);
+}
+
+.wz-ft-claims {
+  margin-top: 4px;
+  color: var(--color-wz-steel);
+}
+
+.wz-ft dt,
+.wz-ft-label {
+  color: var(--color-wz-steel);
+}
+
+.wz-ft dd {
+  overflow-wrap: anywhere;
+}
+
+.wz-ft dd + dt {
+  margin-top: 10px;
+}
+
+.wz-ft a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.wz-ft-list li + li {
+  margin-top: 2px;
+}
+
+.wz-ft-base {
+  border-top: 1px solid var(--color-wz-navy);
+}
+
+.wz-ft-base .wz-ft-base-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 10px;
+  padding-bottom: 12px;
+  color: var(--color-wz-steel);
+}
+
+/* Two by two: the rules run to the window edges and the text keeps the
+   page grid's 48px inset. */
+@media (max-width: 1199px) {
+  .wz-ft .wz-wrap {
+    padding: 0;
+  }
+
+  .wz-ft-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wz-ft-grid > *,
+  .wz-ft-grid > :first-child,
+  .wz-ft-grid > :last-child,
+  .wz-ft .wz-ft-base-row {
+    padding-inline: 48px;
+  }
+
+  .wz-ft-grid > :nth-child(3) {
+    border-left: 0;
+  }
+
+  .wz-ft-grid > :nth-child(n + 3) {
+    border-top: 1px solid var(--color-wz-navy);
+  }
+}
+
+/* One column: sheets and cards unpin; their text sits about 38px in (16px
+   page inset, 20px sheet padding, the ink line), and the footer's text
+   lines up with it. */
+@media (max-width: 1099px) {
+  .wz-ft-grid > *,
+  .wz-ft-grid > :first-child,
+  .wz-ft-grid > :last-child,
+  .wz-ft .wz-ft-base-row {
+    padding-inline: 38px;
+  }
+
+  #wz-story {
+    padding-top: 48px;
+  }
+
+  .wz-story-sheet {
+    width: auto;
+    margin: 0;
+    padding: 30px 20px;
+  }
+
+  .wz-signoff {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    margin-top: -10px;
+    transform: none;
+  }
+
+  #wz-contact {
+    padding-top: 64px;
+  }
+
+  .wz-contact-board {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .wz-card {
+    width: auto;
+    margin-top: 0;
+    padding: 30px 20px 26px;
+    transform: none;
+  }
+
+  .wz-other a[href^='tel:'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 600px) {
+  .wz-ft-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wz-ft-grid > * + * {
+    border-left: 0;
+    border-top: 1px solid var(--color-wz-navy);
+  }
+
+  .wz-ft-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .wz-ft-firm {
+    gap: 12px;
+  }
+
+  /* Label left, value right, each link a full-height tap target. */
+  .wz-ft-fields {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+  }
+
+  .wz-ft dd + dt {
+    margin-top: 0;
+  }
+
+  .wz-ft-fields a {
+    min-height: 48px;
+  }
+
+  .wz-ft-text {
+    padding-block: 12px;
+  }
+
+  .wz-ft-list a,
+  .wz-ft-base a {
+    min-height: 44px;
+  }
+
+  .wz-ft-list li + li {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .wz-other {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .wz-other dd {
+    margin-bottom: 10px;
+  }
+}
