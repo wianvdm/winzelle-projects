@@ -275,6 +275,12 @@
   pointer-events: auto;
 }
 
+.wz-cluster .wz-print {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
 /* Board position (x, y, width on the 1184px board), tilt, aspect and crop
    per print. The roof crop keeps the lifted tile below the frame. */
 .wz-opening-paving-forecourt {

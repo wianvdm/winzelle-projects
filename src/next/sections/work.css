@@ -1,0 +1,529 @@
+/* Our work and the photo lightbox (spec S4). No inline styles: the CSP in
+   public/_headers forbids them, so per-print width, tilt, drop, aspect and
+   crop live here under each photo id. */
+
+/* ===== The label sheet with its tags, beside the prints ===== */
+#wz-work {
+  padding-top: 130px;
+}
+
+/* The label sheet travels down beside the prints, so it never leaves a dead
+   column under it. */
+.wz-work-board {
+  display: grid;
+  grid-template-columns: 372px minmax(0, 1fr);
+  gap: 0 30px;
+  align-items: start;
+}
+
+.wz-work-side {
+  position: sticky;
+  top: 88px;
+}
+
+.wz-work-label {
+  position: relative;
+  padding: 24px 28px 22px;
+  background: var(--color-wz-sheet);
+  box-shadow: var(--shadow-wz-note);
+  transform: rotate(-1deg);
+}
+
+.wz-work-label > p {
+  margin: 12px 0 0;
+  font-size: var(--text-wz-body);
+  line-height: 1.5;
+}
+
+.wz-work-label .wz-fb-note {
+  margin: 14px 0 8px;
+}
+
+.wz-work-status:empty {
+  display: none;
+}
+
+/* ===== Luggage tags: each one shows the prints for one kind of work ===== */
+.wz-tags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.wz-tag {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  color: var(--color-wz-navy);
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  transform: rotate(var(--r, 0deg));
+  filter: drop-shadow(0 1px 1px rgba(16, 38, 58, 0.18))
+    drop-shadow(2px 4px 4px rgba(16, 38, 58, 0.16));
+  transition:
+    transform 140ms ease,
+    filter 140ms ease;
+}
+
+.wz-tag[data-kind='all'] {
+  grid-column: 1 / -1;
+  width: calc(50% - 6px);
+}
+
+/* Tilts in tag order, "All our work" first. */
+.wz-tag:nth-child(1) {
+  --r: -1.2deg;
+}
+.wz-tag:nth-child(2) {
+  --r: 0.8deg;
+}
+.wz-tag:nth-child(3) {
+  --r: -0.6deg;
+}
+.wz-tag:nth-child(4) {
+  --r: 1.1deg;
+}
+.wz-tag:nth-child(5) {
+  --r: 0.7deg;
+}
+.wz-tag:nth-child(6) {
+  --r: -1deg;
+}
+.wz-tag:nth-child(7) {
+  --r: 0.5deg;
+}
+.wz-tag:nth-child(8) {
+  --r: -0.8deg;
+}
+.wz-tag:nth-child(9) {
+  --r: 1deg;
+}
+
+.wz-tag-shape {
+  position: absolute;
+  inset: 0;
+  background: var(--color-wz-navy);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%);
+}
+
+.wz-tag-shape::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--color-wz-tag-paper);
+  clip-path: polygon(13.4px 0, 100% 0, 100% 100%, 13.4px 100%, 0 50%);
+}
+
+.wz-tag-hole {
+  position: absolute;
+  z-index: 2;
+  top: calc(50% - 4px);
+  left: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-wz-sheet);
+  box-shadow: inset 0 0 0 1px var(--color-wz-steel);
+}
+
+.wz-tag-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 52px;
+  padding: 6px 6px 6px 24px;
+  font: 600 var(--text-wz-1) / 1.2 var(--font-wz-serif);
+  text-wrap: balance;
+}
+
+@media (hover: hover) {
+  .wz-tag:hover {
+    transform: rotate(var(--r, 0deg)) translateY(-2px);
+    filter: drop-shadow(0 1px 1px rgba(16, 38, 58, 0.2))
+      drop-shadow(3px 7px 6px rgba(16, 38, 58, 0.22));
+  }
+}
+
+.wz-tag[aria-pressed='true'] {
+  transform: rotate(0deg) translateY(-2px);
+}
+
+.wz-tag[aria-pressed='true'] .wz-tag-shape::after {
+  background: var(--color-wz-navy);
+}
+
+.wz-tag[aria-pressed='true'] .wz-tag-text {
+  color: #ffffff;
+  background: var(--color-wz-navy);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%);
+}
+
+/* ===== Facebook: more of the work than the handpicked prints. Navy, so it
+   never competes with the warm WhatsApp actions. ===== */
+.wz-fb-note {
+  margin: 16px 0 8px;
+  font-size: var(--text-wz-body);
+  line-height: 1.45;
+}
+
+.wz-fb {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 16px;
+  color: var(--color-wz-navy);
+  font-weight: 600;
+  font-size: var(--text-wz-1);
+  line-height: 1.2;
+  text-decoration: none;
+  background: #ffffff;
+  border: 1.5px solid var(--color-wz-navy);
+  border-radius: 2px;
+}
+
+@media (hover: hover) {
+  .wz-fb:hover {
+    color: #ffffff;
+    background: var(--color-wz-navy);
+  }
+}
+
+.wz-fb svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.wz-fb-link {
+  color: inherit;
+  font-size: var(--text-wz-1);
+  text-underline-offset: 3px;
+}
+
+/* ===== The prints, in board order, with the ask pinned after the last
+   one showing ===== */
+.wz-prints {
+  padding-top: 8px;
+}
+
+.wz-prints .wz-print {
+  position: relative;
+  display: inline-block;
+  width: var(--w);
+  margin: var(--dy, 0px) 20px 36px 0;
+  vertical-align: top;
+  transform: rotate(var(--r, 0deg)) translateY(var(--lift, 0px));
+}
+
+.wz-prints .wz-print[hidden] {
+  display: none;
+}
+
+.wz-work-ask {
+  position: relative;
+  display: inline-block;
+  width: 260px;
+  margin: 6px 20px 36px 0;
+  padding: 22px 24px 24px;
+  font-size: var(--text-wz-body);
+  vertical-align: top;
+  background: var(--color-wz-sheet);
+  box-shadow: var(--shadow-wz-note);
+  transform: rotate(0.8deg);
+}
+
+.wz-work-ask p {
+  margin: 0 0 14px;
+}
+
+/* Width, tilt and drop on the board; aspect and crop (spec S4 table). */
+.wz-work-waterproof-roof {
+  --w: 270px;
+  --r: 1.2deg;
+  --ar: 16 / 9;
+  --op: 50% 50%;
+}
+.wz-work-kitchenette-l {
+  --w: 245px;
+  --r: -1.1deg;
+  --dy: 14px;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+.wz-work-roof-ridge-sealed {
+  --w: 180px;
+  --r: 1.8deg;
+  --ar: 3 / 4;
+  --op: 50% 50%;
+}
+.wz-work-wall-facebrick {
+  --w: 250px;
+  --r: 1.3deg;
+  --dy: 4px;
+  --ar: 3 / 2;
+  --op: 50% 0%;
+}
+.wz-work-paving-forecourt {
+  --w: 250px;
+  --r: -0.8deg;
+  --dy: 6px;
+  --ar: 16 / 9;
+  --op: 50% 30%;
+}
+.wz-work-bathroom-basin {
+  --w: 215px;
+  --r: -0.7deg;
+  --dy: 16px;
+  --ar: 16 / 9;
+  --op: 40% 50%;
+}
+.wz-work-scaffolding-facade {
+  --w: 240px;
+  --r: 0.8deg;
+  --ar: 4 / 3;
+  --op: 62% 40%;
+}
+.wz-work-waterproof-curve {
+  --w: 230px;
+  --r: -1.2deg;
+  --dy: 8px;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+.wz-work-kitchenette-sink {
+  --w: 225px;
+  --r: -1.6deg;
+  --dy: 12px;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+.wz-work-roof-verge-paint {
+  --w: 250px;
+  --r: 1.6deg;
+  --ar: 8 / 5;
+  --op: 50% 0%;
+}
+.wz-work-paving-kerb {
+  --w: 200px;
+  --r: -1.5deg;
+  --dy: 10px;
+  --ar: 1 / 1;
+  --op: 50% 0%;
+}
+.wz-work-bathroom-bath {
+  --w: 260px;
+  --r: -0.9deg;
+  --ar: 16 / 9;
+  --op: 50% 50%;
+}
+.wz-work-ceiling-fan {
+  --w: 250px;
+  --r: 0.9deg;
+  --ar: 4 / 3;
+  --op: 50% 40%;
+}
+.wz-work-waterproof-wall {
+  --w: 200px;
+  --r: 1.1deg;
+  --dy: 6px;
+  --ar: 4 / 3;
+  --op: 50% 50%;
+}
+
+/* ===== Lightbox: one print at a time over a dark wash ===== */
+.wz-lightbox {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  color: #ffffff;
+  background: rgba(10, 26, 40, 0.9);
+  border: 0;
+  overscroll-behavior: contain;
+}
+
+.wz-lightbox::backdrop {
+  background: transparent;
+}
+
+/* The page stays put behind an open photo. */
+html:has(.wz-lightbox[open]) {
+  overflow: hidden;
+}
+
+.wz-lightbox :focus-visible {
+  outline-color: #ffffff;
+}
+
+.wz-lb-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+  padding: 24px 80px;
+  touch-action: pan-y;
+}
+
+.wz-lb-print {
+  width: fit-content;
+  padding: 10px 10px 0;
+  color: var(--color-wz-navy);
+  background: var(--color-wz-print-paper);
+  box-shadow: var(--shadow-wz-raised);
+}
+
+.wz-lb-photo {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-wz-mist);
+}
+
+.wz-lb-photo img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--op, 50% 0%);
+}
+
+/* The caption never widens the print: it takes the photo's width and wraps
+   under it. */
+.wz-lb-caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 24px;
+  width: 0;
+  min-width: 100%;
+  padding: 10px 2px 12px;
+  font-size: var(--text-wz-1);
+}
+
+.wz-lb-caption .wz-whatsapp {
+  min-height: 44px;
+  padding: 9px 16px;
+  font-size: var(--text-wz-1);
+}
+
+.wz-lb-btn {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  color: #ffffff;
+  font-size: var(--text-wz-3);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+.wz-lb-btn[hidden] {
+  display: none;
+}
+
+@media (hover: hover) {
+  .wz-lb-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+}
+
+.wz-lb-close {
+  top: 20px;
+  right: 20px;
+}
+
+.wz-lb-prev {
+  top: calc(50% - 26px);
+  left: 16px;
+}
+
+.wz-lb-next {
+  top: calc(50% - 26px);
+  right: 16px;
+}
+
+.wz-lb-count {
+  margin: 0;
+  color: #dfe8ef;
+  font-size: var(--text-wz-1);
+}
+
+/* ===== Narrow windows and phones: the label sheet, then the prints two to
+   a row, then the ask ===== */
+@media (max-width: 1099px) {
+  #wz-work {
+    padding-top: 56px;
+  }
+
+  .wz-work-board {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .wz-work-side {
+    position: static;
+  }
+
+  .wz-work-label {
+    transform: none;
+  }
+
+  .wz-prints {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 24px 16px;
+  }
+
+  .wz-prints .wz-print {
+    width: calc(50% - 8px);
+    margin: 0;
+  }
+
+  .wz-prints .wz-work-ask {
+    width: 100%;
+    margin: 0;
+    transform: none;
+  }
+
+  .wz-lb-inner {
+    padding: 70px 12px 24px;
+  }
+
+  .wz-lb-prev,
+  .wz-lb-next {
+    top: auto;
+    bottom: 16px;
+  }
+
+  .wz-lb-caption .wz-whatsapp {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 520px) {
+  .wz-prints .wz-print figcaption {
+    letter-spacing: 0.02em;
+  }
+}

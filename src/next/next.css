@@ -219,6 +219,29 @@ body:has(.wz-page, .wz-home) {
     box-shadow 160ms ease;
 }
 
+/* A print lifts off the board under the pointer or the keyboard. */
+@media (hover: hover) {
+  .wz-print:hover {
+    --lift: -4px;
+    box-shadow: var(--shadow-wz-raised);
+  }
+}
+
+.wz-print:focus-within {
+  --lift: -4px;
+  z-index: 8;
+  box-shadow: var(--shadow-wz-raised);
+}
+
+.wz-print-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
 .wz-photo {
   position: relative;
   display: block;
@@ -241,8 +264,9 @@ body:has(.wz-page, .wz-home) {
   padding: 8px 2px 10px;
   font-size: var(--text-wz-1);
   line-height: 1.35;
-  /* Long suburb names must not run past the print edge at 320px. */
+  /* Long words must not run past the print edge at 320px. */
   overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 /* Narrow windows and phones: everything unpins into one column. */

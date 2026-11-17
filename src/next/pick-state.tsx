@@ -4,6 +4,9 @@
 // WhatsApp messages and the Our work filter stay at their defaults on load.
 // openTradeId is the trade on the explorer sheet: the picked one, or Paving
 // on load. Its tile shows as lifted onto the sheet either way.
+// workTradeId is the trade the Our work board was last pointed at, by a
+// tile pick or a luggage tag; null shows all our work. A pick always resets
+// it, so picking a tile again after using the tags filters the board again.
 
 import {
   createContext,
@@ -21,7 +24,9 @@ export const DEFAULT_OPEN_TRADE_ID: TradeId = 'paving'
 export interface PickState {
   pickedTradeId: TradeId | null
   openTradeId: TradeId
+  workTradeId: TradeId | null
   pick: (tradeId: TradeId) => void
+  showWork: (tradeId: TradeId | null) => void
   clear: () => void
 }
 
@@ -29,18 +34,24 @@ const PickStateContext = createContext<PickState | null>(null)
 
 export function PickStateProvider({ children }: { children: ReactNode }) {
   const [pickedTradeId, setPickedTradeId] = useState<TradeId | null>(null)
+  const [workTradeId, setWorkTradeId] = useState<TradeId | null>(null)
 
-  const pick = useCallback((tradeId: TradeId) => setPickedTradeId(tradeId), [])
+  const pick = useCallback((tradeId: TradeId) => {
+    setPickedTradeId(tradeId)
+    setWorkTradeId(tradeId)
+  }, [])
   const clear = useCallback(() => setPickedTradeId(null), [])
 
   const value = useMemo(
     () => ({
       pickedTradeId,
       openTradeId: pickedTradeId ?? DEFAULT_OPEN_TRADE_ID,
+      workTradeId,
       pick,
+      showWork: setWorkTradeId,
       clear,
     }),
-    [pickedTradeId, pick, clear],
+    [pickedTradeId, workTradeId, pick, clear],
   )
 
   return (
