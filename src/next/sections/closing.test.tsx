@@ -117,7 +117,9 @@ describe('ContactCard', () => {
       name: 'Tell us what needs doing',
     })
     expect(section.id).toBe('wz-contact')
-    expect(within(section).getAllByRole('link').map(linkSummary)).toEqual([
+    const card = section.querySelector<HTMLElement>('.wz-card')
+    expect(card).not.toBeNull()
+    expect(within(card!).getAllByRole('link').map(linkSummary)).toEqual([
       ['WhatsApp us082 878 1557', whatsappHref, '_blank', 'noopener'],
       ['082 878 1557', 'tel:+27828781557', null, null],
       ['info@winzelle.co.za', 'mailto:info@winzelle.co.za', null, null],
@@ -127,6 +129,17 @@ describe('ContactCard', () => {
     expect(
       [...section.querySelectorAll('dt')].map((term) => term.textContent),
     ).toEqual(['Phone', 'Email', 'Address', 'Facebook'])
+  })
+
+  it('hangs the card over the map print, which starts as a still picture', () => {
+    render(<ContactCard whatsappHref={whatsappHref} />)
+
+    const board = document.querySelector('.wz-contact-board')
+    expect(
+      [...(board?.children ?? [])].map((child) => child.className),
+    ).toEqual(['wz-card wz-pin', 'wz-map-print wz-pin wz-pin-print'])
+    expect(screen.getByRole('button', { name: 'Show the map' })).toBeDefined()
+    expect(document.querySelector('.leaflet-container')).toBeNull()
   })
 
   it('carries the flagged service-area line in the lead', () => {
@@ -252,5 +265,17 @@ describe('closing.css', () => {
 
   it('uses no data: URLs', () => {
     expect(css).not.toMatch(/data:/)
+  })
+
+  it('places the map pin as the prototype does: 68% across, centred on one column', () => {
+    expect(css).toMatch(
+      /\.wz-map-preview \{\s+position: absolute;\s+left: calc\(68% - 640px\);\s+top: calc\(50% - 385px\);\s+width: 1152px;/,
+    )
+    expect(css).toMatch(
+      /\.wz-map-mark \{\s+position: absolute;\s+left: calc\(68% - 14px\);/,
+    )
+    const oneColumn = css.slice(css.indexOf('@media (max-width: 1099px)'))
+    expect(oneColumn).toMatch(/\.wz-map-frame \{\s+height: 300px;/)
+    expect(oneColumn).toMatch(/\.wz-map-mark \{\s+left: calc\(50% - 14px\);/)
   })
 })

@@ -36,27 +36,37 @@ const STOP_WORDS = new Set([
 ])
 
 // The G11 network allow-list. Same-origin requests are always allowed; this
-// list covers external origins. OpenStreetMap tiles join only when the map
-// activates (#100); until then a tile request fails the gate.
+// list covers external origins. OpenStreetMap tiles pass only after the probe
+// has pressed the map's "Show the map" control (#100), and only from the one
+// tile host the CSP names; before that a tile request fails the gate. A
+// stubbed entry never reaches its host: the probe answers it with a stand-in,
+// because OSM's tile policy forbids fetching tiles nobody is viewing.
 const EXTERNAL_ALLOWLIST = [
   {
     host: 'static.cloudflareinsights.com',
     name: 'Cloudflare Web Analytics beacon',
-    active: true,
   },
-  { host: 'api.web3forms.com', name: 'Web3Forms', active: true },
+  { host: 'api.web3forms.com', name: 'Web3Forms' },
   {
     host: 'tile.openstreetmap.org',
     name: 'OpenStreetMap tiles',
-    active: false,
+    exactHost: true,
+    needsMapActive: true,
+    stubbed: true,
     inactiveReason: 'map tiles are allowed only after map activation (#100)',
   },
 ]
 
+function matchesHost(hostname, entry) {
+  if (hostname === entry.host) return true
+  return !entry.exactHost && hostname.endsWith(`.${entry.host}`)
+}
+
 // Classifies one request URL against the G11 allow-list. pageOrigin is the
-// origin of the page under test. External hosts must use https:; an http
-// response can be rewritten in transit, so the hostname alone is not enough.
-export function classifyRequest(rawUrl, pageOrigin) {
+// origin of the page under test; state.mapActive is true once the probe has
+// activated the map. External hosts must use https:; an http response can be
+// rewritten in transit, so the hostname alone is not enough.
+export function classifyRequest(rawUrl, pageOrigin, state = {}) {
   if (rawUrl.startsWith('data:') || rawUrl === 'about:blank')
     return { allowed: true, kind: 'inline' }
   let url
@@ -70,27 +80,25 @@ export function classifyRequest(rawUrl, pageOrigin) {
     }
   }
   if (url.origin === pageOrigin) return { allowed: true, kind: 'same-origin' }
-  for (const entry of EXTERNAL_ALLOWLIST) {
-    if (
-      url.hostname === entry.host ||
-      url.hostname.endsWith(`.${entry.host}`)
-    ) {
-      if (url.protocol !== 'https:')
-        return {
-          allowed: false,
-          kind: entry.name,
-          reason: `external hosts must use https: (got ${url.protocol})`,
-        }
-      return entry.active
-        ? { allowed: true, kind: entry.name }
-        : { allowed: false, kind: entry.name, reason: entry.inactiveReason }
+  const entry = EXTERNAL_ALLOWLIST.find((candidate) =>
+    matchesHost(url.hostname, candidate),
+  )
+  if (!entry)
+    return {
+      allowed: false,
+      kind: 'external',
+      reason: 'not on the G11 allow-list',
     }
-  }
-  return {
-    allowed: false,
-    kind: 'external',
-    reason: 'not on the G11 allow-list',
-  }
+  if (url.protocol !== 'https:')
+    return {
+      allowed: false,
+      kind: entry.name,
+      reason: `external hosts must use https: (got ${url.protocol})`,
+    }
+  if (entry.needsMapActive && !state.mapActive)
+    return { allowed: false, kind: entry.name, reason: entry.inactiveReason }
+  if (entry.stubbed) return { allowed: true, kind: entry.name, stubbed: true }
+  return { allowed: true, kind: entry.name }
 }
 
 const pick = (item, keys) =>
@@ -846,7 +854,39 @@ function g10(parts, survey) {
   }
 }
 
-function g11(log) {
+// The map phase (#100). Once the contact section is on the page, its map
+// must offer "Show the map", pressing it must load at least one tile, and one
+// press of zoom-in must replace those tiles with the next level's, which runs
+// the tile-removal path under the real CSP.
+function mapActivationFailures(map, survey) {
+  if (!survey?.sections?.contact || !map) return []
+  if (!map.found)
+    return [
+      'the contact section has no "Show the map" control, so map activation was not exercised',
+    ]
+  if (!map.tilesLoaded)
+    return ['map activated but no OpenStreetMap tile loaded']
+  if (!map.zoomIn?.found)
+    return [
+      'the live map has no zoom-in control, so tile removal was not exercised',
+    ]
+  if (!map.zoomIn.tilesLoaded || map.zoomIn.zoom !== map.zoom + 1)
+    return [
+      `zoom-in did not settle on the next level's tiles (zoom ${map.zoom} to ${map.zoomIn.zoom ?? 'mixed'})`,
+    ]
+  return []
+}
+
+function mapSummary(map, requests) {
+  if (!map?.found) return ''
+  const stubbed = requests.filter((request) => request.stubbed).length
+  const zoomIn = map.zoomIn?.found
+    ? `, then ${map.zoomIn.tilesLoaded} at zoom ${map.zoomIn.zoom}`
+    : ''
+  return `; map activated, ${map.tilesLoaded} tiles loaded at zoom ${map.zoom}${zoomIn}; ${stubbed} tile requests answered by the probe's stub`
+}
+
+function g11(log, map, survey) {
   const disallowed = dedupe(
     log.requests.filter((request) => !request.allowed),
     (request) => request.url,
@@ -861,6 +901,10 @@ function g11(log) {
       selector: null,
       text: `request ${request.url} (${request.kind || 'unknown'}: ${request.reason || 'not allowed'})`,
     })),
+    ...mapActivationFailures(map, survey).map((text) => ({
+      selector: null,
+      text,
+    })),
   ]
   // A request-gate error means the probe could not vet that request, so the
   // network rule was not fully measured: unknown, never pass.
@@ -870,11 +914,12 @@ function g11(log) {
   const status = fails.length ? 'fail' : gateErrors.length ? 'unknown' : 'pass'
   return {
     status,
-    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
+    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${mapSummary(map, log.requests)}${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
     measured: {
       console: log.console,
       requests: log.requests,
       requestGateErrors: gateErrors,
+      map: map || null,
     },
     failures: fails,
   }
@@ -1157,7 +1202,7 @@ export function finalise(data) {
     G8: g8(parts, survey),
     G9: g9(parts, survey),
     G10: g10(parts, survey),
-    G11: g11(log),
+    G11: g11(log, parts.map, survey),
     G12: g12(parts, survey),
   }
   // A missing shell (no main or h1 at survey time) means the flag-off page

@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { contactFacts, quoteForm } from './contact.ts'
+import { contactFacts, mapPin, quoteForm } from './contact.ts'
 import { fillerValues } from './filler.ts'
 import {
   getWorkPhoto,
@@ -170,6 +170,24 @@ describe('work photos', () => {
 })
 
 describe('contact facts and form strings', () => {
+  it('points the directions link at the map pin, to four decimals', () => {
+    expect(mapPin).toEqual({ latitude: -33.9616, longitude: 25.492 })
+    expect(contactFacts.directionsUrl).toBe(
+      'https://www.openstreetmap.org/directions?to=-33.9616%2C25.4920',
+    )
+  })
+
+  it('keeps the map print strings and the OSM copyright link', () => {
+    expect(contactFacts.mapTag).toBe('10 King Place: get directions')
+    expect(contactFacts.mapCaption).toBe('Ben Kamma, near Walker Drive.')
+    expect(contactFacts.mapAttribution).toBe('© OpenStreetMap contributors')
+    expect(contactFacts.mapAttributionUrl).toBe(
+      'https://www.openstreetmap.org/copyright',
+    )
+    expect(contactFacts.mapShowLabel).toBe('Show the map')
+    expect(contactFacts.mapShowNote).toContain('OpenStreetMap')
+  })
+
   it('flags the service-area line and the prototype submit status as filler', () => {
     expect(fillerValues.has(contactFacts.serviceArea)).toBe(true)
     expect(fillerValues.has(quoteForm.submitStatus)).toBe(true)

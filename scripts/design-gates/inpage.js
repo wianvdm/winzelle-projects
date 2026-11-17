@@ -48,6 +48,7 @@
   const SKIP_TEXT_PARENTS = 'script, style, noscript, template, title, desc'
   const SHELL_WAIT_MS = 5000
   const SHELL_POLL_MS = 100
+  const MAP_POLL_MS = 100
 
   // ---------- identity and description ----------
   const ids = new WeakMap()
@@ -1298,6 +1299,52 @@
       .filter(isShown)
       .map((el) => ({ ...describe(el), href: el.getAttribute('href') }))
   }
+  // The map's activation control (#100): the button named "Show the map".
+  function findMapControl() {
+    const control = [...document.querySelectorAll('button')].find(
+      (el) =>
+        isShown(el) &&
+        !el.closest(IGNORE) &&
+        /^show the map\b/i.test(nameOf(el)),
+    )
+    return control ? { ...describe(control), name: nameOf(control) } : null
+  }
+  // The live map's zoom-in control, as Leaflet names it.
+  function findMapZoomIn() {
+    const control = [
+      ...document.querySelectorAll('.leaflet-control-zoom-in'),
+    ].find(isShown)
+    return control ? { ...describe(control), name: nameOf(control) } : null
+  }
+  // A tile's zoom level, read from its /{z}/{x}/{y}.png address.
+  function tileZoom(tile) {
+    const match = /\/(\d+)\/\d+\/\d+\.png$/.exec(tile.getAttribute('src') || '')
+    return match ? Number(match[1]) : null
+  }
+  // Waits until the map shows one zoom level other than `previousZoom`, every
+  // tile on it decoded. Resolves with the decoded tile count and that level,
+  // or with what is on screen when the time runs out (zoom null while mixed).
+  async function waitForMapTiles(timeoutMs, previousZoom = null) {
+    const deadline = performance.now() + timeoutMs
+    let state = { loaded: 0, zoom: null }
+    while (performance.now() < deadline) {
+      const tiles = [...document.querySelectorAll('img.leaflet-tile')]
+      const zooms = new Set(tiles.map(tileZoom))
+      const loaded = tiles.filter(
+        (tile) => tile.complete && tile.naturalWidth > 0,
+      ).length
+      const zoom = zooms.size === 1 ? [...zooms][0] : null
+      state = { loaded, zoom }
+      const settled =
+        tiles.length > 0 &&
+        loaded === tiles.length &&
+        zoom !== null &&
+        zoom !== previousZoom
+      if (settled) return state
+      await new Promise((resolve) => setTimeout(resolve, MAP_POLL_MS))
+    }
+    return state
+  }
   async function pointFor(id) {
     const el = byId.get(id)
     if (!el || !el.isConnected) return { error: `element ${id} is gone` }
@@ -2148,6 +2195,9 @@
     findFilters,
     findPhotoOpeners,
     findNavLinks,
+    findMapControl,
+    findMapZoomIn,
+    waitForMapTiles,
     pointFor,
     focusById,
     pressedState,

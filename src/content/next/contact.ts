@@ -20,7 +20,18 @@ export interface ContactFacts {
   mapCaption: string
   mapLinkLabel: string
   mapAttribution: string
+  mapAttributionUrl: string
+  mapShowLabel: string
+  mapShowNote: string
+  mapFailedNote: string
+  mapRegionLabel: string
+  mapPinLabel: string
 }
+
+/** The pin on the map print and the end point of the directions link. */
+export const mapPin = { latitude: -33.9616, longitude: 25.492 } as const
+
+const COORDINATE_DECIMALS = 4
 
 export const contactFacts: ContactFacts = {
   phoneDisplay: '082 878 1557',
@@ -28,8 +39,7 @@ export const contactFacts: ContactFacts = {
   whatsappNumber: '27828781557',
   email: 'info@winzelle.co.za',
   address: '10 King Place, Ben Kamma, Port Elizabeth, 6025',
-  directionsUrl:
-    'https://www.openstreetmap.org/directions?to=-33.9616%2C25.4920',
+  directionsUrl: `https://www.openstreetmap.org/directions?to=${mapPin.latitude.toFixed(COORDINATE_DECIMALS)}%2C${mapPin.longitude.toFixed(COORDINATE_DECIMALS)}`,
   facebookUrl: 'https://www.facebook.com/winzelleprojects',
   facebookLabel: 'facebook.com/winzelleprojects',
   serviceArea: filler(
@@ -43,6 +53,13 @@ export const contactFacts: ContactFacts = {
   mapLinkLabel:
     'Directions to 10 King Place, Ben Kamma, on OpenStreetMap (opens in a new tab)',
   mapAttribution: '© OpenStreetMap contributors',
+  mapAttributionUrl: 'https://www.openstreetmap.org/copyright',
+  mapShowLabel: 'Show the map',
+  mapShowNote: 'The map loads from OpenStreetMap.',
+  mapFailedNote: 'The map did not load. Try again, or use the directions.',
+  mapRegionLabel:
+    'Map around 10 King Place, Ben Kamma. Arrow keys move it; plus and minus zoom.',
+  mapPinLabel: 'Winzelle Projects, 10 King Place, Ben Kamma',
 }
 
 /** Button labels stay short and general; context goes in the message. */

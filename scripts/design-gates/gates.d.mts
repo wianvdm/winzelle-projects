@@ -17,6 +17,8 @@ export interface RequestVerdict {
   allowed: boolean
   kind: string
   reason?: string
+  /** The probe answers this request itself; it never reaches the host. */
+  stubbed?: boolean
 }
 
 export interface ProbeViewport {
@@ -43,9 +45,15 @@ export interface GateOutcome {
   screenshots: string[]
 }
 
+export interface RequestState {
+  /** True once the probe has pressed the map's "Show the map" control. */
+  mapActive?: boolean
+}
+
 export function classifyRequest(
   rawUrl: string,
   pageOrigin: string,
+  state?: RequestState,
 ): RequestVerdict
 export function gateOutcome(result: ProbeResult): GateOutcome
 export function finalise(data: {

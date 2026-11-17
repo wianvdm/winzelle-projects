@@ -3,6 +3,7 @@ import {
   footer as fieldLabels,
   whatsappLabels,
 } from '../../content/next/index.ts'
+import { ContactMap } from '../map/ContactMap.tsx'
 import { PHONE_HREF } from './Header.tsx'
 import './closing.css'
 
@@ -15,9 +16,9 @@ interface ContactCardProps {
 }
 
 /**
- * Contact (spec S6): the pinned card, WhatsApp first. The board's grid
- * already holds the columns the map print (#100) and the message form
- * (#101) take beside and under the card.
+ * Contact (spec S6): the pinned card, WhatsApp first, hanging over the map
+ * print. The board's grid already holds the column the message form (#101)
+ * takes under the card.
  */
 export function ContactCard({ whatsappHref }: ContactCardProps) {
   return (
@@ -77,6 +78,7 @@ export function ContactCard({ whatsappHref }: ContactCardProps) {
               </dd>
             </dl>
           </div>
+          <ContactMap />
         </div>
       </div>
     </section>

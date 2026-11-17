@@ -35,6 +35,23 @@ const READY_SURVEY = {
   sections: { ...SHELL_SURVEY.sections, hero: true },
 }
 
+// The contact section, which holds the map (#100), is on the page.
+const CONTACT_SURVEY = {
+  ...SHELL_SURVEY,
+  sections: { ...SHELL_SURVEY.sections, contact: true },
+}
+
+const OSM_TILE = 'https://tile.openstreetmap.org/16/37407/39347.png'
+
+// What the probe's map phase records when everything works.
+const ACTIVE_MAP = {
+  found: true,
+  control: 'Show the map',
+  tilesLoaded: 12,
+  zoom: 15,
+  zoomIn: { found: true, tilesLoaded: 9, zoom: 16 },
+}
+
 // The screenshot sets probe.mjs captures on a full run.
 const SCREENSHOT_SETS = [
   '1280x800',
@@ -144,12 +161,60 @@ describe('classifyRequest', () => {
   })
 
   it('blocks OpenStreetMap tiles until map activation (#100)', () => {
-    const verdict = classifyRequest(
-      'https://a.tile.openstreetmap.org/1/2/3.png',
-      ORIGIN,
-    )
+    const verdict = classifyRequest(OSM_TILE, ORIGIN)
     expect(verdict.allowed).toBe(false)
     expect(verdict.reason).toContain('#100')
+    expect(
+      classifyRequest(OSM_TILE, ORIGIN, { mapActive: false }).allowed,
+    ).toBe(false)
+  })
+
+  it('allows OpenStreetMap tiles once the map is active, stubbed', () => {
+    expect(classifyRequest(OSM_TILE, ORIGIN, { mapActive: true })).toEqual({
+      allowed: true,
+      kind: 'OpenStreetMap tiles',
+      stubbed: true,
+    })
+  })
+
+  it('stubs no other allow-listed host', () => {
+    for (const url of [
+      `${ORIGIN}/next`,
+      'https://api.web3forms.com/submit',
+      'https://static.cloudflareinsights.com/beacon.min.js',
+    ])
+      expect(
+        classifyRequest(url, ORIGIN, { mapActive: true }).stubbed,
+        url,
+      ).toBeUndefined()
+  })
+
+  it('allows only https from the one tile host after activation', () => {
+    const active = { mapActive: true }
+    const http = classifyRequest(
+      'http://tile.openstreetmap.org/16/1/2.png',
+      ORIGIN,
+      active,
+    )
+    expect(http.allowed).toBe(false)
+    expect(http.reason).toContain('https:')
+    for (const url of [
+      'https://a.tile.openstreetmap.org/16/1/2.png',
+      'https://www.openstreetmap.org/directions',
+      'https://nominatim.openstreetmap.org/search?q=x',
+    ])
+      expect(classifyRequest(url, ORIGIN, active).allowed, url).toBe(false)
+  })
+
+  it('leaves the other allow-list entries alone when the map is active', () => {
+    const active = { mapActive: true }
+    expect(
+      classifyRequest('https://api.web3forms.com/submit', ORIGIN, active)
+        .allowed,
+    ).toBe(true)
+    expect(
+      classifyRequest('https://example.com/tracker.js', ORIGIN, active).allowed,
+    ).toBe(false)
   })
 
   it('refuses http for allow-listed external hosts', () => {
@@ -511,6 +576,81 @@ describe('finalise verdicts', () => {
     const data = probeData()
     data.errors = { G7: ['WhatsApp links: boom'] }
     expect(gate(finalise(data), 'G7').status).toBe('skipped')
+  })
+
+  it('fails G11 on a tile request made before map activation', () => {
+    const data = probeData()
+    data.log.requests = [
+      { phase: '1280', url: OSM_TILE, ...classifyRequest(OSM_TILE, ORIGIN) },
+    ] as unknown[]
+    expect(gate(finalise(data), 'G11').status).toBe('fail')
+  })
+
+  it('passes G11 when the activated map loaded tiles and zoomed in', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { ...ACTIVE_MAP }
+    data.log.requests = [
+      {
+        phase: '1280-map',
+        url: OSM_TILE,
+        ...classifyRequest(OSM_TILE, ORIGIN, { mapActive: true }),
+      },
+    ] as unknown[]
+    const g11 = gate(finalise(data), 'G11')
+    expect(g11.status).toBe('pass')
+    expect(g11.summary).toContain(
+      "map activated, 12 tiles loaded at zoom 15, then 9 at zoom 16; 1 tile requests answered by the probe's stub",
+    )
+  })
+
+  it('fails G11 when the activated map loaded no tile', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { ...ACTIVE_MAP, tilesLoaded: 0 }
+    const g11 = gate(finalise(data), 'G11')
+    expect(g11.status).toBe('fail')
+    expect(texts(g11.failures)).toEqual([
+      'map activated but no OpenStreetMap tile loaded',
+    ])
+  })
+
+  it('fails G11 when the live map has no zoom-in control', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { ...ACTIVE_MAP, zoomIn: { found: false } }
+    const g11 = gate(finalise(data), 'G11')
+    expect(texts(g11.failures)).toEqual([
+      'the live map has no zoom-in control, so tile removal was not exercised',
+    ])
+  })
+
+  it('fails G11 when zoom-in does not settle on the next level', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = {
+      ...ACTIVE_MAP,
+      zoomIn: { found: true, tilesLoaded: 14, zoom: null },
+    }
+    const g11 = gate(finalise(data), 'G11')
+    expect(g11.status).toBe('fail')
+    expect(texts(g11.failures)).toEqual([
+      "zoom-in did not settle on the next level's tiles (zoom 15 to mixed)",
+    ])
+  })
+
+  it('fails G11 when the contact section has no map control', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { found: false, tilesLoaded: 0 }
+    expect(gate(finalise(data), 'G11').status).toBe('fail')
+  })
+
+  it('does not ask for a map before the contact section lands', () => {
+    const data = probeData()
+    data.parts.map = { found: false, tilesLoaded: 0 }
+    expect(gate(finalise(data), 'G11').status).toBe('pass')
+  })
+
+  it('marks G11 unknown when the map activation step crashed', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.errors = { G11: ['map activation: boom'] }
+    expect(gate(finalise(data), 'G11').status).toBe('unknown')
   })
 
   it('marks G11 unknown when the request gate errored', () => {

@@ -30,6 +30,10 @@ const MAX_TAB_STOPS = 400
 const DIALOG_TAB_PRESSES = 10
 const MAX_SINGLE_SHOT_PX = 16000
 const LOAD_TIMEOUT_MS = 60000
+const MAP_TILES_TIMEOUT_MS = 20000
+// A valid 1x1 PNG: the probe's stand-in for every OpenStreetMap tile.
+const STUB_TILE_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 const KEYS = {
   Tab: { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 },
   Escape: { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 },
@@ -50,6 +54,9 @@ class Page {
     this.log = log
     this.phase = 'start'
     this.viewport = null
+    // OpenStreetMap tiles pass the request gate only while this is true: from
+    // the moment the probe presses "Show the map" until the next load.
+    this.mapActive = false
   }
 
   send(method, params) {
@@ -104,7 +111,9 @@ class Page {
 
   recordRequest(url, type) {
     if (url.startsWith('data:') || url === 'about:blank') return
-    const verdict = classifyRequest(url, this.pageOrigin)
+    const verdict = classifyRequest(url, this.pageOrigin, {
+      mapActive: this.mapActive,
+    })
     this.log.requests.push({
       phase: this.phase,
       url: url.slice(0, 200),
@@ -114,18 +123,28 @@ class Page {
   }
 
   // Requests outside the G11 allow-list are refused, so the run stays offline
-  // apart from the allow-listed origins; every refusal is on record.
+  // apart from the allow-listed origins; every refusal is on record. Stubbed
+  // requests (map tiles) get a stand-in PNG and never leave the machine.
   async gateRequest({ requestId, request }) {
-    const allowed =
-      request.url.startsWith('data:') ||
-      classifyRequest(request.url, this.pageOrigin).allowed
+    const verdict = request.url.startsWith('data:')
+      ? { allowed: true }
+      : classifyRequest(request.url, this.pageOrigin, {
+          mapActive: this.mapActive,
+        })
     try {
-      if (allowed) await this.send('Fetch.continueRequest', { requestId })
-      else
+      if (!verdict.allowed)
         await this.send('Fetch.failRequest', {
           requestId,
           errorReason: 'BlockedByClient',
         })
+      else if (verdict.stubbed)
+        await this.send('Fetch.fulfillRequest', {
+          requestId,
+          responseCode: 200,
+          responseHeaders: [{ name: 'Content-Type', value: 'image/png' }],
+          body: STUB_TILE_PNG_BASE64,
+        })
+      else await this.send('Fetch.continueRequest', { requestId })
     } catch (error) {
       this.log.probeNotes.push(`request gate: ${error.message}`)
     }
@@ -153,6 +172,7 @@ class Page {
 
   async load(viewport, options = {}) {
     this.viewport = viewport
+    this.mapActive = false
     const { width, height, mobile } = viewport
     await this.send('Emulation.setDeviceMetricsOverride', {
       width,
@@ -485,6 +505,38 @@ async function keyboardOperation(page, item, key) {
   }
 }
 
+// The map phase (#100): before the probe presses "Show the map", every
+// OpenStreetMap request fails G11; from the press on, tile requests to the one
+// allow-listed host get the probe's stub. One press of zoom-in then swaps the
+// tiles for the next level's, so Leaflet removes the old ones under the real
+// CSP. Runs last, so no later load can meet a stray tile.
+async function mapActivation(page) {
+  const control = await page.call('findMapControl')
+  if (!control) return { found: false, tilesLoaded: 0 }
+  page.mapActive = true
+  await page.clickElement(control.id)
+  const shown = await page.call('waitForMapTiles', MAP_TILES_TIMEOUT_MS)
+  return {
+    found: true,
+    control: control.name,
+    tilesLoaded: shown.loaded,
+    zoom: shown.zoom,
+    zoomIn: await zoomInOnce(page, shown.zoom),
+  }
+}
+
+async function zoomInOnce(page, fromZoom) {
+  const control = await page.call('findMapZoomIn')
+  if (!control) return { found: false }
+  await page.clickElement(control.id)
+  const zoomed = await page.call(
+    'waitForMapTiles',
+    MAP_TILES_TIMEOUT_MS,
+    fromZoom,
+  )
+  return { found: true, tilesLoaded: zoomed.loaded, zoom: zoomed.zoom }
+}
+
 async function tilePicks(page) {
   const atLoad = await page.call('whatsappLinks')
   const loadMessages = new Map(atLoad.map((link) => [link.id, link.message]))
@@ -791,6 +843,11 @@ async function run(targetUrl, outDir) {
     page.phase = '1280-reduced-motion'
     await page.load(desktop, { reducedMotion: true })
     parts.G10 = await step('G10', 'reduced motion', () => motionCheck(page))
+
+    // Map activation at 1280, last (see mapActivation)
+    page.phase = '1280-map'
+    await page.load(desktop)
+    parts.map = await step('G11', 'map activation', () => mapActivation(page))
   } finally {
     await browser.close()
   }
