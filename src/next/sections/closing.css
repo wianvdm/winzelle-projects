@@ -131,6 +131,131 @@
   text-decoration: underline;
 }
 
+/* ===== Map print (spec S6): a still picture of the map until the visitor
+   asks for the live one (src/next/map/ContactMap.tsx) ===== */
+
+.wz-map-print {
+  grid-area: 1 / 1 / 2 / -1;
+  align-self: start;
+  margin: 0;
+  padding: 10px 10px 0;
+  background: var(--color-wz-print-paper);
+  box-shadow: var(--shadow-wz-print);
+  transform: rotate(0.3deg);
+}
+
+.wz-map-frame {
+  position: relative;
+  height: 560px;
+  overflow: hidden;
+  background: var(--color-wz-mist);
+}
+
+/* The picture's pin location lands at 68% across, clear of the card. */
+.wz-map-preview {
+  position: absolute;
+  left: calc(68% - 640px);
+  top: calc(50% - 385px);
+  width: 1152px;
+  max-width: none;
+  height: auto;
+}
+
+.wz-map-mark {
+  position: absolute;
+  left: calc(68% - 14px);
+  top: calc(50% - 40px);
+  width: 28px;
+  height: 42px;
+}
+
+.wz-map-pin {
+  display: block;
+  width: 28px;
+  height: 42px;
+}
+
+.wz-map-tag {
+  position: absolute;
+  left: 36px;
+  top: -12px;
+  padding: 4px 10px 5px;
+  white-space: nowrap;
+  color: var(--color-wz-navy);
+  font-size: var(--text-wz-1);
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+}
+
+@media (hover: hover) {
+  .wz-map-tag:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Leaflet draws into this once the visitor asks; the ring sits inside
+   because the frame clips anything outside. */
+.wz-map-live {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.wz-map-frame .wz-map-live:focus-visible {
+  outline-offset: -3px;
+}
+
+.wz-map-show {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: calc(100% - 24px);
+  padding: 10px 12px;
+  font-size: var(--text-wz-1);
+  color: var(--color-wz-steel);
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-note);
+}
+
+.wz-map-show button {
+  min-height: 44px;
+  padding: 8px 18px;
+  color: #ffffff;
+  font: 600 var(--text-wz-body) / 1.15 var(--font-wz-serif);
+  background: var(--color-wz-navy);
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.wz-map-show .wz-map-failed {
+  color: var(--color-wz-navy);
+  font-weight: 600;
+}
+
+.wz-map-print figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 2px 11px 500px;
+  font-size: var(--text-wz-1);
+}
+
+.wz-map-print figcaption a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  text-decoration: underline;
+}
+
 /* ===== Footer (spec S7): the title block along the foot of the page,
    ruled like a drawing sheet's ===== */
 
@@ -295,6 +420,41 @@
     margin-top: 0;
     padding: 30px 20px 26px;
     transform: none;
+  }
+
+  .wz-map-print {
+    align-self: stretch;
+    transform: none;
+  }
+
+  .wz-map-frame {
+    height: 300px;
+  }
+
+  .wz-map-preview {
+    left: calc(50% - 640px);
+  }
+
+  .wz-map-mark {
+    left: calc(50% - 14px);
+  }
+
+  /* Centred under the pin, so the tag never covers it. */
+  .wz-map-tag {
+    left: 50%;
+    top: 48px;
+    transform: translateX(-50%);
+  }
+
+  /* Above the pin: under it the tag fills the short frame. */
+  .wz-map-show {
+    top: 12px;
+    bottom: auto;
+  }
+
+  .wz-map-print figcaption {
+    flex-direction: column;
+    padding-left: 2px;
   }
 
   .wz-other a[href^='tel:'] {

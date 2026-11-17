@@ -1,0 +1,254 @@
+/*! Map styles adapted from Leaflet 1.9.4 dist/leaflet.css (https://leafletjs.com).
+
+Copyright (c) 2010-2023, Volodymyr Agafonkin
+Copyright (c) 2010-2011, CloudMade
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+/* Only the rules this map uses. The stock file also styles the layers
+   control and the default marker, and a build embeds their PNGs in the
+   CSS, which the CSP's img-src refuses. loadMap.ts loads this file. */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-tile-container,
+.leaflet-zoom-box,
+.leaflet-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.leaflet-container {
+  overflow: hidden;
+  font-size: var(--text-wz-1);
+  background: var(--color-wz-mist);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.leaflet-tile,
+.leaflet-marker-icon {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.leaflet-marker-icon {
+  display: block;
+}
+
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container .leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto;
+  padding: 0;
+}
+
+/* Hides the hairline seams Chrome draws between tiles. */
+.leaflet-container img.leaflet-tile {
+  mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+  touch-action: pan-x pan-y;
+}
+
+.leaflet-container.leaflet-touch-drag {
+  touch-action: pinch-zoom;
+}
+
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+  touch-action: none;
+}
+
+.leaflet-tile {
+  filter: inherit;
+  visibility: hidden;
+}
+
+.leaflet-tile-loaded {
+  visibility: inherit;
+}
+
+.leaflet-zoom-box {
+  z-index: 800;
+  width: 0;
+  height: 0;
+  border: 2px dotted var(--color-wz-river);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.leaflet-pane {
+  z-index: 400;
+}
+
+.leaflet-tile-pane {
+  z-index: 200;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400;
+}
+
+.leaflet-shadow-pane {
+  z-index: 500;
+}
+
+.leaflet-marker-pane {
+  z-index: 600;
+}
+
+.leaflet-tooltip-pane {
+  z-index: 650;
+}
+
+.leaflet-popup-pane {
+  z-index: 700;
+}
+
+/* Controls */
+
+.leaflet-control {
+  position: relative;
+  z-index: 800;
+  float: left;
+  clear: both;
+  pointer-events: auto;
+  cursor: auto;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.leaflet-top {
+  top: 0;
+}
+
+.leaflet-right {
+  right: 0;
+}
+
+.leaflet-bottom {
+  bottom: 0;
+}
+
+.leaflet-left {
+  left: 0;
+}
+
+.leaflet-right .leaflet-control {
+  float: right;
+  margin-right: 12px;
+}
+
+.leaflet-left .leaflet-control {
+  margin-left: 12px;
+}
+
+.leaflet-top .leaflet-control {
+  margin-top: 12px;
+}
+
+.leaflet-bottom .leaflet-control {
+  margin-bottom: 12px;
+}
+
+/* Zoom and pan animations; reduced motion turns them off in loadMap.ts. */
+
+.leaflet-zoom-animated {
+  transform-origin: 0 0;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  transition: transform 0.25s cubic-bezier(0, 0, 0.25, 1);
+}
+
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+  transition: none;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+  visibility: hidden;
+}
+
+/* Cursors and pointer events */
+
+.leaflet-grab {
+  cursor: grab;
+}
+
+.leaflet-dragging .leaflet-grab {
+  cursor: grabbing;
+}
+
+.leaflet-marker-icon,
+.leaflet-tile-container {
+  pointer-events: none;
+}
+
+/* The zoom buttons, as sheet-white keys with the board's ink line. */
+
+.leaflet-bar {
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  border-radius: 2px;
+  box-shadow: var(--shadow-wz-note);
+}
+
+.leaflet-bar a {
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: var(--color-wz-navy);
+  font: 600 24px / 38px var(--font-wz-serif);
+  text-align: center;
+  text-decoration: none;
+}
+
+.leaflet-bar a + a {
+  border-top: 1px solid var(--color-wz-navy);
+}
+
+@media (hover: hover) {
+  .leaflet-bar a:hover {
+    background: var(--color-wz-tag-paper);
+  }
+}
+
+.leaflet-bar a.leaflet-disabled {
+  color: var(--color-wz-mist);
+  cursor: default;
+}
+
+/* The pin and its directions tag, drawn by ContactMap inside Leaflet's
+   marker; the tag takes clicks although the marker itself does not. */
+.wz-map-marker .wz-map-tag {
+  pointer-events: auto;
+}
