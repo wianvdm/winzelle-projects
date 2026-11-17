@@ -20,6 +20,8 @@ export interface TradePart {
 }
 
 export interface TradeDrawing {
+  /** Short name used in the caption strip: "{name}, {view}, not to scale". */
+  name: string
   /** Accessible description for the drawing's <title> element. */
   title: string
   view: 'section' | 'elevation'
@@ -51,6 +53,7 @@ export const trades: Trade[] = [
     involves:
       'We dig out to a firm level, compact a stone base, screed a sand bed and lay the pavers tight against a kerb set in concrete. Paving that has sunk is lifted, the base rebuilt and the pavers relaid.',
     drawing: {
+      name: 'Paving on a kerb',
       title:
         'Section through paving: pavers on a sand bed over a compacted stone base, held at the edge by a kerb set in concrete beside the road.',
       view: 'section',
@@ -88,6 +91,7 @@ export const trades: Trade[] = [
     involves:
       'We set out the line, dig and cast a footing, then build up in brick to the height you need and finish with a coping. A leaning or cracked wall is taken down and rebuilt on a proper footing.',
     drawing: {
+      name: 'Boundary wall, footing to coping',
       title:
         'Section through a boundary wall: a concrete footing wider than the wall, 230 brickwork with a damp-proof course just above the ground, and a coping on top.',
       view: 'section',
@@ -125,6 +129,7 @@ export const trades: Trade[] = [
     involves:
       'We replace cracked or slipped tiles, re-bed and point ridge caps, clear and fix gutters, and paint tiled and sheet roofs once the surface is sound.',
     drawing: {
+      name: 'Tiled roof at the ridge',
       title:
         'Section through a tiled pitched roof: tiles on battens over the rafters, a ridge cap bedded in mortar at the top, and a gutter on the fascia at the eave.',
       view: 'section',
@@ -162,6 +167,7 @@ export const trades: Trade[] = [
     involves:
       'We find where the water gets in first. On a flat roof that usually means torch-on in two layers, turned up the wall and tucked under a flashing, with the roof falling to its outlet. Damp walls get the same approach: find the source, then seal it.',
     drawing: {
+      name: 'Parapet at a flat roof edge',
       title:
         'Section through a parapet at a flat roof edge: two layers of torch-on over screed laid to fall to an outlet, turned up the wall and tucked under a flashing, with a coping on the wall.',
       view: 'section',
@@ -200,6 +206,7 @@ export const trades: Trade[] = [
     involves:
       'We find out why it cracked before we fix it. Stepped cracks in brickwork are raked out, stitched with bars set into the bed joints and repointed, and a failed lintel is replaced. For high work we put up scaffolding first.',
     drawing: {
+      name: 'Brick wall with a stepped crack',
       title:
         "Face of a brick wall with a window. A stepped crack runs through the mortar joints from the window's lower corner; steel bars set into the bed joints stitch across it, and a lintel carries the brickwork over the window.",
       view: 'elevation',
@@ -232,6 +239,7 @@ export const trades: Trade[] = [
     involves:
       "We scrape back loose paint, fill cracked plaster, prime and paint. While we're up there we look at fascias, gutters and downpipes and fix what's loose or leaking.",
     drawing: {
+      name: 'House face at the eaves',
       title:
         'The face of a house at the eaves: roof tiles, a painted fascia with a gutter, a downpipe down the wall, plastered and painted walls and a timber window.',
       view: 'elevation',
@@ -269,6 +277,7 @@ export const trades: Trade[] = [
     involves:
       'We fit counters and cupboards and set them level, put up ceiling boards and cornices, and rehang or repair doors and other woodwork.',
     drawing: {
+      name: 'Kitchen counter under a boarded ceiling',
       title:
         'A kitchen wall: ceiling boards fixed under timber brandering with a cornice along the wall, and below them a timber worktop on fitted cupboards with a row of drawers, a tiled splashback and a plinth along the floor.',
       view: 'elevation',
@@ -308,6 +317,7 @@ export const trades: Trade[] = [
     involves:
       "Small plumbing and electrical jobs: fitting toilets, basins, shower heads and baths; replacing plugs and light fittings. For work that needs a certificate of compliance, we'll point you to a registered electrician or plumber.",
     drawing: {
+      name: 'Basin and wall plug',
       title:
         'A tiled bathroom wall with a wall-hung basin and its tap. Under the basin a trap holds water in its bend before the waste pipe enters the wall. To the right, a double wall plug is fed by a cable in the wall.',
       view: 'elevation',
@@ -345,6 +355,7 @@ export const trades: Trade[] = [
     involves:
       "We dig, build the concrete shell, line it and set the coping and paving around the edge. If an existing pool keeps losing water, send us a photo and we'll come and look.",
     drawing: {
+      name: 'Pool edge',
       title:
         'Section through the edge of a pool: a concrete shell with a smooth lining inside, a coping over the edge, the water line just below it and paving around the pool.',
       view: 'section',
@@ -386,6 +397,7 @@ export const trades: Trade[] = [
     involves:
       "Doors that stick, windows that let the weather in, scaffolding for high work, and the list of small jobs that keeps growing. Tell us what it is and we'll come and look.",
     drawing: {
+      name: 'Door and window',
       title:
         'A door and a window in a plastered wall. The door hangs in a timber frame; the window frame is sealed into the wall and sits over a sloped sill with a drip.',
       view: 'elevation',

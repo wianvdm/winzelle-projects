@@ -57,6 +57,7 @@ describe('trades catalogue', () => {
       expect(trade.noun.length).toBeGreaterThan(0)
       expect(trade.line.length).toBeGreaterThan(0)
       expect(trade.involves.length).toBeGreaterThan(0)
+      expect(trade.drawing.name.length).toBeGreaterThan(0)
       expect(trade.drawing.title.length).toBeGreaterThan(0)
       expect(['section', 'elevation']).toContain(trade.drawing.view)
       expect(trade.drawing.problemNote.length).toBeGreaterThan(0)
