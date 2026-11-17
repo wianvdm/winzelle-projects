@@ -29,7 +29,8 @@ const TAGS_LABEL = 'Show our work by kind'
 const ALL_FILTER = 'all'
 
 // Board prints are about 180px to 270px wide beside the label sheet and
-// half the window in the two-column phone grid.
+// half the window in the two-column phone grid. Few-print filters enlarge
+// theirs in sizeFewPrints, which names each enlarged print's own width.
 const BOARD_PRINT_SIZES = '(max-width: 1099px) 50vw, 280px'
 
 // A filter showing this many prints or fewer shows them larger, at most two
@@ -68,12 +69,17 @@ function boardPrints(board: HTMLElement): HTMLElement[] {
 }
 
 function clearPrintWidths(board: HTMLElement) {
-  for (const print of boardPrints(board)) print.style.removeProperty('width')
+  for (const print of boardPrints(board)) {
+    print.style.removeProperty('width')
+    print.querySelector('img')?.setAttribute('sizes', BOARD_PRINT_SIZES)
+  }
 }
 
 /**
- * Sizes a filtered board of few prints so they fill it. CSSOM writes: the
- * CSP forbids style attributes in markup.
+ * Sizes a filtered board of few prints so they fill it, and names each
+ * enlarged print's width in its sizes attribute so the srcset pick on a
+ * high-density screen takes the larger file. CSSOM writes: the CSP forbids
+ * style attributes in markup; sizes is a plain content attribute.
  */
 function sizeFewPrints(board: HTMLElement) {
   clearPrintWidths(board)
@@ -85,6 +91,7 @@ function sizeFewPrints(board: HTMLElement) {
   for (const print of shown) {
     const width = Math.min(share, largestPrintWidth(print), LONE_PRINT_MAX_PX)
     print.style.width = `${Math.floor(width)}px`
+    print.querySelector('img')?.setAttribute('sizes', `${Math.floor(width)}px`)
   }
 }
 

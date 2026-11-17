@@ -207,6 +207,7 @@
 .wz-fb-link {
   color: inherit;
   font-size: var(--text-wz-1);
+  text-decoration: underline;
   text-underline-offset: 3px;
 }
 

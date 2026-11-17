@@ -256,12 +256,17 @@ describe('Our work board', () => {
   it('shows few prints larger, never above 1.3x their pixels', () => {
     renderPage()
     Object.defineProperty(board(), 'clientWidth', { value: 782 })
-    const widthOf = (id: string) =>
-      (board().querySelector(`.wz-work-${id}`) as HTMLElement).style.width
+    const print = (id: string) =>
+      board().querySelector(`.wz-work-${id}`) as HTMLElement
+    const widthOf = (id: string) => print(id).style.width
+    const sizesOf = (id: string) =>
+      print(id).querySelector('img')?.getAttribute('sizes')
 
     fireEvent.click(tag('Walls and building'))
     // One print: the 560px cap, under the column and the pixel limit.
     expect(widthOf('wall-facebrick')).toBe('560px')
+    // The enlarged print names its own width for the srcset pick.
+    expect(sizesOf('wall-facebrick')).toBe('560px')
 
     fireEvent.click(tag('Roofs'))
     // Two to a row share 371px; the 268px ridge photo stops at 1.3x plus
@@ -273,6 +278,8 @@ describe('Our work board', () => {
 
     fireEvent.click(tag('All our work'))
     expect(widthOf('waterproof-roof')).toBe('')
+    // Back on the full board the prints carry the board sizes again.
+    expect(sizesOf('waterproof-roof')).toBe('(max-width: 1099px) 50vw, 280px')
   })
 
   it('scrolls the matches into view from a tag when they sit above the window', () => {
@@ -352,6 +359,32 @@ describe('Lightbox', () => {
     fireEvent.pointerDown(inner, { clientX: 200 })
     fireEvent.pointerUp(inner, { clientX: 300 })
     expect(lightboxCaption()).toBe(photoCaption(workPhotos[0]))
+  })
+
+  it('closes from the backdrop on the first tap after a touch swipe', () => {
+    renderPage()
+    fireEvent.click(openerFor(board(), photoCaption(workPhotos[0])))
+    const inner = dialog().querySelector('.wz-lb-inner') as HTMLElement
+
+    // A touch swipe pages and emits no click, so it must not latch the drag
+    // flag for this open's first backdrop tap.
+    fireEvent.pointerDown(inner, { clientX: 300, pointerType: 'touch' })
+    fireEvent.pointerUp(inner, { clientX: 200, pointerType: 'touch' })
+    expect(lightboxCount()).toBe(`2 of ${TOTAL_PRINTS}`)
+
+    // Touch browsers may swallow the click after a swipe gesture, so the
+    // first tap closes on pointerup without waiting for a click.
+    fireEvent.pointerDown(inner, { clientX: 200, pointerType: 'touch' })
+    fireEvent.pointerUp(inner, { clientX: 200, pointerType: 'touch' })
+    expect(dialog().open).toBe(false)
+
+    // When a click does arrive, the tap that sent it still closes.
+    fireEvent.click(openerFor(board(), photoCaption(workPhotos[1])))
+    fireEvent.pointerDown(inner, { clientX: 300, pointerType: 'touch' })
+    fireEvent.pointerUp(inner, { clientX: 200, pointerType: 'touch' })
+    fireEvent.pointerDown(inner, { clientX: 200, pointerType: 'touch' })
+    fireEvent.click(inner)
+    expect(dialog().open).toBe(false)
   })
 
   it('closes from the backdrop and the close button, returning focus to the print', () => {

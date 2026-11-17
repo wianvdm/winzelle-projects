@@ -163,7 +163,8 @@ function LightboxDialog({
   }
 
   // The dialog fills the window, so a click on the dark area around the
-  // print is a backdrop click. A mouse drag that paged is not.
+  // print is a backdrop click. A mouse drag that paged is not; a touch tap
+  // closes on pointerup in endSwipe.
   const closeFromBackdrop = (event: MouseEvent<HTMLDivElement>) => {
     const wasSwipe = swiped.current
     swiped.current = false
@@ -172,15 +173,29 @@ function LightboxDialog({
   }
 
   const startSwipe = (event: PointerEvent<HTMLDivElement>) => {
+    // A touch swipe ends without a click, so a swipe from an earlier open
+    // must not latch the drag flag and swallow this open's first tap.
+    swiped.current = false
     swipeStartX.current = event.clientX
   }
 
   const endSwipe = (event: PointerEvent<HTMLDivElement>) => {
     const startX = swipeStartX.current
     swipeStartX.current = null
-    if (startX === null || !paging) return
+    if (startX === null) return
     const moved = event.clientX - startX
-    if (Math.abs(moved) < SWIPE_MIN_PX) return
+    if (Math.abs(moved) < SWIPE_MIN_PX) {
+      // A touch tap on the dark area closes here, not on the click, which
+      // a touch browser may swallow after a swipe gesture.
+      if (
+        event.pointerType === 'touch' &&
+        event.target === event.currentTarget
+      ) {
+        close()
+      }
+      return
+    }
+    if (!paging) return
     swiped.current = true
     onStep(moved < 0 ? 1 : -1)
   }
