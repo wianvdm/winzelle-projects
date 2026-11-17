@@ -18,6 +18,7 @@ const SHELL_SURVEY = {
     work: false,
     story: false,
     contact: false,
+    form: false,
   },
   controls: 0,
   whatsappLinks: 0,
@@ -245,7 +246,7 @@ describe('finalise on a partly built page', () => {
     ])
   })
 
-  it('requires the footer and form once the contact section lands', () => {
+  it('requires the footer once the contact section lands', () => {
     const data = probeData({
       survey: {
         ...READY_SURVEY,
@@ -265,12 +266,62 @@ describe('finalise on a partly built page', () => {
     }
     const g12 = gate(finalise(data), 'G12')
     expect(g12.status).toBe('fail')
-    expect(texts(g12.failures)).toEqual(
-      expect.arrayContaining([
-        'no contentinfo landmark',
-        'no form on the page',
-      ]),
-    )
+    expect(texts(g12.failures)).toEqual(['no contentinfo landmark'])
+    expect(texts(g12.pending ?? [])).toEqual(['no form on the page'])
+  })
+
+  // The contact card lands in #99 but the form (#wz-form) only in #101, so
+  // the form rule stays pending while #wz-form is absent even with the
+  // contact section on the page.
+  it('passes G12 when the contact section has landed but #wz-form has not', () => {
+    const data = probeData({
+      survey: {
+        ...READY_SURVEY,
+        sections: { ...READY_SURVEY.sections, story: true, contact: true },
+      },
+    })
+    data.parts.G12 = {
+      structure: structure({
+        landmarks: {
+          banner: [{}],
+          navigation: [{}],
+          main: [{}],
+          contentinfo: [{}],
+        },
+      }),
+      forms: [],
+    }
+    const g12 = gate(finalise(data), 'G12')
+    expect(g12.status).toBe('pass')
+    expect(texts(g12.pending ?? [])).toEqual(['no form on the page'])
+  })
+
+  it('fails G12 for a missing form once #wz-form has landed', () => {
+    const data = probeData({
+      survey: {
+        ...READY_SURVEY,
+        sections: {
+          ...READY_SURVEY.sections,
+          story: true,
+          contact: true,
+          form: true,
+        },
+      },
+    })
+    data.parts.G12 = {
+      structure: structure({
+        landmarks: {
+          banner: [{}],
+          navigation: [{}],
+          main: [{}],
+          contentinfo: [{}],
+        },
+      }),
+      forms: [],
+    }
+    const g12 = gate(finalise(data), 'G12')
+    expect(g12.status).toBe('fail')
+    expect(texts(g12.failures)).toContain('no form on the page')
     expect(g12.pending).toEqual([])
   })
 })

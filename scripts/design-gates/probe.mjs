@@ -10,16 +10,18 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchChrome } from './cdp.mjs'
-import { classifyRequest, finalise, gateOutcome } from './gates.mjs'
+import {
+  classifyRequest,
+  finalise,
+  gateOutcome,
+  REFLOW_WIDTHS,
+  VIEWPORTS,
+} from './gates.mjs'
 import { renderMarkdown } from './report.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
-const VIEWPORTS = {
-  1440: { width: 1440, height: 900, mobile: false },
-  1280: { width: 1280, height: 800, mobile: false },
-  390: { width: 390, height: 844, mobile: true },
-}
-const REFLOW_WIDTHS = [320, 390, 768, 1280, 1440, 1920]
+// VIEWPORTS and REFLOW_WIDTHS come from gates.mjs so the expected screenshot
+// sets there can never drift from what this probe captures.
 const PHONE_BREAKPOINT = 390
 const DESKTOP_REFLOW_HEIGHT = 900
 const PHONE_REFLOW_HEIGHT = 844

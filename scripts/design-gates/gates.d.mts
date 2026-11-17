@@ -19,6 +19,15 @@ export interface RequestVerdict {
   reason?: string
 }
 
+export interface ProbeViewport {
+  width: number
+  height: number
+  mobile: boolean
+}
+
+export const VIEWPORTS: Record<number, ProbeViewport>
+export const REFLOW_WIDTHS: number[]
+
 export interface ProbeResult {
   page: string
   gates: Record<string, Gate>

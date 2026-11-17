@@ -48,9 +48,17 @@ reports `skipped` with a reason, never `pass`:
 - G12 runs its structural checks (lang, heading order, duplicate landmarks,
   field labels) and keeps rules about pieces not yet built as `pending` until
   their own section lands: the `h1`, `banner` and `navigation` wait for the
-  opening screen (#96, `#wz-hero-wa`), the `contentinfo` landmark and the
-  form's error text wait for story and contact (#99, `#wz-contact`). `main` is
-  part of the `/next` shell itself and is always required.
+  opening screen (#96, `#wz-hero-wa`), the `contentinfo` landmark waits for
+  story and contact (#99, `#wz-contact`), and the form's error text waits for
+  the form itself (#101, `#wz-form`). `main` is part of the `/next` shell
+  itself and is always required.
+
+A pending rule only becomes a failure once its section id appears on the
+page, so a rule whose section never lands would stay green forever. The
+cutover child (#105) must therefore run with every structural rule required:
+by then every section id above is on the page, and a rule still pending
+there means an id is missing or renamed, which the cutover PR must fix
+rather than ship.
 
 G6 (reflow) and G11 (console, network, CSP) always run. A skipped gate never
 fails the run. If the `/next` shell itself (the `main` element and the `h1`)
@@ -114,11 +122,11 @@ gate, so they are checked in the run outcome rather than under a gate id.
 
 - `serve.mjs`: wrangler dev wrapper; compares the served CSP with
   `dist/_headers`, runs the probe.
-- `probe.mjs`: run order, viewports, key and mouse input, screenshots, exit
-  codes.
+- `probe.mjs`: run order, key and mouse input, screenshots, exit codes.
 - `inpage.js`: measurements evaluated inside the page (`window.__probe`).
 - `gates.mjs`: pass/fail/manual/skipped verdicts, the network allow-list, the
-  run outcome.
+  shared viewport and reflow lists (`probe.mjs` imports them), the run
+  outcome.
 - `report.mjs`: `probe.md`.
 - `cdp.mjs`: Chrome launch and DevTools Protocol client.
 - `gates.test.ts`: vitest unit tests for the verdict logic in `gates.mjs`.

@@ -872,9 +872,9 @@ function g12(parts, survey) {
   // markup that exists always run; rules about pieces the redesign has not
   // built yet stay pending until their own section lands, so a partly built
   // page is judged only on what exists. The h1, header and nav arrive with
-  // the opening screen (#96); the footer and the form arrive with story and
-  // contact (#99). main is part of the /next shell itself, so it is always
-  // required.
+  // the opening screen (#96); the footer arrives with story and contact
+  // (#99, #wz-contact); the form arrives with #101 (#wz-form). main is part
+  // of the /next shell itself, so it is always required.
   const sections = survey?.sections || {}
   const ready = (section) => !survey || !!sections[section]
   const LANDMARK_SECTION = {
@@ -931,7 +931,7 @@ function g12(parts, survey) {
     )
   const forms = parts.G12.forms
   if (!forms || !forms.length) {
-    ;(ready('contact') ? fails : pending).push({
+    ;(ready('form') ? fails : pending).push({
       selector: null,
       text: 'no form on the page',
       reason: 'empty-submit error text not checked',
@@ -1057,18 +1057,19 @@ function c61(parts) {
 // Screenshot capture is not a gate, so its step errors land in probeErrors
 // under 'screenshots' and a failed capture would otherwise leave the job
 // green with files missing. The run fails on those errors and when an
-// expected set is absent. The sets mirror VIEWPORTS and REFLOW_WIDTHS in
-// probe.mjs.
+// expected set is absent. The expected sets derive from the shared lists
+// below, which probe.mjs imports for its run order and captures.
+export const VIEWPORTS = {
+  1440: { width: 1440, height: 900, mobile: false },
+  1280: { width: 1280, height: 800, mobile: false },
+  390: { width: 390, height: 844, mobile: true },
+}
+export const REFLOW_WIDTHS = [320, 390, 768, 1280, 1440, 1920]
 const EXPECTED_SCREENSHOTS = [
-  '1280x800',
-  '1440x900',
-  '390x844',
-  'reflow-320',
-  'reflow-390',
-  'reflow-768',
-  'reflow-1280',
-  'reflow-1440',
-  'reflow-1920',
+  ...Object.values(VIEWPORTS).map(
+    (viewport) => `${viewport.width}x${viewport.height}`,
+  ),
+  ...REFLOW_WIDTHS.map((width) => `reflow-${width}`),
 ]
 
 // The job outcome: the design gate fails the run on a failed gate, on an

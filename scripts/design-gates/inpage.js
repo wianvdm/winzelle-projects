@@ -2115,6 +2115,7 @@
         work: section('wz-work'),
         story: section('wz-story'),
         contact: section('wz-contact'),
+        form: section('wz-form'),
       },
       controls: tabbables().length,
       whatsappLinks: document.querySelectorAll(WHATSAPP_SELECTOR).length,
