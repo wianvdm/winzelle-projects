@@ -5,13 +5,19 @@
 import { useId } from 'react'
 
 import { getTrade } from '../../content/next/trades'
-import { Drawing, type PartMarker } from './Drawing'
+import {
+  Drawing,
+  type DrawingCrop,
+  type DrawingPartProps,
+  type DrawingView,
+  type PartMarker,
+} from './Drawing'
 import { pavers, stones, type Stone } from './fills'
 import {
   CutEdge,
   CutFine,
   Dim,
-  glowClass,
+  useGlowClass,
   Leader,
   Note,
   useDrawingKit,
@@ -46,7 +52,8 @@ function StonePolygons({ stones: list }: { stones: Stone[] }) {
 }
 
 function PavingArt() {
-  const { tile, highlight } = useDrawingKit()
+  const { tile } = useDrawingKit()
+  const glow = useGlowClass()
   const raw = useId().replace(/[^a-zA-Z0-9_-]/g, '')
   const clipBase = `wzpv-${raw}-base`
   const clipSoil = `wzpv-${raw}-soil`
@@ -220,7 +227,7 @@ function PavingArt() {
             road
           </Dim>
           <rect
-            className={glowClass('wz-glow-area', highlight === 'a')}
+            className={glow('wz-glow-area', 'a')}
             data-part="a"
             x={20}
             y={196}
@@ -228,7 +235,7 @@ function PavingArt() {
             height={24}
           />
           <rect
-            className={glowClass('wz-glow-area', highlight === 'b')}
+            className={glow('wz-glow-area', 'b')}
             data-part="b"
             x={20}
             y={220}
@@ -236,7 +243,7 @@ function PavingArt() {
             height={12}
           />
           <rect
-            className={glowClass('wz-glow-area', highlight === 'c')}
+            className={glow('wz-glow-area', 'c')}
             data-part="c"
             x={20}
             y={232}
@@ -244,7 +251,7 @@ function PavingArt() {
             height={40}
           />
           <path
-            className={glowClass('wz-glow-area', highlight === 'd')}
+            className={glow('wz-glow-area', 'd')}
             data-part="d"
             d="M460 186H492Q496 186 496 190V290H460Z"
           />
@@ -256,21 +263,20 @@ function PavingArt() {
 
 export function PavingDrawing({
   view,
-  highlight,
   crop,
+  ...parts
 }: {
-  view: 'problem' | 'fixed'
-  highlight?: string | null
-  crop?: 'full' | 'tile'
-}) {
+  view: DrawingView
+  crop?: DrawingCrop
+} & DrawingPartProps) {
   return (
     <Drawing
       drawing={getTrade('paving').drawing}
       markers={MARKERS}
       view={view}
-      highlight={highlight}
       crop={crop}
       cropViewBox={CROP_VIEW_BOX}
+      {...parts}
     >
       <PavingArt />
     </Drawing>

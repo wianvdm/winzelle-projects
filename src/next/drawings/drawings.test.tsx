@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getTrade } from '../../content/next/trades'
 import { PavingDrawing } from './PavingDrawing'
-import { Note } from './primitives'
+import { MARKER_SIZE_NARROW, Note } from './primitives'
 import { RoofsDrawing } from './RoofsDrawing'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 function singleSvg(container: HTMLElement): SVGSVGElement {
   const svg = container.querySelector('svg')
@@ -133,7 +137,139 @@ describe('several drawings on one page', () => {
   })
 })
 
+describe('part interaction', () => {
+  it('lights the hot part lighter than the held one', () => {
+    const { container } = render(
+      <PavingDrawing view="fixed" highlight="b" hot="a" />,
+    )
+    const classesOf = (selector: string) =>
+      container.querySelector(selector)?.getAttribute('class')
+    expect(classesOf('.wz-glow-area[data-part="a"]')).toBe(
+      'wz-glow-area wz-hot',
+    )
+    expect(classesOf('.wz-glow-area[data-part="b"]')).toBe(
+      'wz-glow-area wz-held',
+    )
+    expect(classesOf('.wz-marker[data-part="a"]')).toBe('wz-marker wz-hot')
+  })
+
+  it('reports mouse hover and presses on a marker, not touch hover', () => {
+    const onPartHover = vi.fn()
+    const onPartPress = vi.fn()
+    const { container } = render(
+      <PavingDrawing
+        view="problem"
+        onPartHover={onPartHover}
+        onPartPress={onPartPress}
+      />,
+    )
+    const marker = container.querySelector('.wz-marker[data-part="b"]')
+    if (!marker) throw new Error('No marker b')
+    expect(marker.classList.contains('wz-marker-live')).toBe(true)
+    fireEvent.pointerOver(marker, { pointerType: 'touch' })
+    expect(onPartHover).not.toHaveBeenCalled()
+    fireEvent.pointerOver(marker, { pointerType: 'mouse' })
+    expect(onPartHover).toHaveBeenLastCalledWith('b')
+    fireEvent.pointerOut(marker, { pointerType: 'mouse' })
+    expect(onPartHover).toHaveBeenLastCalledWith(null)
+    fireEvent.click(marker)
+    expect(onPartPress).toHaveBeenCalledWith('b')
+  })
+
+  it('shows the held part in the caption strip instead of the state note', () => {
+    const drawing = getTrade('paving').drawing
+    const part = drawing.parts[2]
+    const { container } = render(
+      <PavingDrawing view="fixed" highlight={part.key} />,
+    )
+    const strip = container.querySelector('.wz-drawing-note')
+    expect(strip?.textContent).toBe(`${part.name}: ${part.note}`)
+    // Only the in-drawing note remains.
+    expect(screen.getAllByText(drawing.fixedNote)).toHaveLength(1)
+  })
+})
+
+describe('Marker size', () => {
+  it('keeps the narrow marker size in px and the disc inside the frame', () => {
+    // A 200px-wide drawing on a narrow window: 3 viewBox units per px.
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query === '(max-width: 1099px)',
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }),
+    })
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    )
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+      width: 200,
+    } as DOMRect)
+    try {
+      const { container } = render(<RoofsDrawing view="problem" />)
+      const transformOf = (letter: string) =>
+        container
+          .querySelector(`.wz-marker[data-part="${letter}"]`)
+          ?.getAttribute('transform')
+      // Inset 17px = 51 units: a (236, 36) and d (92, 320) are pulled in.
+      expect(transformOf('a')).toBe('translate(236 51) scale(3)')
+      expect(transformOf('d')).toBe('translate(92 309) scale(3)')
+      const disc = container.querySelector('.wz-marker-disc')
+      expect(Number(disc?.getAttribute('r'))).toBe(
+        MARKER_SIZE_NARROW.diameter / 2 - 0.75,
+      )
+    } finally {
+      Reflect.deleteProperty(window, 'matchMedia')
+    }
+  })
+})
+
 describe('Note', () => {
+  /** A media query list for the notes breakpoint that the test flips. */
+  function stubNotesShown(initial: boolean) {
+    const listeners = new Set<() => void>()
+    const list = {
+      matches: initial,
+      addEventListener: (_type: string, listener: () => void) =>
+        listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) =>
+        listeners.delete(listener),
+    }
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: () => list,
+    })
+    return (matches: boolean) => {
+      list.matches = matches
+      act(() => listeners.forEach((listener) => listener()))
+    }
+  }
+
+  /** jsdom has no SVG layout: each `.wz-note` line measures `width()` wide. */
+  function stubTextWidth(width: () => number) {
+    Object.defineProperty(SVGElement.prototype, 'getBBox', {
+      configurable: true,
+      value: () => ({ x: 10, y: 20, width: width(), height: 14 }),
+    })
+  }
+
+  function labelWidths(container: HTMLElement): string[] {
+    return [...container.querySelectorAll('.wz-note-back')].map(
+      (back) => back.getAttribute('width') ?? '',
+    )
+  }
+
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'matchMedia')
+    Reflect.deleteProperty(SVGElement.prototype, 'getBBox')
+    Reflect.deleteProperty(document, 'fonts')
+  })
+
   it('renders onFill notes without layout support (jsdom has no getBBox)', () => {
     const { container } = render(
       <svg>
@@ -142,6 +278,64 @@ describe('Note', () => {
     )
     expect(screen.getByText('a note')).toBeDefined()
     expect(container.querySelector('.wz-note-back')).toBeNull()
+  })
+
+  it('labels each line once the notes show above 1220px, from the text only', () => {
+    let width = 0
+    stubTextWidth(() => width)
+    const setShown = stubNotesShown(false)
+    const { container } = render(
+      <svg>
+        <Note x={10} y={30} lines={['first line', 'second line']} onFill />
+      </svg>,
+    )
+    // Hidden notes measure zero wide, so no label yet.
+    expect(labelWidths(container)).toEqual([])
+
+    width = 120
+    setShown(true)
+    expect(labelWidths(container)).toEqual(['128', '128'])
+    const back = container.querySelector('.wz-note-back')
+    expect(back?.getAttribute('x')).toBe('6')
+    expect(back?.getAttribute('height')).toBe('22')
+
+    // Measuring again must not grow: the labels are never measured.
+    setShown(true)
+    expect(labelWidths(container)).toEqual(['128', '128'])
+  })
+
+  it('measures again when webfonts finish loading', async () => {
+    let width = 100
+    stubTextWidth(() => width)
+    stubNotesShown(true)
+    let fontsReady = () => {}
+    const fontListeners = new Set<() => void>()
+    Object.defineProperty(document, 'fonts', {
+      configurable: true,
+      value: {
+        ready: new Promise<void>((resolve) => {
+          fontsReady = resolve
+        }),
+        addEventListener: (_type: string, listener: () => void) =>
+          fontListeners.add(listener),
+        removeEventListener: (_type: string, listener: () => void) =>
+          fontListeners.delete(listener),
+      },
+    })
+    const { container } = render(
+      <svg>
+        <Note x={10} y={30} lines={['a note']} onFill />
+      </svg>,
+    )
+    expect(labelWidths(container)).toEqual(['108'])
+
+    width = 130
+    await act(async () => fontsReady())
+    expect(labelWidths(container)).toEqual(['138'])
+
+    width = 140
+    act(() => fontListeners.forEach((listener) => listener()))
+    expect(labelWidths(container)).toEqual(['148'])
   })
 })
 

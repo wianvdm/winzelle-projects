@@ -97,7 +97,10 @@ describe('slope', () => {
   it('marks exactly the slipped tile and uses a different sequence for it', () => {
     const slipped = slope({ length: 300, slip: 5 })
     expect(slipped.tiles.filter((tile) => tile.slipped)).toHaveLength(1)
-    expect(slipped.tiles[5].slipped).toBe(true)
+    // Batten 5 from the ridge, listed foot first.
+    expect(slipped.tiles.findIndex((tile) => tile.slipped)).toBe(
+      slipped.tiles.length - 1 - 5,
+    )
     expect(slipped).not.toEqual(slope({ length: 300 }))
   })
 
@@ -107,5 +110,13 @@ describe('slope', () => {
     expect(result.tiles).toHaveLength(9)
     expect(result.battens[0]).toBe(14)
     expect(result.battens[1]).toBe(36)
+  })
+
+  it('lists the lower courses first, so each tail paints over the course below', () => {
+    const heads = slope({ length: 300 }).tiles.map((tile) =>
+      Number(tile.points.split(',')[0]),
+    )
+    expect(heads).toEqual([...heads].sort((a, b) => b - a))
+    expect(heads.at(-1)).toBe(0)
   })
 })

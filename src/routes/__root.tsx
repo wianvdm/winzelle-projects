@@ -65,7 +65,9 @@ function RootComponent() {
       homeNextEnabled &&
       state.matches.some(
         (match) =>
-          match.routeId === '/next' || match.routeId === '/next/drawings',
+          match.routeId === '/next' ||
+          // Dev-only kit preview (#94); the literal drops out of builds.
+          (import.meta.env.DEV && match.routeId === '/next/drawings'),
       ),
   })
 

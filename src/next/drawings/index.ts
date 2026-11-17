@@ -1,6 +1,7 @@
 export { Drawing } from './Drawing'
 export type {
   DrawingCrop,
+  DrawingPartProps,
   DrawingProps,
   DrawingView,
   PartMarker,

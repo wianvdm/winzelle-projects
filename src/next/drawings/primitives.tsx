@@ -10,6 +10,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type PointerEvent,
 } from 'react'
 
 /** Per-instance ids so several drawings can share one page. */
@@ -36,8 +37,10 @@ export interface DrawingKitContextValue {
   ids: DrawingIds
   /** Tile crops drop notes, leaders, dims, glows and texture filters. */
   tile: boolean
-  /** Letter of the part currently highlighted, if any. */
+  /** Letter of the part held (pressed), if any. */
   highlight: string | null
+  /** Letter of the part under the pointer or keyboard focus, if any. */
+  hot: string | null
 }
 
 const DrawingKitContext = createContext<DrawingKitContextValue | null>(null)
@@ -65,12 +68,39 @@ export function useFilterRef(
   return tile ? undefined : `url(#${ids[id]})`
 }
 
-/** Glow shape class for a part, lit when the part is highlighted. */
-export function glowClass(
-  base: 'wz-glow' | 'wz-glow-area',
-  active: boolean,
+/** Class for a glow shape or marker: held wins over hot. */
+function partClass(
+  base: string,
+  letter: string,
+  { highlight, hot }: Pick<DrawingKitContextValue, 'highlight' | 'hot'>,
 ): string {
-  return active ? `${base} wz-held` : base
+  if (highlight === letter) return `${base} wz-held`
+  if (hot === letter) return `${base} wz-hot`
+  return base
+}
+
+/** Glow shape class for a part, lit while the part is held or hot. */
+export function useGlowClass(): (
+  base: 'wz-glow' | 'wz-glow-area',
+  letter: string,
+) => string {
+  const kit = useDrawingKit()
+  return (base, letter) => partClass(base, letter, kit)
+}
+
+/**
+ * Calls `onChange` whenever the media query flips. A no-op where matchMedia
+ * is missing (jsdom).
+ */
+export function watchMedia(
+  query: string,
+  onChange: (matches: boolean) => void,
+): () => void {
+  if (typeof window.matchMedia !== 'function') return () => {}
+  const list = window.matchMedia(query)
+  const listener = () => onChange(list.matches)
+  list.addEventListener('change', listener)
+  return () => list.removeEventListener('change', listener)
 }
 
 /** The shared material library, scoped to one drawing instance. */
@@ -385,70 +415,122 @@ export function Leader({
 
 const NOTE_LINE_HEIGHT = 18
 const NOTE_BACK_PADDING = 4
+/** In-drawing notes show from here up; drawings.css hides them below. */
+const NOTES_SHOWN_QUERY = '(min-width: 1220px)'
+
+interface Box {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** One padded paper label per drawn line; null where a line has no layout. */
+function measureNoteBacks(group: SVGGElement): (Box | null)[] {
+  return [...group.querySelectorAll<SVGGraphicsElement>('.wz-note')].map(
+    (line) => {
+      // jsdom has no SVG layout; the paper label is cosmetic backing only.
+      if (typeof line.getBBox !== 'function') return null
+      const box = line.getBBox()
+      // Hidden notes (below 1220px) measure zero wide.
+      if (!box.width) return null
+      return {
+        x: box.x - NOTE_BACK_PADDING,
+        y: box.y - NOTE_BACK_PADDING,
+        width: box.width + 2 * NOTE_BACK_PADDING,
+        height: box.height + 2 * NOTE_BACK_PADDING,
+      }
+    },
+  )
+}
+
+function sameBacks(
+  previous: readonly (Box | null)[],
+  next: readonly (Box | null)[],
+): boolean {
+  return (
+    previous.length === next.length &&
+    previous.every(
+      (box, index) => JSON.stringify(box) === JSON.stringify(next[index]),
+    )
+  )
+}
+
+/**
+ * Measures the note's text lines (never the labels) and measures again when
+ * the notes come back into view above 1220px and when webfonts finish
+ * loading, since both change the drawn text's size.
+ */
+function useNoteBacks(enabled: boolean, layoutKey: string) {
+  const groupRef = useRef<SVGGElement>(null)
+  const [backs, setBacks] = useState<(Box | null)[]>([])
+
+  useLayoutEffect(() => {
+    const group = groupRef.current
+    if (!enabled || !group) return
+    let live = true
+    const measure = () => {
+      if (!live) return
+      const next = measureNoteBacks(group)
+      setBacks((previous) => (sameBacks(previous, next) ? previous : next))
+    }
+    measure()
+    const stopWatching = watchMedia(NOTES_SHOWN_QUERY, measure)
+    const fonts = 'fonts' in document ? document.fonts : undefined
+    void fonts?.ready.then(measure)
+    fonts?.addEventListener('loadingdone', measure)
+    return () => {
+      live = false
+      stopWatching()
+      fonts?.removeEventListener('loadingdone', measure)
+    }
+  }, [enabled, layoutKey])
+
+  return { groupRef, backs: enabled ? backs : [] }
+}
 
 /**
  * Italic surveyor's note. Lines sit 18 units apart from the first line's
- * baseline. `onFill` lays a solid paper label behind the note so it stays
- * readable over a textured fill; the label is measured from the drawn text.
+ * baseline. `onFill` lays a solid paper label behind each line so it stays
+ * readable over a textured fill; the labels are measured from the drawn text.
  */
 export function Note({
   x,
   y,
   lines,
-  onFill,
+  onFill = false,
 }: {
   x: number
   y: number
   lines: string[]
   onFill?: boolean
 }) {
-  const groupRef = useRef<SVGGElement>(null)
-  const [back, setBack] = useState<{
-    x: number
-    y: number
-    width: number
-    height: number
-  } | null>(null)
-
-  useLayoutEffect(() => {
-    if (!onFill) return
-    const group = groupRef.current
-    // jsdom has no SVG layout; the paper label is cosmetic backing only.
-    if (!group || typeof group.getBBox !== 'function') return
-    const box = group.getBBox()
-    if (!box.width) return
-    const next = {
-      x: box.x - NOTE_BACK_PADDING,
-      y: box.y - NOTE_BACK_PADDING,
-      width: box.width + 2 * NOTE_BACK_PADDING,
-      height: box.height + 2 * NOTE_BACK_PADDING,
-    }
-    setBack((prev) =>
-      prev &&
-      prev.x === next.x &&
-      prev.y === next.y &&
-      prev.width === next.width &&
-      prev.height === next.height
-        ? prev
-        : next,
-    )
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on line text, not array identity
-  }, [onFill, x, y, ...lines])
+  const { groupRef, backs } = useNoteBacks(
+    onFill,
+    `${x},${y},${lines.join('\n')}`,
+  )
 
   return (
     <g ref={groupRef}>
-      {back && (
-        <rect
-          className="wz-note-back"
-          x={back.x}
-          y={back.y}
-          width={back.width}
-          height={back.height}
-        />
+      {/* Labels first, so a second line's label never covers the first line. */}
+      {backs.map(
+        (box, index) =>
+          box && (
+            <rect
+              // One label per line, in the note's fixed line order.
+              key={index}
+              className="wz-note-back"
+              x={box.x}
+              y={box.y}
+              width={box.width}
+              height={box.height}
+            />
+          ),
       )}
       {lines.map((line, index) => (
         <text
-          key={line}
+          // Lines of one note may repeat; their order never changes.
+          key={index}
           className="wz-note"
           x={x}
           y={y + index * NOTE_LINE_HEIGHT}
@@ -477,31 +559,80 @@ export function Dim({
   )
 }
 
+/** On-screen marker size in CSS px, as the prototype's marker buttons. */
+export interface MarkerSize {
+  /** Outer diameter including the ring. */
+  diameter: number
+  /** Least distance from the marker centre to the frame edge. */
+  inset: number
+}
+
+export const MARKER_SIZE_WIDE: MarkerSize = { diameter: 44, inset: 24 }
+export const MARKER_SIZE_NARROW: MarkerSize = { diameter: 30, inset: 17 }
+const MARKER_RING_WIDTH = 1.5
+/** The drawings' shared 600x360 viewBox. */
+export const VIEW_WIDTH = 600
+const VIEW_HEIGHT = 360
+
+export interface PartHandlers {
+  /** The pointer entered a part's marker (its letter) or left it (null). */
+  onPartHover?: (letter: string | null) => void
+  /** A part's marker was clicked or tapped. */
+  onPartPress?: (letter: string) => void
+}
+
+function clamp(value: number, low: number, high: number): number {
+  return Math.min(Math.max(value, low), high)
+}
+
 /**
- * Lettered marker over the drawing. Presentational: the explorer's key
- * buttons (#97) drive interaction, and `held` mirrors the highlighted part.
- * SVG-native because the CSP forbids the inline styles the HTML overlay
- * version would need for positioning.
+ * Lettered marker over the drawing: a pointer target that mirrors the
+ * explorer's key buttons (#97), which carry keyboard access, so it is
+ * aria-hidden. It is drawn in CSS px: scaling by 1 / `pixelsPerUnit` (drawing
+ * width / 600) keeps the prototype's 44px (30px narrow) marker at any drawing
+ * width, and its centre is clamped so the disc stays inside the frame.
+ * Without a measurement (server, jsdom) it draws at one unit per px.
  */
 export function Marker({
   x,
   y,
   letter,
-  held,
+  size,
+  pixelsPerUnit,
+  onPartHover,
+  onPartPress,
 }: {
   x: number
   y: number
   letter: string
-  held: boolean
-}) {
+  size: MarkerSize
+  pixelsPerUnit: number | null
+} & PartHandlers) {
+  const kit = useDrawingKit()
+  const unitsPerPixel = pixelsPerUnit ? 1 / pixelsPerUnit : 1
+  const inset = size.inset * unitsPerPixel
+  const cx = clamp(x, inset, VIEW_WIDTH - inset)
+  const cy = clamp(y, inset, VIEW_HEIGHT - inset)
+  const base = onPartPress ? 'wz-marker wz-marker-live' : 'wz-marker'
+  // Touch has no pointer leave, so only a mouse lights a part on hover.
+  const hover = (event: PointerEvent, letterOrNull: string | null) => {
+    if (event.pointerType === 'mouse') onPartHover?.(letterOrNull)
+  }
+
   return (
     <g
-      className={held ? 'wz-marker wz-held' : 'wz-marker'}
-      transform={`translate(${x} ${y})`}
+      className={partClass(base, letter, kit)}
+      transform={`translate(${cx} ${cy}) scale(${unitsPerPixel})`}
       data-part={letter}
       aria-hidden="true"
+      onPointerEnter={(event) => hover(event, letter)}
+      onPointerLeave={(event) => hover(event, null)}
+      onClick={onPartPress ? () => onPartPress(letter) : undefined}
     >
-      <circle className="wz-marker-disc" r={21} />
+      <circle
+        className="wz-marker-disc"
+        r={size.diameter / 2 - MARKER_RING_WIDTH / 2}
+      />
       <text className="wz-marker-letter">{letter}</text>
     </g>
   )

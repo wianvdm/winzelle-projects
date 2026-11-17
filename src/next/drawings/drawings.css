@@ -173,11 +173,16 @@ svg[data-state='problem'] .wz-slip {
 }
 
 /* Lettered markers: paper discs with the part letter, navy when held. They
-   are SVG shapes (the CSP forbids the inline styles an HTML overlay would
-   need), 42 units across so they read as the prototype's 44px buttons at
-   full size. Presentational: the explorer's key buttons drive interaction. */
+   are SVG shapes drawn in CSS px (Marker scales them out of the viewBox), so
+   they keep the prototype's 44px size, and 30px with 15px letters on narrow
+   windows, however wide the drawing is. */
 .wz-marker {
   pointer-events: none;
+}
+
+.wz-marker-live {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .wz-marker-disc {
@@ -190,10 +195,20 @@ svg[data-state='problem'] .wz-slip {
 
 .wz-marker-letter {
   fill: var(--color-wz-navy);
-  font: 500 17px var(--font-wz-voice);
+  font: 500 var(--text-wz-body) var(--font-wz-voice);
   letter-spacing: 0.04em;
   text-anchor: middle;
   dominant-baseline: central;
+}
+
+@media (hover: hover) {
+  .wz-marker-live:hover .wz-marker-disc {
+    stroke-width: 3;
+  }
+}
+
+.wz-marker.wz-hot .wz-marker-disc {
+  stroke-width: 3;
 }
 
 .wz-marker.wz-held .wz-marker-disc {
@@ -205,6 +220,12 @@ svg[data-state='problem'] .wz-slip {
 
 .wz-marker.wz-held .wz-marker-letter {
   fill: #ffffff;
+}
+
+@media (max-width: 1099px) {
+  .wz-marker-letter {
+    font-size: var(--text-wz-1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -254,4 +275,9 @@ svg[data-state='problem'] .wz-slip {
   .wz-preview-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.wz-preview-fill {
+  max-width: 640px;
+  border: var(--wz-ink-line);
 }

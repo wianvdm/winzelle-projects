@@ -4,12 +4,18 @@
 // slipped; the fixed view re-beds and points it. Tile colour is the same in
 // both views. Geometry ported from the prototype drawing.
 import { getTrade } from '../../content/next/trades'
-import { Drawing, type PartMarker } from './Drawing'
+import {
+  Drawing,
+  type DrawingCrop,
+  type DrawingPartProps,
+  type DrawingView,
+  type PartMarker,
+} from './Drawing'
 import { bricks, slope } from './fills'
 import {
   CutEdge,
   CutFine,
-  glowClass,
+  useGlowClass,
   Leader,
   Note,
   useDrawingKit,
@@ -58,7 +64,8 @@ function RoofSlope({ slip }: { slip?: number }) {
 }
 
 function RoofsArt() {
-  const { tile, highlight } = useDrawingKit()
+  const { tile } = useDrawingKit()
+  const glow = useGlowClass()
   const sand = useFilterRef('sand')
   const brickFilter = useFilterRef('brick')
   const timber = useMaterialRef('timber')
@@ -191,22 +198,22 @@ function RoofsArt() {
             ]}
           />
           <path
-            className={glowClass('wz-glow-area', highlight === 'a')}
+            className={glow('wz-glow-area', 'a')}
             data-part="a"
             d="M272 71.02L278 68.24A22 22 0 0 1 322 68.24L328 71.02Z"
           />
           <path
-            className={glowClass('wz-glow', highlight === 'b')}
+            className={glow('wz-glow', 'b')}
             data-part="b"
             d="M286 86L60 242"
           />
           <path
-            className={glowClass('wz-glow', highlight === 'c')}
+            className={glow('wz-glow', 'c')}
             data-part="c"
             d="M314 86L540 242"
           />
           <path
-            className={glowClass('wz-glow-area', highlight === 'd')}
+            className={glow('wz-glow-area', 'd')}
             data-part="d"
             d="M45 246H41A14 14 0 0 1 13 246H9A18 18 0 0 0 45 246Z M45 240H53V268H45Z"
           />
@@ -218,21 +225,20 @@ function RoofsArt() {
 
 export function RoofsDrawing({
   view,
-  highlight,
   crop,
+  ...parts
 }: {
-  view: 'problem' | 'fixed'
-  highlight?: string | null
-  crop?: 'full' | 'tile'
-}) {
+  view: DrawingView
+  crop?: DrawingCrop
+} & DrawingPartProps) {
   return (
     <Drawing
       drawing={getTrade('roofs').drawing}
       markers={MARKERS}
       view={view}
-      highlight={highlight}
       crop={crop}
       cropViewBox={CROP_VIEW_BOX}
+      {...parts}
     >
       <RoofsArt />
     </Drawing>

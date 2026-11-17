@@ -228,7 +228,7 @@ export function slope(options: { length: number; slip?: number }): Slope {
   for (let index = battens.length - 1; index >= 0; index--) {
     const head = index * TILE_GAUGE
     const tail = head + TILE_LENGTH
-    tiles.unshift({
+    tiles.push({
       points: `${head},5 ${tail},${5 + TILE_RISE} ${tail},${5 + TILE_RISE + TILE_THICKNESS} ${head},${5 + TILE_THICKNESS}`,
       fill: pick(rand, TILE_COLOURS),
       slipped: index === slip,
