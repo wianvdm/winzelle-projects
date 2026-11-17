@@ -1,33 +1,45 @@
-// Dev-only preview of the drawing kit (#94), mounted at /next/drawings only
-// when import.meta.env.DEV is true (see src/router.tsx), so it is absent from
-// every build. It renders each drawing in both views, with a held part, with
-// live markers, and as a tile crop, plus a note on a textured fill, for
-// screenshot comparison against the prototype.
+// Dev-only preview of the drawing kit (#94, #95), mounted at /next/drawings
+// only when import.meta.env.DEV is true (see src/router.tsx), so it is absent
+// from every build. It renders each trade's drawing in both views, with a held
+// part, with live markers and a view toggle, and as a tile crop, plus a note
+// on a textured fill, for screenshot comparison against the prototype.
 import { useState } from 'react'
 
-import { getTrade } from '../../content/next/trades'
+import { trades, whatNeedsDoing, type TradeId } from '../../content/next/trades'
 import '../next.css'
+import { CracksDrawing } from './CracksDrawing'
+import { DampDrawing } from './DampDrawing'
+import type { DrawingView } from './Drawing'
 import { stones } from './fills'
+import { KitchensDrawing } from './KitchensDrawing'
+import { OtherDrawing } from './OtherDrawing'
+import { PaintingDrawing } from './PaintingDrawing'
 import { PavingDrawing } from './PavingDrawing'
+import { PlumbingDrawing } from './PlumbingDrawing'
+import { PoolsDrawing } from './PoolsDrawing'
 import { Note } from './primitives'
 import { RoofsDrawing } from './RoofsDrawing'
+import { WallsDrawing } from './WallsDrawing'
 
-const CASES = [
-  {
-    id: 'paving',
-    label: getTrade('paving').label,
-    DrawingComponent: PavingDrawing,
-  },
-  {
-    id: 'roofs',
-    label: getTrade('roofs').label,
-    DrawingComponent: RoofsDrawing,
-  },
-] as const
+type DrawingComponent = typeof PavingDrawing
 
-type DrawingComponent = (typeof CASES)[number]['DrawingComponent']
+const DRAWINGS: Record<TradeId, DrawingComponent> = {
+  paving: PavingDrawing,
+  walls: WallsDrawing,
+  roofs: RoofsDrawing,
+  damp: DampDrawing,
+  cracks: CracksDrawing,
+  painting: PaintingDrawing,
+  kitchens: KitchensDrawing,
+  plumbing: PlumbingDrawing,
+  pools: PoolsDrawing,
+  other: OtherDrawing,
+}
 
-/** Markers wired like the explorer will wire them: hover lights, click holds. */
+/**
+ * Markers wired like the explorer will wire them: hover lights, click holds,
+ * and the state toggle switches the view.
+ */
 function LiveCase({
   DrawingComponent,
 }: {
@@ -35,16 +47,30 @@ function LiveCase({
 }) {
   const [held, setHeld] = useState<string | null>(null)
   const [hot, setHot] = useState<string | null>(null)
+  const [view, setView] = useState<DrawingView>('problem')
+  const fixed = view === 'fixed'
   return (
-    <DrawingComponent
-      view="problem"
-      highlight={held}
-      hot={hot}
-      onPartHover={setHot}
-      onPartPress={(letter) =>
-        setHeld((current) => (current === letter ? null : letter))
-      }
-    />
+    <>
+      <button
+        type="button"
+        className="wz-preview-toggle"
+        aria-pressed={fixed}
+        onClick={() => setView(fixed ? 'problem' : 'fixed')}
+      >
+        {fixed
+          ? whatNeedsDoing.showProblemLabel
+          : whatNeedsDoing.showFixedLabel}
+      </button>
+      <DrawingComponent
+        view={view}
+        highlight={held}
+        hot={hot}
+        onPartHover={setHot}
+        onPartPress={(letter) =>
+          setHeld((current) => (current === letter ? null : letter))
+        }
+      />
+    </>
   )
 }
 
@@ -82,39 +108,42 @@ export default function DrawingsPreview() {
     <main className="wz-page">
       <h1 className="wz-shell-title">Surveyor drawing kit preview</h1>
       <p>
-        Development-only check page for the Paving and Roofs drawings: problem
-        and fixed views, a held part, live markers, the tile crop, and a note on
-        a textured fill.
+        Development-only check page for every trade's drawing: problem and fixed
+        views, a held part, live markers with a view toggle, the tile crop, and
+        a note on a textured fill.
       </p>
-      {CASES.map(({ id, label, DrawingComponent }) => (
-        <section key={id} className="wz-preview-section" aria-label={label}>
-          <h2 className="wz-shell-title">{label}</h2>
-          <div className="wz-preview-grid">
-            <div className="wz-preview-case" data-case={`${id}-problem`}>
-              <p>Problem, full size</p>
-              <DrawingComponent view="problem" />
-            </div>
-            <div className="wz-preview-case" data-case={`${id}-fixed`}>
-              <p>Fixed, full size</p>
-              <DrawingComponent view="fixed" />
-            </div>
-            <div className="wz-preview-case" data-case={`${id}-held`}>
-              <p>Fixed, part c held</p>
-              <DrawingComponent view="fixed" highlight="c" />
-            </div>
-            <div className="wz-preview-case" data-case={`${id}-live`}>
-              <p>Problem, live markers (hover lights, click holds)</p>
-              <LiveCase DrawingComponent={DrawingComponent} />
-            </div>
-            <div className="wz-preview-case" data-case={`${id}-tile`}>
-              <p>Tile crop (fixed)</p>
-              <div className="wz-preview-tile">
-                <DrawingComponent view="fixed" crop="tile" />
+      {trades.map(({ id, label }) => {
+        const DrawingComponent = DRAWINGS[id]
+        return (
+          <section key={id} className="wz-preview-section" aria-label={label}>
+            <h2 className="wz-shell-title">{label}</h2>
+            <div className="wz-preview-grid">
+              <div className="wz-preview-case" data-case={`${id}-problem`}>
+                <p>Problem, full size</p>
+                <DrawingComponent view="problem" />
+              </div>
+              <div className="wz-preview-case" data-case={`${id}-fixed`}>
+                <p>Fixed, full size</p>
+                <DrawingComponent view="fixed" />
+              </div>
+              <div className="wz-preview-case" data-case={`${id}-held`}>
+                <p>Fixed, part c held</p>
+                <DrawingComponent view="fixed" highlight="c" />
+              </div>
+              <div className="wz-preview-case" data-case={`${id}-live`}>
+                <p>Live markers (hover lights, click holds) and view toggle</p>
+                <LiveCase DrawingComponent={DrawingComponent} />
+              </div>
+              <div className="wz-preview-case" data-case={`${id}-tile`}>
+                <p>Tile crop (fixed)</p>
+                <div className="wz-preview-tile">
+                  <DrawingComponent view="fixed" crop="tile" />
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        )
+      })}
       <section className="wz-preview-section" aria-label="Note on a fill">
         <h2 className="wz-shell-title">Note on a textured fill</h2>
         <div className="wz-preview-case" data-case="note-on-fill">

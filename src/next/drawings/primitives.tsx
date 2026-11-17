@@ -7,11 +7,14 @@
 import {
   createContext,
   useContext,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
   type PointerEvent,
 } from 'react'
+
+import type { Brick, Stone } from './fills'
 
 /** Per-instance ids so several drawings can share one page. */
 export interface DrawingIds {
@@ -66,6 +69,53 @@ export function useFilterRef(
 ): string | undefined {
   const { ids, tile } = useDrawingKit()
   return tile ? undefined : `url(#${ids[id]})`
+}
+
+/**
+ * Ids for a drawing's own clip paths, unique per instance so a drawing and its
+ * tile crop can share a page: `id('soil')` gives `wz{prefix}-{instance}-soil`.
+ */
+export function useLocalId(prefix: string): (name: string) => string {
+  const raw = useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  return (name) => `wz${prefix}-${raw}-${name}`
+}
+
+/** Seeded stones, each outlined in its own colour so neighbours read apart. */
+export function StoneFill({ stones }: { stones: readonly Stone[] }) {
+  return (
+    <>
+      {stones.map((stone) => (
+        <polygon
+          key={stone.points}
+          points={stone.points}
+          fill={stone.fill}
+          stroke={stone.fill}
+          strokeWidth={0.6}
+          strokeLinejoin="round"
+        />
+      ))}
+    </>
+  )
+}
+
+/** Brick courses cut through a wall, under the brick texture filter. */
+export function BrickFill({ bricks }: { bricks: readonly Brick[] }) {
+  const brickFilter = useFilterRef('brick')
+  return (
+    <g filter={brickFilter}>
+      {bricks.map((brick) => (
+        <rect
+          key={`${brick.x},${brick.y}`}
+          x={brick.x}
+          y={brick.y}
+          width={brick.width}
+          height={brick.height}
+          rx={0.5}
+          fill={brick.fill}
+        />
+      ))}
+    </g>
+  )
 }
 
 /** Class for a glow shape or marker: held wins over hot. */
@@ -361,13 +411,25 @@ export function CutEdge({ d }: { d: string }) {
   return <path className="wz-cut-edge" d={d} />
 }
 
-/** Fine internal line; `arrow` adds the navy arrowhead at the path end. */
-export function CutFine({ d, arrow }: { d: string; arrow?: boolean }) {
+/**
+ * Fine internal line; `arrow` adds the navy arrowhead at the path end and
+ * `dash` a stroke-dasharray for hidden or reference lines.
+ */
+export function CutFine({
+  d,
+  arrow,
+  dash,
+}: {
+  d: string
+  arrow?: boolean
+  dash?: string
+}) {
   const { ids } = useDrawingKit()
   return (
     <path
       className="wz-cut-fine"
       d={d}
+      strokeDasharray={dash}
       markerEnd={arrow ? `url(#${ids.arrow})` : undefined}
     />
   )
@@ -458,8 +520,10 @@ function sameBacks(
 
 /**
  * Measures the note's text lines (never the labels) and measures again when
- * the notes come back into view above 1220px and when webfonts finish
- * loading, since both change the drawn text's size.
+ * the notes come back into view above 1220px, when the drawing switches view
+ * (a note inside `.wz-if-problem` or `.wz-if-fixed` measures zero wide while
+ * hidden) and when webfonts finish loading, since all three change the drawn
+ * text's size.
  */
 function useNoteBacks(enabled: boolean, layoutKey: string) {
   const groupRef = useRef<SVGGElement>(null)
@@ -476,12 +540,19 @@ function useNoteBacks(enabled: boolean, layoutKey: string) {
     }
     measure()
     const stopWatching = watchMedia(NOTES_SHOWN_QUERY, measure)
+    const viewChanges = new MutationObserver(measure)
+    if (group.ownerSVGElement) {
+      viewChanges.observe(group.ownerSVGElement, {
+        attributeFilter: ['data-state'],
+      })
+    }
     const fonts = 'fonts' in document ? document.fonts : undefined
     void fonts?.ready.then(measure)
     fonts?.addEventListener('loadingdone', measure)
     return () => {
       live = false
       stopWatching()
+      viewChanges.disconnect()
       fonts?.removeEventListener('loadingdone', measure)
     }
   }, [enabled, layoutKey])
@@ -542,18 +613,20 @@ export function Note({
   )
 }
 
-/** Small-caps dimension or area label. */
+/** Small-caps dimension or area label; `anchor` centres it on x. */
 export function Dim({
   x,
   y,
+  anchor,
   children,
 }: {
   x: number
   y: number
+  anchor?: 'middle'
   children: string
 }) {
   return (
-    <text className="wz-dim" x={x} y={y}>
+    <text className="wz-dim" x={x} y={y} textAnchor={anchor}>
       {children}
     </text>
   )
