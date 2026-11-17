@@ -141,7 +141,7 @@
   min-height: 52px;
   padding: 6px 6px 6px 24px;
   font: 600 var(--text-wz-1) / 1.2 var(--font-wz-serif);
-  text-wrap: balance;
+  text-wrap-style: balance;
 }
 
 @media (hover: hover) {
