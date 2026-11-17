@@ -154,7 +154,7 @@ describe('NextPage opening', () => {
         <PickRoofs />
       </PickStateProvider>,
     )
-    const hero = screen.getByRole('link', { name: 'WhatsApp us a photo' })
+    const hero = document.getElementById('wz-hero-wa') as HTMLElement
     const sticky = within(
       document.getElementById('wz-sticky') as HTMLElement,
     ).getByText('WhatsApp us')
