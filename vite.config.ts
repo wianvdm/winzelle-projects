@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv, type Plugin } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
@@ -6,19 +6,14 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+import { resolveHomeNext } from './scripts/home-next-flag.mjs'
+
 const GOOGLE_FONTS_LINK_PATTERN =
   /[ \t]*<link\b[^>]*href=["']https:\/\/fonts\.g(?:oogleapis|static)\.com[^"']*["'][^>]*\/?>\r?\n?/gi
 
-export function resolveHomeNext(
-  command: 'build' | 'serve',
-  mode: string,
-): boolean {
-  const env = loadEnv(mode, process.cwd(), 'VITE_')
-  const rawHomeNext = process.env.VITE_HOME_NEXT ?? env.VITE_HOME_NEXT
-  return rawHomeNext !== undefined
-    ? rawHomeNext === 'true'
-    : command === 'serve'
-}
+// Re-exported so tests and callers keep one import site; the implementation
+// lives in scripts/home-next-flag.mjs, shared with scripts/check-filler.mjs.
+export { resolveHomeNext }
 
 export function stripGoogleFontsPlugin(): Plugin {
   return {

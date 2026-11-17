@@ -30,10 +30,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build with the /next flag on
+        # VITE_ALLOW_FILLER lets the flag-on build pass while the /next
+        # content still holds filler() placeholders (replaced in #102).
         run: npm run build
         env:
           VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
           VITE_HOME_NEXT: 'true'
+          VITE_ALLOW_FILLER: 'true'
       - name: Run the design gates against /next
         # serve.mjs serves dist/ with the pinned wrangler (local mode, no
         # Cloudflare login), asserts the CSP from public/_headers is applied,
