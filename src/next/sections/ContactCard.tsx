@@ -6,7 +6,7 @@ import {
 import { PHONE_HREF } from './Header.tsx'
 import './closing.css'
 
-export const CONTACT_SECTION_ID = 'wz-contact'
+const CONTACT_SECTION_ID = 'wz-contact'
 const CONTACT_TITLE_ID = 'wz-contact-title'
 export const EMAIL_HREF = `mailto:${contactFacts.email}`
 

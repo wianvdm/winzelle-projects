@@ -7,7 +7,7 @@ import { usePickState } from '../pick-state.tsx'
 import { buildWhatsAppLink, storyMessage, tradeMessage } from '../whatsapp.ts'
 import './closing.css'
 
-export const STORY_SECTION_ID = 'wz-story'
+const STORY_SECTION_ID = 'wz-story'
 const STORY_TITLE_ID = 'wz-story-title'
 const SIGNOFF_LABEL = 'Sign-off'
 

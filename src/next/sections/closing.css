@@ -213,7 +213,7 @@
   border-top: 1px solid var(--color-wz-navy);
 }
 
-.wz-ft-base-row {
+.wz-ft-base .wz-ft-base-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
