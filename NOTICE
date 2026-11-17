@@ -9,3 +9,14 @@ all rights reserved by Wian van der Merwe:
 - public/logo512.png
 - public/favicon.ico
 - src/content/ (site copy), except src/content/types.ts and src/content/index.ts
+
+Third-party font assets under `public/fonts/`:
+
+- `public/fonts/spectral-400.woff2`
+- `public/fonts/spectral-400-italic.woff2`
+- `public/fonts/spectral-600.woff2`
+- `public/fonts/spectral-sc-500.woff2`
+
+Spectral and Spectral SC are copyright 2017 The Spectral Project Authors
+(https://github.com/productiontype/Spectral) and licensed under the
+SIL Open Font License, Version 1.1 (OFL-1.1; see `public/fonts/OFL.txt`).
