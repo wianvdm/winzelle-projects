@@ -146,8 +146,9 @@ describe('work photos', () => {
 })
 
 describe('contact facts and form strings', () => {
-  it('flags the service-area line as filler', () => {
+  it('flags the service-area line and the prototype submit status as filler', () => {
     expect(fillerValues.has(contactFacts.serviceArea)).toBe(true)
+    expect(fillerValues.has(quoteForm.submitStatus)).toBe(true)
   })
 
   it('keeps the verbatim form error and status strings', () => {

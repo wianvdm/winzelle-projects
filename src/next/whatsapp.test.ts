@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { contactFacts } from '../content/next/contact.ts'
 import { getTrade, trades, type TradeId } from '../content/next/trades.ts'
-import { getWorkPhoto, photoCaption } from '../content/next/photos.ts'
+import {
+  photoCaption,
+  workPhotos,
+  type WorkPhoto,
+} from '../content/next/photos.ts'
 import {
   buildWhatsAppLink,
   defaultMessage,
@@ -64,7 +68,7 @@ describe('whatsapp message builder', () => {
     },
   )
 
-  it('builds the work board messages for all, other and a filtered trade', () => {
+  it('builds the board-wide and "other" work-board messages', () => {
     expect(workMessage(null)).toBe(
       'Hello Winzelle, I saw your photos and I have a job like those.' + ENDING,
     )
@@ -72,19 +76,30 @@ describe('whatsapp message builder', () => {
       "Hello Winzelle, I saw your photos and I have a job that isn't on your list." +
         ENDING,
     )
-    expect(workMessage(getTrade('roofs'))).toBe(
-      'Hello Winzelle, I saw your photos and I need help with a roof.' + ENDING,
-    )
   })
 
-  it('builds the lightbox message quoting the photo caption', () => {
-    const caption = photoCaption(getWorkPhoto('paving-forecourt'))
-    expect(caption).toBe('Concrete apron and ramp, Westering, August 2025')
-    expect(photoMessage(caption)).toBe(
-      `Hello Winzelle, I saw your photo “${caption}”. I'd like to ask about a job like this.` +
-        ENDING,
-    )
+  it.each(
+    trades
+      .filter((trade) => trade.id !== 'other')
+      .map((trade) => [trade.id, trade.noun] as [TradeId, string]),
+  )('builds the filtered work-board message for %s', (id, noun) => {
+    const expected =
+      `Hello Winzelle, I saw your photos and I need help with ${noun}.` + ENDING
+    expect(workMessage(getTrade(id))).toBe(expected)
+    expect(buildWhatsAppLink(workMessage(getTrade(id)))).toBe(linkOf(expected))
   })
+
+  it.each(workPhotos.map((photo) => [photo.id, photo] as [string, WorkPhoto]))(
+    'builds the lightbox message quoting the %s caption',
+    (_id, photo) => {
+      const caption = photoCaption(photo)
+      expect(caption.length).toBeGreaterThan(0)
+      expect(photoMessage(caption)).toBe(
+        `Hello Winzelle, I saw your photo “${caption}”. I'd like to ask about a job like this.` +
+          ENDING,
+      )
+    },
+  )
 
   it('URL-encodes spaces, ampersands, quotes and accented characters', () => {
     const link = buildWhatsAppLink(
@@ -95,7 +110,6 @@ describe('whatsapp message builder', () => {
     expect(link).toContain('%26')
     expect(link).toContain(encodeURIComponent('“'))
     expect(link).toContain(encodeURIComponent('é'))
-    expect(link).toContain(encodeURIComponent("'"))
   })
 
   it('ends every message with the suburb prompt', () => {

@@ -75,8 +75,10 @@ export const quoteForm = {
     emailMissingAt: 'That email address is missing an @ or the part after it.',
     jobEmpty: 'Tell us in a few words what needs doing.',
   },
-  submitStatus:
+  // Prototype status line, flagged until #101 wires the real submit.
+  submitStatus: filler(
     "Thanks. We'll get back to you on the number or email you gave. (Prototype: nothing was sent.)",
+  ),
 } as const
 
 /** Footer title block and base row (spec S7). */
