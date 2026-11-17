@@ -1,4 +1,5 @@
 import { useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { flushSync } from 'react-dom'
 
 import {
   getTrade,
@@ -69,6 +70,8 @@ function isTouchClick(event: MouseEvent): boolean {
 interface KeyButtonProps {
   part: TradePart
   held: boolean
+  /** Whether any part is held, so Escape releases it from any key button. */
+  anyHeld: boolean
   hot: boolean
   onHot: (letter: string | null) => void
   onPress: (letter: string, event: MouseEvent) => void
@@ -79,13 +82,14 @@ interface KeyButtonProps {
 function KeyButton({
   part,
   held,
+  anyHeld,
   hot,
   onHot,
   onPress,
   onRelease,
 }: KeyButtonProps) {
   const releaseOnEscape = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || !held) return
+    if (event.key !== 'Escape' || !anyHeld) return
     event.preventDefault()
     onRelease()
   }
@@ -205,11 +209,15 @@ export function ExplorerSheet() {
   const release = () => setState((current) => ({ ...current, held: null }))
   const toggleHeld = (letter: string) => {
     const holding = held !== letter
-    setState((current) => ({
-      ...current,
-      held: holding ? letter : null,
-      hot: holding ? current.hot : null,
-    }))
+    // The strip carries the held part's note, so it must be at its new
+    // height before the drawing is measured for the reveal.
+    flushSync(() =>
+      setState((current) => ({
+        ...current,
+        held: holding ? letter : null,
+        hot: holding ? current.hot : null,
+      })),
+    )
     if (holding) revealDrawing(frameRef.current)
   }
   // Touch has no pointer leave, so a tapped key row would stay lit; only the
@@ -283,6 +291,7 @@ export function ExplorerSheet() {
             key={part.key}
             part={part}
             held={held === part.key}
+            anyHeld={held !== null}
             hot={hot === part.key}
             onHot={setHot}
             onPress={pressKey}

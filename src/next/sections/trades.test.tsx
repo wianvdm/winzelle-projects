@@ -308,6 +308,22 @@ describe('Drawing key and markers', () => {
     expect(strip()).toBe(getTrade('paving').drawing.problemNote)
   })
 
+  it('releases the held part with Escape from another key button', () => {
+    renderBoard()
+    const held = getTrade('paving').drawing.parts[0]
+    const other = getTrade('paving').drawing.parts[1]
+    const heldButton = keyButton(new RegExp(held.name))
+    const otherButton = keyButton(new RegExp(other.name))
+
+    fireEvent.click(heldButton)
+    expect(heldButton.getAttribute('aria-pressed')).toBe('true')
+
+    fireEvent.focus(otherButton)
+    fireEvent.keyDown(otherButton, { key: 'Escape' })
+    expect(heldButton.getAttribute('aria-pressed')).toBe('false')
+    expect(strip()).toBe(getTrade('paving').drawing.problemNote)
+  })
+
   it('lights a part while its key button has focus', () => {
     renderBoard()
     const button = keyButton(/Kerb/)
