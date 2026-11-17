@@ -63,7 +63,10 @@ function RootComponent() {
   const isNextRoute = useRouterState({
     select: (state) =>
       homeNextEnabled &&
-      state.matches.some((match) => match.routeId === '/next'),
+      state.matches.some(
+        (match) =>
+          match.routeId === '/next' || match.routeId === '/next/drawings',
+      ),
   })
 
   if (isNextRoute) {

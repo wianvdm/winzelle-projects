@@ -11,16 +11,34 @@ const baseChildren = Array.isArray(generatedRouteTree.children)
   ? [...generatedRouteTree.children]
   : []
 
-const routeTree =
+const nextChildren =
   import.meta.env.VITE_HOME_NEXT === 'true'
-    ? generatedRouteTree.addChildren([
-        ...baseChildren,
+    ? [
         createRoute({
           getParentRoute: () => rootRoute,
           path: '/next',
           component: lazyRouteComponent(() => import('./next/NextPage')),
         }),
-      ])
+        // Dev-only preview of the drawing kit (#94): import.meta.env.DEV is
+        // statically false in every build, so the route and its chunk never
+        // ship.
+        ...(import.meta.env.DEV
+          ? [
+              createRoute({
+                getParentRoute: () => rootRoute,
+                path: '/next/drawings',
+                component: lazyRouteComponent(
+                  () => import('./next/drawings/DrawingsPreview'),
+                ),
+              }),
+            ]
+          : []),
+      ]
+    : []
+
+const routeTree =
+  nextChildren.length > 0
+    ? generatedRouteTree.addChildren([...baseChildren, ...nextChildren])
     : generatedRouteTree
 
 export function getRouteTree() {
