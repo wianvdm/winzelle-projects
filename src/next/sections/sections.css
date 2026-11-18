@@ -224,6 +224,13 @@
   font-size: var(--text-wz-1);
 }
 
+/* Small print beside the main WhatsApp actions (spec S6 privacy notes). */
+.wz-meta-note {
+  margin: 4px 0 0;
+  color: var(--color-wz-steel);
+  font-size: var(--text-wz-1);
+}
+
 /* On the sheet's top-right corner, clear of the headline. */
 .wz-seal {
   position: absolute;

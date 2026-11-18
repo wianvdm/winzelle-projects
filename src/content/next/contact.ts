@@ -92,10 +92,22 @@ export const quoteForm = {
     emailMissingAt: 'That email address is missing an @ or the part after it.',
     jobEmpty: 'Tell us in a few words what needs doing.',
   },
-  // Prototype status line, flagged until #101 wires the real submit.
-  submitStatus: filler(
-    "Thanks. We'll get back to you on the number or email you gave. (Prototype: nothing was sent.)",
-  ),
+  honeypotLabel: 'Leave this box unticked',
+  sendingStatus: 'Sending your message…',
+  successStatus:
+    "Thanks, your message is on its way. We'll get back to you on the number or email you gave.",
+  // The phone number sits between these two parts as a tel: link.
+  failureStatusBefore: "Your message didn't send. Phone us on ",
+  failureStatusAfter: ', or try again.',
+  subject: 'Website message',
+  noTradePicked: 'Not picked',
+  fromName: 'Winzelle Projects website',
+} as const
+
+/** Privacy notes (spec S6): at the form, and beside the main WhatsApp actions. */
+export const privacyNotes = {
+  form: 'Your details come to us, Winzelle Projects, and we use them only to reply to this message, never for marketing. Giving them is up to you. The form sends them through Web3Forms, a service outside South Africa. If you press Show the map, your browser loads it from OpenStreetMap.',
+  whatsapp: 'WhatsApp is run by Meta.',
 } as const
 
 /** Footer title block and base row (spec S7). */

@@ -1,9 +1,11 @@
 import {
   contactFacts,
   footer as fieldLabels,
+  privacyNotes,
   whatsappLabels,
 } from '../../content/next/index.ts'
 import { ContactMap } from '../map/ContactMap.tsx'
+import { ContactForm } from './ContactForm.tsx'
 import { PHONE_HREF } from './Header.tsx'
 import './closing.css'
 
@@ -17,8 +19,7 @@ interface ContactCardProps {
 
 /**
  * Contact (spec S6): the pinned card, WhatsApp first, hanging over the map
- * print. The board's grid already holds the column the message form (#101)
- * takes under the card.
+ * print, with the message form tucked under the card.
  */
 export function ContactCard({ whatsappHref }: ContactCardProps) {
   return (
@@ -45,6 +46,7 @@ export function ContactCard({ whatsappHref }: ContactCardProps) {
                 {contactFacts.phoneDisplay}
               </span>
             </a>
+            <p className="wz-meta-note">{privacyNotes.whatsapp}</p>
             <dl className="wz-other">
               <dt className="wz-voice">{fieldLabels.phoneLabel}</dt>
               <dd>
@@ -79,6 +81,7 @@ export function ContactCard({ whatsappHref }: ContactCardProps) {
             </dl>
           </div>
           <ContactMap />
+          <ContactForm />
         </div>
       </div>
     </section>

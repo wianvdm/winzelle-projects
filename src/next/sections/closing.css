@@ -64,7 +64,8 @@
 }
 
 /* The card hangs over the map print (#100), which spans the first row;
-   the message note (#101) is pinned under the card's lower-right corner. */
+   the message form (form.css) is pinned under the card's lower-right
+   corner. */
 .wz-contact-board {
   position: relative;
   display: grid;
@@ -105,6 +106,10 @@
 
 .wz-card .wz-whatsapp-number {
   font-size: var(--text-wz-1);
+}
+
+.wz-card .wz-meta-note {
+  margin-top: 8px;
 }
 
 .wz-other {

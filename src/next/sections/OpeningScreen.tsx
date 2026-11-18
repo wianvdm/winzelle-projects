@@ -3,6 +3,7 @@ import {
   getWorkPhoto,
   opening,
   openingPhotoIds,
+  privacyNotes,
   whatsappLabels,
 } from '../../content/next/index.ts'
 import { Header, PHONE_HREF, type SectionLinksProps } from './Header.tsx'
@@ -101,6 +102,7 @@ export function OpeningScreen({
             </span>
           </div>
           <p className="wz-act-free">{opening.freeQuoteNote}</p>
+          <p className="wz-meta-note">{privacyNotes.whatsapp}</p>
         </div>
 
         <Header currentSectionId={currentSectionId} />

@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { contactFacts, mapPin, quoteForm } from './contact.ts'
+import { contactFacts, mapPin, privacyNotes, quoteForm } from './contact.ts'
 import { fillerValues } from './filler.ts'
 import {
   getWorkPhoto,
@@ -188,9 +188,22 @@ describe('contact facts and form strings', () => {
     expect(contactFacts.mapShowNote).toContain('OpenStreetMap')
   })
 
-  it('flags the service-area line and the prototype submit status as filler', () => {
+  it('flags the service-area line as filler and the form statuses as real copy', () => {
     expect(fillerValues.has(contactFacts.serviceArea)).toBe(true)
-    expect(fillerValues.has(quoteForm.submitStatus)).toBe(true)
+    expect(fillerValues.has(quoteForm.successStatus)).toBe(false)
+    expect(quoteForm.successStatus).not.toContain('Prototype')
+  })
+
+  it('names who gets the form details, why, and where they go', () => {
+    expect(privacyNotes.form).toContain('Winzelle Projects')
+    expect(privacyNotes.form).toContain('only to reply to this message')
+    expect(privacyNotes.form).toContain('never for marketing')
+    expect(privacyNotes.form).toContain('up to you')
+    expect(privacyNotes.form).toContain(
+      'Web3Forms, a service outside South Africa',
+    )
+    expect(privacyNotes.form).toContain('OpenStreetMap')
+    expect(privacyNotes.whatsapp).toBe('WhatsApp is run by Meta.')
   })
 
   it('keeps the verbatim form error and status strings', () => {
@@ -212,9 +225,12 @@ describe('contact facts and form strings', () => {
     expect(quoteForm.errors.jobEmpty).toBe(
       'Tell us in a few words what needs doing.',
     )
-    expect(quoteForm.submitStatus).toBe(
-      "Thanks. We'll get back to you on the number or email you gave. (Prototype: nothing was sent.)",
+    expect(quoteForm.successStatus).toBe(
+      "Thanks, your message is on its way. We'll get back to you on the number or email you gave.",
     )
+    expect(
+      `${quoteForm.failureStatusBefore}${contactFacts.phoneDisplay}${quoteForm.failureStatusAfter}`,
+    ).toBe("Your message didn't send. Phone us on 082 878 1557, or try again.")
   })
 
   it('compiles the documented phone and email patterns', () => {
