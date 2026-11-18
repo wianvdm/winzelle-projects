@@ -2,9 +2,10 @@
 // contains a flagged filler() call (suburbs, months, the service-area line;
 // replaced with confirmed facts in #102). Runs
 // before vite build in npm run build. VITE_HOME_NEXT resolution is shared
-// with vite.config.ts through scripts/home-next-flag.mjs: default off for
-// builds, opt in with 'true'. VITE_ALLOW_FILLER=true is the explicit opt-in
-// for builds that knowingly ship placeholders.
+// with vite.config.ts through scripts/home-next-flag.mjs: on by default,
+// off when VITE_HOME_NEXT is set to anything but 'true'.
+// VITE_ALLOW_FILLER=true is the explicit opt-in for builds that knowingly
+// ship placeholders.
 //
 // Scans src/ recursively so a placeholder in a subfolder or in src/next/
 // cannot slip past. Tests pass a fixture directory as the first argument.
@@ -19,7 +20,7 @@ const MARKER = 'filler('
 // fixtures and assertions rather than holding placeholder values.
 const EXCLUDED_NAMES = new Set(['filler.ts'])
 
-if (!resolveHomeNext('build', 'production')) {
+if (!resolveHomeNext('production')) {
   console.log('[check-filler] /next is off in this build; filler allowed.')
   process.exit(0)
 }

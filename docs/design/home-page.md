@@ -1,6 +1,6 @@
 # Home page design specification
 
-Design reference for the redesigned Winzelle Projects home page (`wianvdm/winzelle-projects`, parent #90). Until cutover (#105), the page builds at `/next` behind the `VITE_HOME_NEXT` flag (`noindex`, omitted from default production builds).
+Design reference for the redesigned Winzelle Projects home page (`wianvdm/winzelle-projects`, parent #90). Until cutover (#105), the page builds at `/next` behind the `VITE_HOME_NEXT` flag (`noindex`, unlinked; on in production builds since #104 so the client can check it live).
 
 ## Settled decisions
 

@@ -15,9 +15,11 @@ const {
   DEFAULT_DELAY_MS,
   PLACEHOLDER_ACCESS_KEY,
   PRODUCTION_ORIGIN,
+  MAX_BUNDLE_CHUNKS,
   extractChunkReferences,
   extractLocalStylesheet,
   extractMainModuleScript,
+  extractStaticImports,
   readExpectedScript,
   runSmoke,
 } = smoke
@@ -188,6 +190,55 @@ function names(results: { name: string; ok: boolean }[]) {
   return results.map((entry) => entry.name)
 }
 
+function findResult(results: { name: string }[], name: string) {
+  return results.find((entry) => entry.name === name)
+}
+
+async function smokeAccessKey(overrides: Record<string, StubResponse>) {
+  const { fetchImpl, requests } = serveRoutes(passingRoutes(overrides))
+  const { ok, results } = await runSmoke({
+    baseUrl: BASE_URL,
+    fetch: fetchImpl,
+    attempts: 1,
+    delayMs: 0,
+  })
+  return { ok, results, requests }
+}
+
+const KEY_CHUNK_FILE = 'public-env-key.js'
+const KEY_CHUNK = `/assets/${KEY_CHUNK_FILE}`
+const NEXT_CHUNK = '/assets/NextPage-next.js'
+
+// Mirrors the flag-on build: the quote form and the /next page both use the
+// key helper, so the bundler moves it into its own chunk that both import,
+// and both import the main script back.
+function splitKeyRoutes(overrides: Record<string, StubResponse> = {}) {
+  const js = (body: string) => ({
+    contentType: 'application/javascript',
+    body,
+  })
+  const sharedImports =
+    `import{t as e}from"./${KEY_CHUNK_FILE}";` +
+    'import{j as n}from"./index-abc123.js";'
+  return {
+    [`${BASE_URL}${MODULE_SCRIPT}`]: js(
+      'const a=()=>import(`./routes-quote.js`),b=()=>import(`./NextPage-next.js`);',
+    ),
+    [`${BASE_URL}${CHUNK_SCRIPT}`]: js(
+      sharedImports +
+        'let r=e();await fetch(`https://api.web3forms.com/submit`,' +
+        '{body:JSON.stringify({access_key:r})});',
+    ),
+    [`${BASE_URL}${NEXT_CHUNK}`]: js(
+      sharedImports + 'function Q({accessKey:t}){return{access_key:t}}',
+    ),
+    [`${BASE_URL}${KEY_CHUNK}`]: js(
+      `function e(){return\`${ACCESS_KEY}\`}export{e as t};`,
+    ),
+    ...overrides,
+  }
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -260,6 +311,18 @@ describe('extractChunkReferences', () => {
 
   it('returns an empty list when nothing is referenced', () => {
     expect(extractChunkReferences('const a = 1')).toEqual([])
+  })
+})
+
+describe('extractStaticImports', () => {
+  it('collects static imports and skips dynamic ones', () => {
+    const body =
+      'import{t as e}from"./public-env-x.js";import{a}from"./index-y.js";' +
+      'const m=()=>import(`./loadMap-z.js`);import{t}from"./public-env-x.js";'
+    expect(extractStaticImports(body)).toEqual([
+      './public-env-x.js',
+      './index-y.js',
+    ])
   })
 })
 
@@ -581,6 +644,95 @@ describe('runSmoke', () => {
     expect(endpoint.reason).toMatch(
       /chunk \/assets\/routes-quote\.js returned 404/,
     )
+  })
+
+  it('passes when the minified key helper sits inline in the lazy chunk (flag-off shape)', async () => {
+    const { ok, results } = await smokeAccessKey({
+      [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+        contentType: 'application/javascript',
+        body:
+          `function ae(){return\`${ACCESS_KEY}\`}` +
+          'let r=ae();await fetch(`https://api.web3forms.com/submit`,' +
+          '{body:JSON.stringify({access_key:r})});',
+      },
+    })
+    expect(ok).toBe(true)
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: true,
+      reason: 'key present',
+    })
+  })
+
+  it('passes when the key helper sits in a split chunk the form chunks import (flag-on shape)', async () => {
+    const { ok, results, requests } = await smokeAccessKey(splitKeyRoutes())
+    expect(ok).toBe(true)
+    expect(findResult(results, 'form-endpoint')).toMatchObject({ ok: true })
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: true,
+      reason: 'key present',
+    })
+    const fetched = (path: string) =>
+      requests.filter((request) => request.url === `${BASE_URL}${path}`)
+    // The chunks import the main script and the key chunk back; each is
+    // fetched once.
+    expect(fetched(MODULE_SCRIPT)).toHaveLength(1)
+    expect(fetched(KEY_CHUNK)).toHaveLength(1)
+  })
+
+  it('fails the form-access-key check when no chunk that sets access_key imports the key helper', async () => {
+    const { results } = await smokeAccessKey(
+      splitKeyRoutes({
+        [`${BASE_URL}${NEXT_CHUNK}`]: {
+          contentType: 'application/javascript',
+          body: `import{t as e}from"./${KEY_CHUNK_FILE}";const id=e();`,
+        },
+        [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+          contentType: 'application/javascript',
+          body:
+            "fetch('https://api.web3forms.com/submit'," +
+            '{body:JSON.stringify({access_key:r})});',
+        },
+      }),
+    )
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: false,
+      reason: 'key missing',
+    })
+  })
+
+  it('fails the form checks when a statically imported chunk is missing', async () => {
+    const { results } = await smokeAccessKey(
+      splitKeyRoutes({ [`${BASE_URL}${KEY_CHUNK}`]: { status: 404 } }),
+    )
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: false,
+      reason: `chunk ${KEY_CHUNK} returned 404`,
+    })
+  })
+
+  it('stops following chunks at MAX_BUNDLE_CHUNKS', async () => {
+    const chainPath = (index: number) => `/assets/chain-${index}.js`
+    const chain: Record<string, StubResponse> = {
+      [`${BASE_URL}${MODULE_SCRIPT}`]: {
+        contentType: 'application/javascript',
+        body: 'import("./chain-1.js");',
+      },
+    }
+    for (let index = 1; index <= MAX_BUNDLE_CHUNKS + 5; index += 1) {
+      chain[`${BASE_URL}${chainPath(index)}`] = {
+        contentType: 'application/javascript',
+        body: `import("./chain-${index + 1}.js");`,
+      }
+    }
+    const { results, requests } = await smokeAccessKey(chain)
+    const chunkRequests = requests.filter((request) =>
+      request.url.includes('/assets/chain-'),
+    )
+    expect(chunkRequests).toHaveLength(MAX_BUNDLE_CHUNKS - 1)
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: false,
+      reason: 'key missing',
+    })
   })
 
   it('fails the stylesheet check on a 404', async () => {

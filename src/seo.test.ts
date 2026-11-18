@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+// @ts-expect-error the script ships no type declarations
+import { headersFor, parseHeadersFile } from '../scripts/design-gates/serve.mjs'
 import { siteSettings } from './content/site-settings.ts'
 import { services } from './content/services.ts'
 
@@ -55,5 +57,47 @@ describe('index.html SEO metadata', () => {
 
     expect(html).not.toContain('winzelleprojects.co.za')
     expect(html).not.toContain('XXXX')
+  })
+})
+
+function readRepoFile(path: string): string {
+  return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+}
+
+// The files that render /: its HTML, the legacy components and the legacy
+// content modules (src/content/next/ belongs to /next).
+function legacyPageFiles(): string[] {
+  const inDir = (dir: string) =>
+    readdirSync(new URL(`../${dir}`, import.meta.url), { withFileTypes: true })
+      .filter((entry) => entry.isFile() && !entry.name.includes('.test.'))
+      .map((entry) => `${dir}/${entry.name}`)
+  return [
+    'index.html',
+    'src/routes/index.tsx',
+    ...inDir('src/components'),
+    ...inDir('src/content'),
+  ]
+}
+
+describe('/next soak stays out of search (#104)', () => {
+  const headerBlocks = parseHeadersFile(readRepoFile('public/_headers'))
+  const robotsHeaderAt = (pathname: string) =>
+    new Map<string, string>(headersFor(headerBlocks, pathname)).get(
+      'x-robots-tag',
+    )
+
+  it('sends X-Robots-Tag: noindex on /next and not on /', () => {
+    expect(robotsHeaderAt('/next')).toBe('noindex')
+    expect(robotsHeaderAt('/')).toBeUndefined()
+  })
+
+  it('keeps /next out of the sitemap', () => {
+    expect(readRepoFile('public/sitemap.xml')).not.toContain('/next')
+  })
+
+  it('never links to /next from /', () => {
+    for (const file of legacyPageFiles()) {
+      expect(readRepoFile(file), file).not.toContain('/next')
+    }
   })
 })

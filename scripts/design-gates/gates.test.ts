@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { classifyRequest, finalise, gateOutcome } from './gates.mjs'
 import type { ProbeResult } from './gates.mjs'
+// @ts-expect-error the script ships no type declarations
+import { headersFor, parseHeadersFile } from './serve.mjs'
 
 type ProbeData = Parameters<typeof finalise>[0]
 
@@ -776,5 +778,52 @@ describe('gateOutcome', () => {
     const outcome = gateOutcome(finalise(data))
     expect(outcome.ok).toBe(false)
     expect(outcome.screenshots).toEqual(['390: boom'])
+  })
+})
+
+describe('serve.mjs _headers matching', () => {
+  const HEADERS_FILE = [
+    '# Comment lines are skipped.',
+    '/*',
+    "  Content-Security-Policy: default-src 'self'",
+    '  X-Robots-Tag: nosnippet',
+    '',
+    '/assets/*',
+    '  Cache-Control: public, max-age=31536000, immutable',
+    '',
+    '/next',
+    '  X-Robots-Tag: noindex',
+    '',
+  ].join('\n')
+  const blocks = parseHeadersFile(HEADERS_FILE)
+  const headersAt = (pathname: string) =>
+    Object.fromEntries(headersFor(blocks, pathname))
+
+  it('merges every matching block like Cloudflare, joining repeated headers with a comma', () => {
+    expect(headersAt('/next')).toEqual({
+      'content-security-policy': "default-src 'self'",
+      'x-robots-tag': 'nosnippet, noindex',
+    })
+  })
+
+  it('applies only the blocks whose pattern matches the path', () => {
+    expect(headersAt('/')).toEqual({
+      'content-security-policy': "default-src 'self'",
+      'x-robots-tag': 'nosnippet',
+    })
+    expect(headersAt('/assets/index-abc.js')).toEqual({
+      'content-security-policy': "default-src 'self'",
+      'x-robots-tag': 'nosnippet',
+      'cache-control': 'public, max-age=31536000, immutable',
+    })
+    expect(headersAt('/next/x')).toEqual(headersAt('/'))
+  })
+
+  it('treats comment lines as comments, not path patterns', () => {
+    expect(blocks.map(({ pattern }: { pattern: string }) => pattern)).toEqual([
+      '/*',
+      '/assets/*',
+      '/next',
+    ])
   })
 })

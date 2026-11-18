@@ -4,7 +4,7 @@ Winzelle is a React 19 single-page application built with Vite 8 and TanStack Ro
 
 ## Components
 
-- `src/routes/`: file-based routes. The router plugin generates `src/routeTree.gen.ts` from them. Today there is a single route, `/`, defined in `src/routes/index.tsx` with the root layout in `src/routes/__root.tsx`.
+- `src/routes/`: file-based routes. The router plugin generates `src/routeTree.gen.ts` from them. Today there is a single file route, `/`, defined in `src/routes/index.tsx` with the root layout in `src/routes/__root.tsx`. The redesign under `src/next/` is a code-based `/next` route in `src/router.tsx`, registered when `VITE_HOME_NEXT` is on (the default in every build since #104) and served from its own `dist/next.html`, `noindex` and unlinked until cutover (#105); see [docs/development.md](development.md).
 - `src/content/`: typed content modules (hero, about, services, projects, contact, site settings) sharing the types in `src/content/types.ts`. Media sits in `public/content/`. It was migrated from Sanity; see [docs/content-migration.md](content-migration.md).
 - `src/lib/public-env.ts`: reads the public Web3Forms key and exposes `getWeb3FormsAccessKey()`, which returns undefined when the key is missing or still the placeholder.
 - `wrangler.toml`: a Cloudflare Worker serves `dist/` as static assets with `not_found_handling = "single-page-application"` for the SPA fallback. It also sets `workers_dev = false` and `preview_urls = false` (#58).
