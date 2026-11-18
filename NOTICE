@@ -8,7 +8,7 @@ all rights reserved by Wian van der Merwe:
 - public/logo192.png
 - public/logo512.png
 - public/favicon.ico
-- src/content/ (site copy), except src/content/types.ts and src/content/index.ts
+- src/content/ (site copy)
 
 Third-party font assets under `public/fonts/`:
 
