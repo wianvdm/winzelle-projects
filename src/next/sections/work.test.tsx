@@ -277,11 +277,15 @@ describe('Our work board', () => {
     // second shares the next row with the ask at the two-to-a-row 371px.
     expect(widthOf('paving-forecourt')).toBe('560px')
     expect(widthOf('paving-kerb')).toBe('371px')
+    // The break is flagged for the stylesheet, not left to the first width.
+    expect(print('paving-forecourt').hasAttribute('data-own-row')).toBe(true)
+    expect(print('paving-kerb').hasAttribute('data-own-row')).toBe(false)
 
     fireEvent.click(tag('Roofs'))
     // Three to a board: two to a row share 371px; the 268px ridge photo stops at 1.3x plus
     // the print's paper (jsdom computes no aspect, so the 4:3 default).
     expect(widthOf('waterproof-roof')).toBe('371px')
+    expect(print('waterproof-roof').hasAttribute('data-own-row')).toBe(false)
     expect(widthOf('roof-ridge-sealed')).toBe(
       `${Math.floor(getWorkPhoto('roof-ridge-sealed').width * 1.3 + 20)}px`,
     )

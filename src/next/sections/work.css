@@ -226,6 +226,10 @@
   transform: rotate(var(--r, 0deg)) translateY(var(--lift, 0px));
 }
 
+.wz-prints .wz-print[data-own-row] {
+  display: block;
+}
+
 .wz-prints .wz-print[hidden] {
   display: none;
 }

@@ -78,6 +78,7 @@ function setPrintSizes(print: HTMLElement, sizes: string) {
 
 function clearPrintWidths(board: HTMLElement) {
   for (const print of boardPrints(board)) {
+    delete print.dataset.ownRow
     print.style.removeProperty('width')
     setPrintSizes(print, BOARD_PRINT_SIZES)
   }
@@ -86,7 +87,8 @@ function clearPrintWidths(board: HTMLElement) {
 /**
  * The room each shown print gets in its row. Two prints side by side would
  * leave the ask alone on the next row beside an empty half board, so the
- * first takes a row to itself and the second shares the ask's row.
+ * first takes a row to itself (data-own-row, which work.css turns into a
+ * line break whatever its width) and the second shares the ask's row.
  */
 function printShares(board: HTMLElement, count: number): number[] {
   const perRow = Math.min(count, PRINTS_PER_ROW)
@@ -114,6 +116,9 @@ function sizeFewPrints(board: HTMLElement) {
       LONE_PRINT_MAX_PX,
     )
     print.style.width = `${Math.floor(width)}px`
+    if (shown.length === PRINTS_PER_ROW && index === 0) {
+      print.dataset.ownRow = ''
+    }
     setPrintSizes(print, `${Math.floor(width)}px`)
   }
 }
