@@ -164,6 +164,31 @@ describe('ContactForm', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
+  it('announces the first error in the status region when Enter is pressed in the invalid field', () => {
+    const fetchMock = stubFetch(jsonResponse(200, { success: true }))
+    renderForm()
+
+    type('Email', 'name@example')
+    field('Email').focus()
+    fireEvent.keyDown(field('Email'), { key: 'Enter' })
+    // jsdom skips the implicit submission Enter would trigger; submit the
+    // form the same way with focus still in the invalid field.
+    fireEvent.submit(document.getElementById('wz-form') as HTMLFormElement)
+
+    expect(document.activeElement).toBe(field('Email'))
+    expect(statusText()).toBe(quoteForm.errors.emailBadShape)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not mirror the error into the status region when focus moves to the field', () => {
+    renderForm()
+
+    send()
+
+    expect(document.activeElement).toBe(field('Phone number'))
+    expect(statusText()).toBe('')
+  })
+
   it('focuses the job box when only the message is missing', () => {
     stubFetch(jsonResponse(200, { success: true }))
     renderForm()

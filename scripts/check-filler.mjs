@@ -1,6 +1,6 @@
 // Fails a production build that enables /next while any source file still
-// contains a flagged filler() call (suburbs, months, the service-area line,
-// the prototype submit status; replaced with confirmed facts in #102). Runs
+// contains a flagged filler() call (suburbs, months, the service-area line;
+// replaced with confirmed facts in #102). Runs
 // before vite build in npm run build. VITE_HOME_NEXT resolution is shared
 // with vite.config.ts through scripts/home-next-flag.mjs: default off for
 // builds, opt in with 'true'. VITE_ALLOW_FILLER=true is the explicit opt-in

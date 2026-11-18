@@ -165,6 +165,10 @@ export function ContactForm() {
   const [errors, setErrors] = useState<FieldErrors>(NO_ERRORS)
   const [honeypotTicked, setHoneypotTicked] = useState(false)
   const [sendState, setSendState] = useState<SendState>('idle')
+  // The first validation error, mirrored into the status region only when
+  // focus stays put (Enter pressed in the invalid field), so a reader hears
+  // it even though no description change or focus move announces it.
+  const [statusNote, setStatusNote] = useState('')
   const phoneRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const jobRef = useRef<HTMLTextAreaElement>(null)
@@ -197,13 +201,20 @@ export function ContactForm() {
         setSendState('idle')
       })
       const fieldRefs = { phone: phoneRef, email: emailRef, job: jobRef }
-      fieldRefs[firstInvalid].current?.focus()
+      const target = fieldRefs[firstInvalid].current
+      // Announcing the moved-to field already speaks its error; only a field
+      // that keeps focus needs the status mirror to be heard.
+      const focusStays = document.activeElement === target
+      target?.focus()
+      setStatusNote(focusStays ? found[firstInvalid] : '')
       return
     }
 
     setErrors(NO_ERRORS)
+    setStatusNote('')
     const accessKey = getWeb3FormsAccessKey()
     if (accessKey === undefined) {
+      setStatusNote('')
       setSendState('failed')
       return
     }
@@ -218,6 +229,7 @@ export function ContactForm() {
     }
     setValues(EMPTY_VALUES)
     setHoneypotTicked(false)
+    setStatusNote('')
     setSendState('sent')
   }
 
@@ -316,6 +328,7 @@ export function ContactForm() {
         </div>
       </div>
       <p className="wz-form-status" id={STATUS_ID} role="status">
+        {statusNote}
         <SendStatus sendState={sendState} />
       </p>
       <p className="wz-form-privacy">{privacyNotes.form}</p>
