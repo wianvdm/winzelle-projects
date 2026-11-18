@@ -9,7 +9,7 @@ import { HomeBoard, NextPage } from '../NextPage.tsx'
 import { PickStateProvider, usePickState } from '../pick-state.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from '../whatsapp.ts'
 import { LightboxProvider } from './Lightbox.tsx'
-import { OpeningScreen } from './OpeningScreen.tsx'
+import { NhbrcSeal, OpeningScreen } from './OpeningScreen.tsx'
 
 afterEach(cleanup)
 
@@ -75,6 +75,20 @@ describe('OpeningScreen', () => {
     const seal = screen.getByRole('img', { name: 'Stamp: NHBRC registered' })
     expect(seal.textContent).toBe('registeredhome builderNHBRC')
     expect(seal.textContent).not.toMatch(/\d/)
+  })
+
+  it('renders no registration-number line while the slot is empty', () => {
+    render(<NhbrcSeal nhbrcNumber="" />)
+
+    const seal = screen.getByRole('img', { name: 'Stamp: NHBRC registered' })
+    expect(seal.textContent).toBe('registeredhome builderNHBRC')
+  })
+
+  it('shows the registration number on the stamp once one is set', () => {
+    render(<NhbrcSeal nhbrcNumber="0000000" />)
+
+    const seal = screen.getByRole('img', { name: 'Stamp: NHBRC registered' })
+    expect(seal.textContent).toBe('registeredhome builderNHBRC0000000')
   })
 
   it('pins the four opening prints with alt text, captions and AVIF/WebP sources', () => {

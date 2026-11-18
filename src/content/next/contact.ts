@@ -1,8 +1,6 @@
 // Contact facts, the fallback form strings (spec S6) and the footer (S7).
-// The service-area sentence is filler() until #102 confirms it. The phone
+// The service-area sentence is confirmed copy (#102). The phone
 // number has exactly one display format and one tel: format, used everywhere.
-
-import { filler, type Filler } from './filler.ts'
 
 export interface ContactFacts {
   phoneDisplay: string
@@ -13,7 +11,7 @@ export interface ContactFacts {
   directionsUrl: string
   facebookUrl: string
   facebookLabel: string
-  serviceArea: Filler
+  serviceArea: string
   contactLead: string
   contactHeading: string
   mapTag: string
@@ -42,9 +40,8 @@ export const contactFacts: ContactFacts = {
   directionsUrl: `https://www.openstreetmap.org/directions?to=${mapPin.latitude.toFixed(COORDINATE_DECIMALS)}%2C${mapPin.longitude.toFixed(COORDINATE_DECIMALS)}`,
   facebookUrl: 'https://www.facebook.com/winzelleprojects',
   facebookLabel: 'facebook.com/winzelleprojects',
-  serviceArea: filler(
+  serviceArea:
     'We work across Port Elizabeth (Gqeberha), and most of Nelson Mandela Bay depending on the job.',
-  ),
   contactLead:
     "WhatsApp is quickest. Send a photo and your suburb and we'll arrange a time to come and look.",
   contactHeading: 'Tell us what needs doing',
