@@ -17,6 +17,10 @@ const nextChildren =
         createRoute({
           getParentRoute: () => rootRoute,
           path: '/next',
+          // Only the exact path matches next.html (noindex, no Google
+          // Fonts); a case variant falls back to index.html and must not
+          // render the page.
+          caseSensitive: true,
           component: lazyRouteComponent(() => import('./next/NextPage')),
         }),
         // Dev-only preview of the drawing kit (#94): import.meta.env.DEV is

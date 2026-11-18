@@ -94,6 +94,25 @@ describe('/next route gating', () => {
     ).toBeNull()
   })
 
+  it.each(['/NEXT', '/Next'])(
+    'renders NotFound, not the new page, for the case variant %s',
+    async (path) => {
+      vi.stubEnv('VITE_HOME_NEXT', 'true')
+
+      await loadRouterAtPath(path)
+
+      await waitFor(() => {
+        expect(screen.getByText('Page not found')).toBeDefined()
+      })
+      expect(
+        screen.queryByRole('heading', {
+          level: 1,
+          name: 'We fix, maintain and build in Port Elizabeth.',
+        }),
+      ).toBeNull()
+    },
+  )
+
   it('keeps the legacy / route and chrome without injecting head tags when VITE_HOME_NEXT is true', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'true')
 
