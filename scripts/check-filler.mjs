@@ -4,8 +4,7 @@
 // before vite build in npm run build. VITE_HOME_NEXT resolution is shared
 // with vite.config.ts through scripts/home-next-flag.mjs: default off for
 // builds, opt in with 'true'. VITE_ALLOW_FILLER=true is the explicit opt-in
-// for builds that knowingly ship placeholders, such as the design-gate
-// workflow's flag-on build.
+// for builds that knowingly ship placeholders.
 //
 // Scans src/ recursively so a placeholder in a subfolder or in src/next/
 // cannot slip past. Tests pass a fixture directory as the first argument.
