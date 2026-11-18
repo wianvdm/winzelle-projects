@@ -333,10 +333,11 @@ describe('zooming the live map', () => {
   const ROUNDING_PX = 2
   const ZOOM_IN_KEY = 187
   const ZOOM_OUT_KEY = 189
+  const ARROW_RIGHT_KEY = 39
 
   type Positioned = HTMLElement & { _leaflet_pos: { x: number; y: number } }
 
-  async function liveMapInFrame() {
+  async function liveMapInFrame(overrides: Partial<typeof SETTINGS> = {}) {
     const { createLiveMap } =
       await vi.importActual<typeof import('./loadMap.ts')>('./loadMap.ts')
     const container = document.createElement('div')
@@ -345,6 +346,7 @@ describe('zooming the live map', () => {
     document.body.append(container)
     const live = createLiveMap(container, {
       ...SETTINGS,
+      ...overrides,
       pin: { ...SETTINGS.pin, offset: OFFSET },
     })
     return { container, live }
@@ -391,6 +393,40 @@ describe('zooming the live map', () => {
       )
     }
     live.remove()
+    container.remove()
+  })
+
+  it('zooms about the frame centre once the pin has been dragged out of the frame', async () => {
+    const setZoomAround = vi.spyOn(LeafletMap.prototype, 'setZoomAround')
+    const { container, live } = await liveMapInFrame({ reducedMotion: true })
+    const zoomIn = container.querySelector('.leaflet-control-zoom-in')!
+    const zoomOut = container.querySelector('.leaflet-control-zoom-out')!
+    container.focus()
+
+    fireEvent.click(zoomOut)
+    expect(setZoomAround).toHaveBeenCalledTimes(1)
+
+    // Each arrow press jumps 80px, so 20 presses carry the pin past the edge.
+    for (let press = 0; press < 20; press++) {
+      fireEvent.keyDown(document, { keyCode: ARROW_RIGHT_KEY })
+    }
+    expect(pinDrift(container, live.markElement)).toBeGreaterThan(FRAME[0])
+    fireEvent.click(zoomIn)
+    fireEvent.click(zoomOut)
+
+    expect(setZoomAround).toHaveBeenCalledTimes(1)
+    live.remove()
+    container.remove()
+  })
+
+  it('takes a zoom before the map has a view', () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    const map = new StillMap(container)
+
+    expect(() => map.setZoom(14)).not.toThrow()
+    expect(map.getZoom()).toBe(14)
+    map.remove()
     container.remove()
   })
 })

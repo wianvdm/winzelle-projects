@@ -52,10 +52,13 @@ declare module 'leaflet/dist/leaflet-src.esm.js' {
       zoom: number,
       options?: ZoomOptions,
     ): this
+    getZoom(): number | undefined
     getMinZoom(): number
     getMaxZoom(): number
     project(latlng: LatLng | LatLngTuple, zoom: number): Point
     unproject(point: Point | PointTuple, zoom: number): LatLng
+    latLngToContainerPoint(latlng: LatLng | LatLngTuple): Point
+    getSize(): Point
     remove(): this
   }
 

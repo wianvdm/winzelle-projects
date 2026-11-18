@@ -83,12 +83,20 @@ export class CspSafeTileLayer extends TileLayer {
 }
 
 /**
- * The zoom buttons and the + and - keys zoom about the pin. It sits off
- * centre where the preview had it, so zooming about the frame's centre
- * would push it out of the frame at the closest levels.
+ * The zoom buttons and the + and - keys zoom about the pin while it is in
+ * the frame. It sits off centre where the preview had it, so zooming about
+ * the frame's centre would push it out of the frame at the closest levels.
+ * Once the visitor drags the pin out of the frame, zooming about it would
+ * throw the place they are looking at out of view, so the frame's centre
+ * takes over.
  */
 class PinnedMap extends LeafletMap {
   override setZoom(zoom: number, options?: ZoomOptions): this {
+    // Before the first setView there is no frame to measure; Leaflet only
+    // stores the zoom then.
+    if (this.getZoom() === undefined || !this.pinIsInFrame()) {
+      return super.setZoom(zoom, options)
+    }
     // Shift with + or - asks for three levels and can pass a limit.
     // setZoomAround places the pin for the zoom it gets, so an unclamped
     // zoom moves the pin once setView limits it.
@@ -97,6 +105,14 @@ class PinnedMap extends LeafletMap {
       this.getMaxZoom(),
     )
     return this.setZoomAround(PIN, clampedZoom, options)
+  }
+
+  private pinIsInFrame(): boolean {
+    const point = this.latLngToContainerPoint(PIN)
+    const size = this.getSize()
+    return (
+      point.x >= 0 && point.x <= size.x && point.y >= 0 && point.y <= size.y
+    )
   }
 }
 
