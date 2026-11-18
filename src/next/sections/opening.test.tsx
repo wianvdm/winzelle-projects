@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { getTrade } from '../../content/next/index.ts'
+import { getTrade, opening } from '../../content/next/index.ts'
 import { HomeBoard, NextPage } from '../NextPage.tsx'
 import { PickStateProvider, usePickState } from '../pick-state.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from '../whatsapp.ts'
@@ -69,12 +69,13 @@ describe('OpeningScreen', () => {
     ).toBe('WhatsApp us a photo')
   })
 
-  it('shows the NHBRC stamp as registered, without a number', () => {
+  it('shows the NHBRC stamp as registered, with the number from its slot', () => {
     renderOpening()
 
-    const seal = screen.getByRole('img', { name: 'Stamp: NHBRC registered' })
-    expect(seal.textContent).toBe('registeredhome builderNHBRC')
-    expect(seal.textContent).not.toMatch(/\d/)
+    const seal = screen.getByRole('img', { name: /^Stamp: NHBRC registered/ })
+    expect(seal.textContent).toBe(
+      `registeredhome builderNHBRC${opening.nhbrcNumber}`,
+    )
   })
 
   it('renders no registration-number line while the slot is empty', () => {
@@ -84,11 +85,17 @@ describe('OpeningScreen', () => {
     expect(seal.textContent).toBe('registeredhome builderNHBRC')
   })
 
-  it('shows the registration number on the stamp once one is set', () => {
-    render(<NhbrcSeal nhbrcNumber="0000000" />)
+  it('shows and names the registration number once one is set', () => {
+    render(<NhbrcSeal nhbrcNumber="0000000000" />)
 
-    const seal = screen.getByRole('img', { name: 'Stamp: NHBRC registered' })
-    expect(seal.textContent).toBe('registeredhome builderNHBRC0000000')
+    const seal = screen.getByRole('img', {
+      name: 'Stamp: NHBRC registered, registration number 0000000000',
+    })
+    expect(seal.textContent).toBe('registeredhome builderNHBRC0000000000')
+    // Its own small type, so ten digits fit inside the inner ring.
+    expect(seal.querySelector('.wz-seal-number')?.textContent).toBe(
+      '0000000000',
+    )
   })
 
   it('pins the four opening prints with alt text, captions and AVIF/WebP sources', () => {
@@ -169,14 +176,15 @@ describe('NextPage opening', () => {
     expect(firstOutsideSticky?.closest('main')).not.toBeNull()
   })
 
-  it('has one banner header, navigation landmarks with distinct names and no inline styles', () => {
+  it('makes the visible header the one banner, with distinct navigation names and no inline styles', () => {
     const { container } = render(<NextPage />)
 
-    const topLevelHeaders = [...container.querySelectorAll('header')].filter(
-      (header) =>
-        !header.parentElement?.closest('article, aside, main, nav, section'),
-    )
-    expect(topLevelHeaders.map((header) => header.id)).toEqual(['wz-sticky'])
+    // Inside main a header element is no banner, so the role is explicit;
+    // the sticky bar, hidden at load, is no landmark.
+    const banners = [...container.querySelectorAll('header, [role="banner"]')]
+    expect(banners.map((banner) => banner.className)).toEqual(['wz-header'])
+    expect(banners[0].getAttribute('role')).toBe('banner')
+    expect(screen.getByRole('banner')).toBe(banners[0])
     expect(screen.getAllByRole('navigation')).toHaveLength(2)
     expect(screen.getByRole('navigation', { name: 'Sections' })).toBeDefined()
     expect(

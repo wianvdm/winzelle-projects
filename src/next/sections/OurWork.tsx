@@ -78,9 +78,23 @@ function setPrintSizes(print: HTMLElement, sizes: string) {
 
 function clearPrintWidths(board: HTMLElement) {
   for (const print of boardPrints(board)) {
+    delete print.dataset.ownRow
     print.style.removeProperty('width')
     setPrintSizes(print, BOARD_PRINT_SIZES)
   }
+}
+
+/**
+ * The room each shown print gets in its row. Two prints side by side would
+ * leave the ask alone on the next row beside an empty half board, so the
+ * first takes a row to itself (data-own-row, which work.css turns into a
+ * line break whatever its width) and the second shares the ask's row.
+ */
+function printShares(board: HTMLElement, count: number): number[] {
+  const perRow = Math.min(count, PRINTS_PER_ROW)
+  const share = (board.clientWidth - perRow * PRINT_GAP_PX) / perRow
+  if (count !== PRINTS_PER_ROW) return Array(count).fill(share)
+  return [board.clientWidth - PRINT_GAP_PX, share]
 }
 
 /**
@@ -93,12 +107,18 @@ function sizeFewPrints(board: HTMLElement) {
   clearPrintWidths(board)
   const shown = boardPrints(board).filter((print) => !print.hidden)
   if (shown.length > FEW_PRINTS || matchesMedia(ONE_COLUMN_QUERY)) return
-  const perRow = Math.min(shown.length, PRINTS_PER_ROW)
-  const share = (board.clientWidth - perRow * PRINT_GAP_PX) / perRow
-  if (share <= 0) return
-  for (const print of shown) {
-    const width = Math.min(share, largestPrintWidth(print), LONE_PRINT_MAX_PX)
+  const shares = printShares(board, shown.length)
+  if (shares.some((share) => share <= 0)) return
+  for (const [index, print] of shown.entries()) {
+    const width = Math.min(
+      shares[index],
+      largestPrintWidth(print),
+      LONE_PRINT_MAX_PX,
+    )
     print.style.width = `${Math.floor(width)}px`
+    if (shown.length === PRINTS_PER_ROW && index === 0) {
+      print.dataset.ownRow = ''
+    }
     setPrintSizes(print, `${Math.floor(width)}px`)
   }
 }

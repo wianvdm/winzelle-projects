@@ -202,9 +202,12 @@ function LightboxDialog({
   }
 
   // The tap's click would land on the page under the dark area once
-  // endSwipe has closed the dialog, so a tap there sends no click.
+  // endSwipe has closed the dialog, so a tap there sends no click. After a
+  // scroll-like drag the touchend cannot be cancelled, and trying logs a
+  // console error.
   const keepTapOnBackdrop = (event: TouchEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) event.preventDefault()
+    if (event.cancelable && event.target === event.currentTarget)
+      event.preventDefault()
   }
 
   const caption = item ? photoCaption(item.photo) : ''

@@ -180,7 +180,13 @@ export function ExplorerSheet() {
 
   const setHot = (letter: string | null) =>
     setState((current) => ({ ...current, hot: letter }))
-  const release = () => setState((current) => ({ ...current, held: null }))
+  // The released part goes dark even while its own key button keeps focus.
+  const release = () =>
+    setState((current) => ({
+      ...current,
+      held: null,
+      hot: current.hot === current.held ? null : current.hot,
+    }))
   const toggleHeld = (letter: string) => {
     const holding = held !== letter
     // The strip carries the held part's note, so it must be at its new

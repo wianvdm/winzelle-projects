@@ -14,6 +14,35 @@ describe('stones', () => {
     expect(stones(options)).toEqual(stones(options))
   })
 
+  it('picks each colour before its outline, giving the prototype stones', () => {
+    // The first stones of the Paving drawing's soil as the prototype draws
+    // them from seed 43.
+    const result = stones({
+      box: [2, 276, 596, 82],
+      count: 60,
+      seed: 43,
+      maxRadius: 3.4,
+      palette: 'soil',
+    })
+    expect(result.slice(0, 3)).toEqual([
+      {
+        points:
+          '165.0,321.2 165.4,318.2 166.9,316.5 168.8,318.5 168.5,320.1 166.4,322.2',
+        fill: '#7a644a',
+      },
+      {
+        points:
+          '559.5,297.8 557.3,296.5 557.2,294.2 559.0,293.3 560.8,294.4 561.6,297.2',
+        fill: '#7a644a',
+      },
+      {
+        points:
+          '541.5,339.8 540.3,338.8 541.0,337.2 543.3,336.5 544.0,338.5 543.1,339.7',
+        fill: '#9b8667',
+      },
+    ])
+  })
+
   it('differs between seeds', () => {
     const options = {
       box: [21, 233, 438, 38] as const,

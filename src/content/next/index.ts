@@ -32,7 +32,10 @@ export const opening = {
   freeQuoteNote: 'The visit and the quote are free.',
   sealLabel: 'Stamp: NHBRC registered',
   sealLines: ['registered', 'NHBRC', 'home builder'],
-  // Registration number, to be supplied later; while empty the stamp and
-  // footer claims stay exactly as the spec's S2/S7 wording.
+  // Names a supplied registration number in the stamp's accessible name.
+  sealNumberLead: 'registration number',
+  // Registration number, to be supplied later (up to 10 digits fit the
+  // stamp); while empty the stamp and footer claims stay exactly as the
+  // spec's S2/S7 wording.
   nhbrcNumber: '',
 } as const

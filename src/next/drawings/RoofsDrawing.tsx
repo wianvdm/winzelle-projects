@@ -13,6 +13,7 @@ import {
 } from './Drawing'
 import { bricks, slope } from './fills'
 import {
+  BrickFill,
   CutEdge,
   CutFine,
   useGlowClass,
@@ -34,6 +35,10 @@ const MARKERS: readonly PartMarker[] = [
 ]
 
 const SLOPE_LENGTH = 300
+const RIDGE_CAP =
+  'M278 68.24A22 22 0 0 1 322 68.24L317.9 66.35A18 18 0 0 0 282.1 66.35Z'
+// The problem view's cap, lifted and tipped off its mortar bed.
+const LOOSE_CAP_TRANSFORM = 'translate(0 -6) rotate(-6 300 68.2)'
 
 /** One roof slope in local units, standing on the ridge at (0, 0). */
 function RoofSlope({ slip }: { slip?: number }) {
@@ -67,7 +72,6 @@ function RoofsArt() {
   const { tile } = useDrawingKit()
   const glow = useGlowClass()
   const sand = useFilterRef('sand')
-  const brickFilter = useFilterRef('brick')
   const timber = useMaterialRef('timber')
   const timberV = useMaterialRef('timberV')
   const metal = useMaterialRef('metal')
@@ -87,19 +91,7 @@ function RoofsArt() {
         fill="#c5bfb2"
         filter={sand}
       />
-      <g filter={brickFilter}>
-        {leftBricks.map((brick) => (
-          <rect
-            key={`${brick.x},${brick.y}`}
-            x={brick.x}
-            y={brick.y}
-            width={brick.width}
-            height={brick.height}
-            rx={0.5}
-            fill={brick.fill}
-          />
-        ))}
-      </g>
+      <BrickFill bricks={leftBricks} />
       <rect
         x={482}
         y={250}
@@ -108,19 +100,7 @@ function RoofsArt() {
         fill="#c5bfb2"
         filter={sand}
       />
-      <g filter={brickFilter}>
-        {rightBricks.map((brick) => (
-          <rect
-            key={`${brick.x},${brick.y}`}
-            x={brick.x}
-            y={brick.y}
-            width={brick.width}
-            height={brick.height}
-            rx={0.5}
-            fill={brick.fill}
-          />
-        ))}
-      </g>
+      <BrickFill bricks={rightBricks} />
       <CutEdge d="M84 250V360 M118 250V360 M482 250V360 M516 250V360" />
       <g transform="translate(300 70) rotate(145.3)">
         <RoofSlope />
@@ -142,7 +122,7 @@ function RoofsArt() {
           stroke="#2b3238"
           strokeWidth={1}
           strokeLinejoin="round"
-          d="M278 68.24A22 22 0 0 1 322 68.24L317.9 66.35A18 18 0 0 0 282.1 66.35Z"
+          d={RIDGE_CAP}
         />
         <path
           fill="#c6c0b2"
@@ -161,8 +141,8 @@ function RoofsArt() {
             stroke="#2b3238"
             strokeWidth={1}
             strokeLinejoin="round"
-            d="M278 68.24A22 22 0 0 1 322 68.24L317.9 66.35A18 18 0 0 0 282.1 66.35Z"
-            transform="translate(0 -6) rotate(-6 300 68.2)"
+            d={RIDGE_CAP}
+            transform={LOOSE_CAP_TRANSFORM}
           />
           <path
             fill="none"
@@ -188,29 +168,42 @@ function RoofsArt() {
       <Water d="M27 268V292" arrow />
       {!tile && (
         <>
+          {/* The slope leaders and glows run along the tile course, where
+              both slopes' tiles are; the cap's follow it off its bed. */}
           <Leader
-            d="M260 40L292 50 M178 100L190 150 M468 108L430 168 M70 312L30 262"
+            d="M178 100L171 147 M468 108L429 147 M70 312L30 262"
             dots={[
-              [292, 50],
-              [190, 150],
-              [430, 168],
+              [171, 147],
+              [429, 147],
               [30, 262],
             ]}
           />
-          <path
-            className={glow('wz-glow-area', 'a')}
-            data-part="a"
-            d="M272 71.02L278 68.24A22 22 0 0 1 322 68.24L328 71.02Z"
-          />
+          <g className="wz-if-fixed">
+            <Leader d="M260 40L292 50" dots={[[292, 50]]} />
+            <path
+              className={glow('wz-glow-area', 'a')}
+              data-part="a"
+              d="M272 71.02L278 68.24A22 22 0 0 1 322 68.24L328 71.02Z"
+            />
+          </g>
+          <g className="wz-if-problem">
+            <Leader d="M260 40L290 45" dots={[[290, 45]]} />
+            <path
+              className={glow('wz-glow-area', 'a')}
+              data-part="a"
+              d={RIDGE_CAP}
+              transform={LOOSE_CAP_TRANSFORM}
+            />
+          </g>
           <path
             className={glow('wz-glow', 'b')}
             data-part="b"
-            d="M286 86L60 242"
+            d="M278.4 74L52.4 230.5"
           />
           <path
             className={glow('wz-glow', 'c')}
             data-part="c"
-            d="M314 86L540 242"
+            d="M321.6 74L547.6 230.5"
           />
           <path
             className={glow('wz-glow-area', 'd')}

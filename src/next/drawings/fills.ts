@@ -143,10 +143,9 @@ export function stones(options: {
     )
     if (overlaps) continue
     placed.push({ x: cx, y: cy, r })
-    result.push({
-      points: stonePoints(rand, cx, cy, r),
-      fill: pick(rand, colours),
-    })
+    // Colour before outline, the prototype's draw order from one seed.
+    const fill = pick(rand, colours)
+    result.push({ points: stonePoints(rand, cx, cy, r), fill })
   }
   return result
 }

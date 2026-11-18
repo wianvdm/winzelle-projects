@@ -174,14 +174,24 @@ function PoolsArt() {
             <Note x={380} y={232} lines={['the level holds steady']} />
           </g>
           <Leader
-            d="M278 54L212 100 M92 204L152 226 M308 246L189 278 M500 102V140"
+            d="M278 54L212 100 M92 204L152 226 M308 246L189 278"
             dots={[
               [212, 100],
               [152, 226],
               [189, 278],
-              [500, 140],
             ]}
           />
+          {/* The water line's leader ends on the water as drawn: the full
+              line when fixed, the dropped one past its note in the problem. */}
+          <g className="wz-if-fixed">
+            <Leader d={`M500 102V${FULL_LEVEL}`} dots={[[500, FULL_LEVEL]]} />
+          </g>
+          <g className="wz-if-problem">
+            <Leader
+              d={`M500 102L560 ${DROPPED_LEVEL}`}
+              dots={[[560, DROPPED_LEVEL]]}
+            />
+          </g>
           <path
             className={glow('wz-glow-area', 'a')}
             data-part="a"
@@ -193,11 +203,20 @@ function PoolsArt() {
             data-part="c"
             d="M188 114V314H598"
           />
-          <path
-            className={glow('wz-glow', 'd')}
-            data-part="d"
-            d="M194 140H598"
-          />
+          <g className="wz-if-fixed">
+            <path
+              className={glow('wz-glow', 'd')}
+              data-part="d"
+              d={`M194 ${FULL_LEVEL}H598`}
+            />
+          </g>
+          <g className="wz-if-problem">
+            <path
+              className={glow('wz-glow', 'd')}
+              data-part="d"
+              d={`M194 ${DROPPED_LEVEL}H598`}
+            />
+          </g>
         </>
       )}
     </>

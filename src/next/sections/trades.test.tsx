@@ -28,6 +28,7 @@ const scrollIntoView = vi.fn()
 beforeEach(() => {
   scrollIntoView.mockClear()
   Element.prototype.scrollIntoView = scrollIntoView
+  window.scrollBy = vi.fn()
 })
 
 afterEach(() => {
@@ -138,6 +139,22 @@ describe('What needs doing? tiles', () => {
     },
   )
 
+  it('follows the tiles with the sheet, then the "Not sure" card, in Tab order', () => {
+    renderBoard()
+    const tiles = screen.getByRole('group', { name: 'Kinds of work' })
+    const unsure = screen.getByRole('heading', {
+      name: 'Not sure which it is?',
+    })
+
+    expect(
+      tiles.compareDocumentPosition(panel()) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      panel().compareDocumentPosition(unsure) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
   it('keeps the "Not sure" card on its own message', () => {
     renderBoard()
     fireEvent.click(tile('Roofs'))
@@ -168,7 +185,7 @@ describe('Scrolling after a pick', () => {
   it('always brings the sheet into view on one column', () => {
     stubMedia({ oneColumn: true })
     renderBoard()
-    fireEvent.click(tile('Roofs'))
+    fireEvent.click(tile('Roofs'), { detail: 1 })
 
     expect(scrollIntoView).toHaveBeenCalledTimes(1)
     expect(scrollIntoView.mock.contexts[0]).toBe(panel())
@@ -184,7 +201,7 @@ describe('Scrolling after a pick', () => {
     vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue({
       top: 200,
     } as DOMRect)
-    fireEvent.click(tile('Roofs'))
+    fireEvent.click(tile('Roofs'), { detail: 1 })
 
     expect(scrollIntoView).not.toHaveBeenCalled()
   })
@@ -195,11 +212,33 @@ describe('Scrolling after a pick', () => {
     vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue({
       top: -200,
     } as DOMRect)
-    fireEvent.click(tile('Something else'))
+    fireEvent.click(tile('Something else'), { detail: 1 })
 
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: 'auto',
       block: 'start',
+    })
+  })
+
+  it('brings the sheet up after a keyboard pick only as far as the tile stays in view', () => {
+    stubMedia({ oneColumn: true })
+    renderBoard()
+    const roofs = tile('Roofs')
+    vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue({
+      top: 900,
+    } as DOMRect)
+    vi.spyOn(roofs, 'getBoundingClientRect').mockReturnValue({
+      top: 400,
+      bottom: 470,
+    } as DOMRect)
+    // Enter or Space on a button clicks with no pointer presses: detail 0.
+    fireEvent.click(roofs, { detail: 0 })
+
+    expect(scrollIntoView).not.toHaveBeenCalled()
+    // The tile stops just under the sticky bar's 72px clearance.
+    expect(window.scrollBy).toHaveBeenCalledWith({
+      top: 328,
+      behavior: 'smooth',
     })
   })
 })
@@ -293,7 +332,10 @@ describe('Drawing key and markers', () => {
     renderBoard()
     const part = getTrade('paving').drawing.parts[1]
     const button = keyButton(new RegExp(part.name))
+    const marker = () =>
+      panel().querySelector(`.wz-marker[data-part="${part.key}"]`)
 
+    fireEvent.focus(button)
     fireEvent.click(button)
     expect(button.getAttribute('aria-pressed')).toBe('true')
     expect(strip()).toBe(`${part.name}: ${part.note}`)
@@ -306,6 +348,10 @@ describe('Drawing key and markers', () => {
     fireEvent.keyDown(button, { key: 'Escape' })
     expect(button.getAttribute('aria-pressed')).toBe('false')
     expect(strip()).toBe(getTrade('paving').drawing.problemNote)
+    // Released and dark, though its key button keeps focus.
+    expect(button.classList.contains('wz-hot')).toBe(false)
+    expect(marker()?.classList.contains('wz-hot')).toBe(false)
+    expect(marker()?.classList.contains('wz-held')).toBe(false)
   })
 
   it('releases the held part with Escape from another key button', () => {

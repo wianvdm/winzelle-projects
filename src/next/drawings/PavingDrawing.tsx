@@ -12,7 +12,7 @@ import {
   type DrawingView,
   type PartMarker,
 } from './Drawing'
-import { pavers, stones, type Stone } from './fills'
+import { pavers, stones } from './fills'
 import {
   CutEdge,
   CutFine,
@@ -20,6 +20,7 @@ import {
   useGlowClass,
   Leader,
   Note,
+  StoneFill,
   useDrawingKit,
   useFilterRef,
   Water,
@@ -33,23 +34,6 @@ const MARKERS: readonly PartMarker[] = [
   { key: 'c', x: 380, y: 110 },
   { key: 'd', x: 540, y: 110 },
 ]
-
-function StonePolygons({ stones: list }: { stones: Stone[] }) {
-  return (
-    <>
-      {list.map((stone) => (
-        <polygon
-          key={stone.points}
-          points={stone.points}
-          fill={stone.fill}
-          stroke={stone.fill}
-          strokeWidth={0.6}
-          strokeLinejoin="round"
-        />
-      ))}
-    </>
-  )
-}
 
 function PavingArt() {
   const { tile } = useDrawingKit()
@@ -109,7 +93,7 @@ function PavingArt() {
           fill="#a8916d"
           filter={sand}
         />
-        <StonePolygons stones={soilStones} />
+        <StoneFill stones={soilStones} />
       </g>
       <g clipPath={`url(#${clipBase})`}>
         <rect
@@ -120,7 +104,7 @@ function PavingArt() {
           fill="#8f8b84"
           filter={sand}
         />
-        <StonePolygons stones={baseStones} />
+        <StoneFill stones={baseStones} />
       </g>
       <rect
         x={20}
@@ -177,7 +161,7 @@ function PavingArt() {
           fill="#a4a7a4"
           filter={concrete}
         />
-        <StonePolygons stones={kerbStones} />
+        <StoneFill stones={kerbStones} />
       </g>
       <rect
         x={496}
@@ -215,14 +199,21 @@ function PavingArt() {
       {!tile && (
         <>
           <Leader
-            d="M100 132V203 M240 132V226 M380 132V252 M540 132L486 192"
+            d="M100 132V203 M380 132V252 M540 132L486 192"
             dots={[
               [100, 203],
-              [240, 226],
               [380, 252],
               [486, 192],
             ]}
           />
+          {/* The dipped pavers cover the sand bed under the dip, so in the
+              problem view the sand bed's leader ends where it still shows. */}
+          <g className="wz-if-fixed">
+            <Leader d="M240 132V226" dots={[[240, 226]]} />
+          </g>
+          <g className="wz-if-problem">
+            <Leader d="M240 132L140 226" dots={[[140, 226]]} />
+          </g>
           <Dim x={548} y={230}>
             road
           </Dim>

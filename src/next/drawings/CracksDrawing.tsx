@@ -37,6 +37,9 @@ const LOWER_CRACK =
   'M282 210V214.4H304.3V228.1H325.4V241.8H346.5V255.5H367.6V269.2H388.7V282.9H409.8V296.6H430.9V310.3H452V320'
 const UPPER_CRACK = 'M130 64V58.2H114.1V44.5H93V30.8H72V20'
 const STITCHING_BARS = 'M286 228.1H392 M328 255.5H446 M370 282.9H480'
+// The brick-face pattern's mortar and joint height.
+const MORTAR = '#c5bfb2'
+const BED_JOINT_WIDTH = 2.2
 const LINTEL = 'M130 64H290V80H130Z'
 const SILL = 'M142 200.8H278L282 210H138Z'
 
@@ -138,6 +141,14 @@ function CracksArt() {
       {!tile && (
         <>
           <g className="wz-if-problem">
+            {/* The bed joints the stitching bars will go into, drawn so the
+                bars' leader ends on mortar before they are there. */}
+            <path
+              fill="none"
+              stroke={MORTAR}
+              strokeWidth={BED_JOINT_WIDTH}
+              d={STITCHING_BARS}
+            />
             <Cracks colour="#1b1f23" />
             <path
               fill="none"
