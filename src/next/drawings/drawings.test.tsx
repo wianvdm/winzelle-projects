@@ -21,6 +21,17 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+/** Leader dots a view shows: those outside the other view's groups. */
+function shownDots(
+  container: HTMLElement,
+  view: 'problem' | 'fixed',
+): [cx: string | null, cy: string | null][] {
+  const otherView = view === 'problem' ? '.wz-if-fixed' : '.wz-if-problem'
+  return [...container.querySelectorAll('.wz-dot')]
+    .filter((dot) => !dot.closest(otherView))
+    .map((dot) => [dot.getAttribute('cx'), dot.getAttribute('cy')])
+}
+
 function singleSvg(container: HTMLElement): SVGSVGElement {
   const svg = container.querySelector('svg')
   if (!svg) throw new Error('No svg rendered')
@@ -84,6 +95,18 @@ describe('PavingDrawing', () => {
   })
 })
 
+describe('PavingDrawing leaders', () => {
+  it('ends the sand bed leader where the sand shows in each view', () => {
+    // The dipped pavers cover the sand under the dip in the problem view.
+    const { container: problem } = render(<PavingDrawing view="problem" />)
+    expect(shownDots(problem, 'problem')).toContainEqual(['140', '226'])
+    expect(shownDots(problem, 'problem')).toHaveLength(4)
+    const { container: fixed } = render(<PavingDrawing view="fixed" />)
+    expect(shownDots(fixed, 'fixed')).toContainEqual(['240', '226'])
+    expect(shownDots(fixed, 'fixed')).toHaveLength(4)
+  })
+})
+
 describe('RoofsDrawing', () => {
   const drawing = getTrade('roofs').drawing
 
@@ -117,6 +140,19 @@ describe('RoofsDrawing', () => {
         tile.getAttribute('fill'),
       )
     expect(fillsOf(problem)).toEqual(fillsOf(fixed))
+  })
+
+  it('follows the loose ridge cap with its leader and glow', () => {
+    const { container } = render(<RoofsDrawing view="problem" />)
+    expect(shownDots(container, 'problem')).toContainEqual(['290', '45'])
+    expect(shownDots(container, 'problem')).not.toContainEqual(['292', '50'])
+    const loose = container.querySelector(
+      '.wz-if-problem .wz-glow-area[data-part="a"]',
+    )
+    expect(loose?.getAttribute('transform')).toBe(
+      'translate(0 -6) rotate(-6 300 68.2)',
+    )
+    expect(shownDots(container, 'fixed')).toContainEqual(['292', '50'])
   })
 
   it('renders the tile crop without notes, leaders or markers', () => {
@@ -219,9 +255,8 @@ describe.each(REMAINING_DRAWINGS)(
       expect(container.querySelectorAll('.wz-marker')).toHaveLength(
         drawing.parts.length,
       )
-      expect(container.querySelectorAll('.wz-dot')).toHaveLength(
-        drawing.parts.length,
-      )
+      expect(shownDots(container, 'problem')).toHaveLength(drawing.parts.length)
+      expect(shownDots(container, 'fixed')).toHaveLength(drawing.parts.length)
     })
 
     it('lights the held part', () => {
@@ -259,6 +294,29 @@ describe.each(REMAINING_DRAWINGS)(
     })
   },
 )
+
+describe('leaders that change with the view', () => {
+  it('ends the cracks stitching bars leader on a drawn bed joint before the bars are in', () => {
+    const { container } = render(<CracksDrawing view="problem" />)
+    const joints = container.querySelector(
+      '.wz-if-problem path[stroke="#c5bfb2"]',
+    )
+    expect(joints?.getAttribute('d')).toContain('M286 228.1H392')
+    expect(shownDots(container, 'problem')).toContainEqual(['360', '228.1'])
+  })
+
+  it('ends the pools water line leader on the water in each view', () => {
+    const { container } = render(<PoolsDrawing view="problem" />)
+    expect(shownDots(container, 'problem')).toContainEqual(['560', '182'])
+    expect(shownDots(container, 'problem')).not.toContainEqual(['500', '140'])
+    expect(shownDots(container, 'fixed')).toContainEqual(['500', '140'])
+    expect(
+      container
+        .querySelector('.wz-if-problem .wz-glow[data-part="d"]')
+        ?.getAttribute('d'),
+    ).toBe('M194 182H598')
+  })
+})
 
 describe('several drawings on one page', () => {
   it('keeps every id unique across instances', () => {
