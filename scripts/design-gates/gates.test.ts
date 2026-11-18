@@ -122,7 +122,7 @@ function probeData(overrides: Partial<ProbeData> = {}): ProbeData {
       G12: { structure: structure(), forms: [] },
     },
     errors: {},
-    log: { console: [], requests: [], probeNotes: [] },
+    log: { console: [], requests: [], answeredTiles: [], probeNotes: [] },
     screenshots: SCREENSHOT_SETS.map((set) => ({ ...set })),
     ...overrides,
   }
@@ -230,6 +230,29 @@ describe('classifyRequest', () => {
     expect(
       classifyRequest('ftp://api.web3forms.com/submit', ORIGIN).allowed,
     ).toBe(false)
+  })
+
+  it('refuses a non-default port for the tile host and the other external hosts', () => {
+    const active = { mapActive: true }
+    const tile = classifyRequest(
+      'https://tile.openstreetmap.org:8443/16/1/2.png',
+      ORIGIN,
+      active,
+    )
+    expect(tile.allowed).toBe(false)
+    expect(tile.reason).toBe(
+      'external hosts must use the default https port (got 8443)',
+    )
+    expect(
+      classifyRequest('https://api.web3forms.com:8080/submit', ORIGIN).allowed,
+    ).toBe(false)
+    expect(
+      classifyRequest(
+        'https://tile.openstreetmap.org:443/16/1/2.png',
+        ORIGIN,
+        active,
+      ),
+    ).toMatchObject({ allowed: true, stubbed: true })
   })
 
   it('blocks everything else, including Google Fonts', () => {
@@ -520,6 +543,51 @@ describe('finalise verdicts', () => {
     expect(gate(finalise(data), 'G6').status).toBe('fail')
   })
 
+  describe('G6 cascade-order check on the footer base row', () => {
+    function g6At(width: number, footerBaseRowHeight: number | null) {
+      const data = probeData()
+      data.parts.G6 = {
+        runs: [
+          reflowRun({
+            width,
+            innerWidth: width,
+            clientWidth: width,
+            scrollWidth: width,
+            bodyScrollWidth: width,
+            footerBaseRowHeight,
+          }),
+        ],
+      }
+      return gate(finalise(data), 'G6')
+    }
+
+    it('passes a padded row at 1280, 1440 and 1920', () => {
+      for (const width of [1280, 1440, 1920])
+        expect(g6At(width, 44.5).status, String(width)).toBe('pass')
+    })
+
+    it('fails a row that lost its padding at 1200px and up', () => {
+      for (const width of [1200, 1280, 1440]) {
+        const g6 = g6At(width, 24)
+        expect(g6.status, String(width)).toBe('fail')
+        expect(texts(g6.failures)).toEqual([
+          'footer base row 24px tall, under 40px: its padding lost to a later rule',
+        ])
+      }
+    })
+
+    it('fails when the row is missing at 1200px and up', () => {
+      expect(texts(g6At(1280, null).failures)).toEqual([
+        'footer base row not found, so the cascade-order check did not run',
+      ])
+    })
+
+    it('leaves narrower widths alone, where the footer stacks', () => {
+      expect(g6At(1199, 24).status).toBe('pass')
+      expect(g6At(390, null).status).toBe('pass')
+    })
+  })
+
   it('fails G11 on a disallowed request', () => {
     const data = probeData()
     data.log.requests = [
@@ -596,11 +664,31 @@ describe('finalise verdicts', () => {
         ...classifyRequest(OSM_TILE, ORIGIN, { mapActive: true }),
       },
     ] as unknown[]
+    data.log.answeredTiles = [OSM_TILE]
     const g11 = gate(finalise(data), 'G11')
     expect(g11.status).toBe('pass')
     expect(g11.summary).toContain(
       "map activated, 12 tiles loaded at zoom 15, then 9 at zoom 16; 1 tile requests answered by the probe's stub",
     )
+  })
+
+  it('counts only answered tiles in the G11 summary, not ones the CSP refused', () => {
+    const data = probeData({ survey: CONTACT_SURVEY })
+    data.parts.map = { ...ACTIVE_MAP }
+    const blockedTile = 'https://tile.openstreetmap.org/16/37408/39347.png'
+    // Both requests pass the allow-list, so both are logged as stubbed;
+    // the CSP refused the second before it reached the probe.
+    data.log.requests = [OSM_TILE, blockedTile].map((url) => ({
+      phase: '1280-map',
+      url,
+      ...classifyRequest(url, ORIGIN, { mapActive: true }),
+    })) as unknown[]
+    data.log.answeredTiles = [OSM_TILE]
+    const g11 = gate(finalise(data), 'G11')
+    expect(g11.summary).toContain(
+      "; 1 tile requests answered by the probe's stub",
+    )
+    expect(g11.measured).toMatchObject({ answeredTiles: [OSM_TILE] })
   })
 
   it('fails G11 when the activated map loaded no tile', () => {

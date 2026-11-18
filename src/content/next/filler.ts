@@ -1,6 +1,6 @@
-// Placeholder values (suburbs, months, the service-area line) stay flagged
-// until #102 replaces them with confirmed facts. The filler() call keeps each
-// one machine-detectable: scripts/check-filler.mjs scans for filler( call
+// Marks a placeholder value that still needs a confirmed fact. #102 replaced
+// every placeholder the redesign started with; the filler() call keeps any
+// new one machine-detectable: scripts/check-filler.mjs scans for filler( call
 // sites and fails a production build that enables /next while any remain.
 
 declare const fillerBrand: unique symbol
