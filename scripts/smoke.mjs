@@ -34,8 +34,9 @@ const ACCESS_KEY_UUID = new RegExp(
 // When two chunks share the key helper, the bundler moves it into its own
 // chunk (`function e(){return `<uuid>`}export{e as t};`) and the payload
 // chunks import it statically, directly or through another chunk. The key
-// then counts only when a chunk that sets access_key reaches, through static
-// imports, a chunk whose helper returns the UUID.
+// then counts only when a chunk that sets access_key holds a helper that
+// returns the UUID (in any order, at any distance) or reaches one through
+// static imports.
 const ACCESS_KEY_FIELD = /access_key["']?\s*[:=]/
 const KEY_HELPER = new RegExp(`return\\s*["'\`]${UUID_SOURCE}["'\`]`, 'i')
 // public-env.ts ships the placeholder as a guard constant in every build,
@@ -166,11 +167,19 @@ function chunkPaths(fromPath, references) {
   )
 }
 
+// The SPA fallback answers a missing /assets/*.js with 200 text/html, so only
+// a JavaScript content type proves the chunk was served.
+const JAVASCRIPT_TYPES = new Set(['text/javascript', 'application/javascript'])
+
 async function fetchChunk(fetchImpl, url) {
   const chunk = await safeFetch(fetchImpl, url)
   if (chunk.error) return { error: `failed: ${chunk.error}` }
   if (chunk.response.status !== 200) {
     return { error: `returned ${chunk.response.status}` }
+  }
+  const type = mediaType(chunk.response.headers.get('content-type'))
+  if (!JAVASCRIPT_TYPES.has(type.toLowerCase())) {
+    return { error: `returned ${type || 'no content type'}, not JavaScript` }
   }
   return { text: (await tryText(chunk.response)) ?? '' }
 }
@@ -209,9 +218,9 @@ function staticDependencies(chunks, path) {
   return [...reached]
 }
 
-function importsKeyHelper(chunks, path) {
+function reachesKeyHelper(chunks, path) {
   if (!ACCESS_KEY_FIELD.test(chunks.get(path))) return false
-  return staticDependencies(chunks, path).some((dependency) =>
+  return [path, ...staticDependencies(chunks, path)].some((dependency) =>
     KEY_HELPER.test(chunks.get(dependency) ?? ''),
   )
 }
@@ -223,7 +232,7 @@ function checkAccessKey(chunks) {
   }
   const keyBound = [...chunks].some(
     ([path, text]) =>
-      ACCESS_KEY_UUID.test(text) || importsKeyHelper(chunks, path),
+      ACCESS_KEY_UUID.test(text) || reachesKeyHelper(chunks, path),
   )
   return keyBound
     ? result('form-access-key', true, 'key present')

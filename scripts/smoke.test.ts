@@ -205,6 +205,10 @@ async function smokeAccessKey(overrides: Record<string, StubResponse>) {
   return { ok, results, requests }
 }
 
+// Wider than the 4096-character UUID-to-access_key bound in smoke.mjs, so
+// only the same-chunk key helper rule can bind the key.
+const BEYOND_KEY_DISTANCE = `/*${'x'.repeat(4200)}*/`
+
 const KEY_CHUNK_FILE = 'public-env-key.js'
 const KEY_CHUNK = `/assets/${KEY_CHUNK_FILE}`
 const NEXT_CHUNK = '/assets/NextPage-next.js'
@@ -661,6 +665,65 @@ describe('runSmoke', () => {
       ok: true,
       reason: 'key present',
     })
+  })
+
+  it('passes when the key helper sits far before the payload in the same chunk', async () => {
+    const { ok, results } = await smokeAccessKey({
+      [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+        contentType: 'application/javascript',
+        body:
+          `function ae(){return\`${ACCESS_KEY}\`}` +
+          BEYOND_KEY_DISTANCE +
+          'let r=ae();await fetch(`https://api.web3forms.com/submit`,' +
+          '{body:JSON.stringify({access_key:r})});',
+      },
+    })
+    expect(ok).toBe(true)
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: true,
+      reason: 'key present',
+    })
+  })
+
+  it('passes when the key helper sits after the payload in the same chunk', async () => {
+    const { ok, results } = await smokeAccessKey({
+      [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+        contentType: 'application/javascript',
+        body:
+          'let r=ae();await fetch(`https://api.web3forms.com/submit`,' +
+          '{body:JSON.stringify({access_key:r})});' +
+          BEYOND_KEY_DISTANCE +
+          `function ae(){return\`${ACCESS_KEY}\`}`,
+      },
+    })
+    expect(ok).toBe(true)
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: true,
+      reason: 'key present',
+    })
+  })
+
+  it('fails the form checks when the SPA fallback answers a missing chunk with HTML', async () => {
+    const { results } = await smokeAccessKey({
+      [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+        contentType: 'text/html',
+        body: homeHtml(),
+      },
+    })
+    expect(findResult(results, 'form-endpoint')).toMatchObject({
+      ok: false,
+      reason: `chunk ${CHUNK_SCRIPT} returned text/html, not JavaScript`,
+    })
+  })
+
+  it('accepts a chunk served as text/javascript with parameters', async () => {
+    const { ok } = await smokeAccessKey({
+      [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+        contentType: 'text/javascript; charset=utf-8',
+        body: chunkBody(),
+      },
+    })
+    expect(ok).toBe(true)
   })
 
   it('passes when the key helper sits in a split chunk the form chunks import (split shape)', async () => {
