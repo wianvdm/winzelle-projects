@@ -7,7 +7,8 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { contactFacts, mapPin, privacyNotes, quoteForm } from './contact.ts'
-import { fillerValues } from './filler.ts'
+import { filler, fillerValues } from './filler.ts'
+import { opening } from './index.ts'
 import {
   getWorkPhoto,
   openingPhotoIds,
@@ -117,10 +118,12 @@ describe('work photos', () => {
     }
   })
 
-  it('flags every suburb and month as filler', () => {
+  it('keeps every suburb and month as confirmed, unflagged strings', () => {
     for (const photo of workPhotos) {
-      expect(fillerValues.has(photo.suburb)).toBe(true)
-      expect(fillerValues.has(photo.month)).toBe(true)
+      expect(photo.suburb.length).toBeGreaterThan(0)
+      expect(photo.month.length).toBeGreaterThan(0)
+      expect(fillerValues.has(photo.suburb)).toBe(false)
+      expect(fillerValues.has(photo.month)).toBe(false)
     }
   })
 
@@ -188,8 +191,11 @@ describe('contact facts and form strings', () => {
     expect(contactFacts.mapShowNote).toContain('OpenStreetMap')
   })
 
-  it('flags the service-area line as filler and the form statuses as real copy', () => {
-    expect(fillerValues.has(contactFacts.serviceArea)).toBe(true)
+  it('keeps the service-area line as confirmed copy and the form statuses as real copy', () => {
+    expect(contactFacts.serviceArea).toBe(
+      'We work across Port Elizabeth (Gqeberha), and most of Nelson Mandela Bay depending on the job.',
+    )
+    expect(fillerValues.has(contactFacts.serviceArea)).toBe(false)
     expect(fillerValues.has(quoteForm.successStatus)).toBe(false)
     expect(quoteForm.successStatus).not.toContain('Prototype')
   })
@@ -244,6 +250,15 @@ describe('contact facts and form strings', () => {
 
 describe('filler marker', () => {
   it('registers marked values so tests and the build guard can find them', () => {
-    expect(fillerValues.size).toBeGreaterThan(0)
+    const flagged = filler('Only a test placeholder')
+    expect(fillerValues.has(flagged)).toBe(true)
+  })
+})
+
+describe('NHBRC registration number slot', () => {
+  it('stays empty until a number is supplied, with the claims unchanged', () => {
+    expect(opening.nhbrcNumber).toBe('')
+    expect(opening.sealLabel).toBe('Stamp: NHBRC registered')
+    expect(opening.sealLines).toEqual(['registered', 'NHBRC', 'home builder'])
   })
 })

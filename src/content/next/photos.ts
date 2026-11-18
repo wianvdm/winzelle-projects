@@ -1,9 +1,9 @@
 // The converted photo set (spec S2 cluster, S3 explorer prints, S4 board).
 // width/height record the intrinsic pixels so sections cap display at about
-// 1.3x. Suburbs and months are filler() until #102 confirms them.
+// 1.3x. Suburbs and months are confirmed facts (#102); every photo is
+// cleared for publication.
 // Captions compose as "Work, Suburb, Month Year" via photoCaption().
 
-import { filler, type Filler } from './filler.ts'
 import type { TradeId } from './trades.ts'
 
 export interface WorkPhoto {
@@ -14,8 +14,10 @@ export interface WorkPhoto {
   alt: string
   /** Caption part: the work done, e.g. "Concrete apron and ramp". */
   work: string
-  suburb: Filler
-  month: Filler
+  /** Caption part: the confirmed suburb, e.g. "Newton Park". */
+  suburb: string
+  /** Caption part: the confirmed month, e.g. "June 2025". */
+  month: string
   /** Trades this print belongs to (the board's data-kinds). */
   trades: TradeId[]
   /** Width of the "<id>-<width>" derivative, for prints shown much smaller. */
@@ -32,8 +34,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 427,
     alt: 'A flat roof sealed with a silver coating, carried up over the parapet edge',
     work: 'Flat roof sealed and coated',
-    suburb: filler('Newton Park'),
-    month: filler('June 2025'),
+    suburb: 'Newton Park',
+    month: 'June 2025',
     trades: ['damp', 'roofs'],
   },
   {
@@ -42,8 +44,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 395,
     alt: 'An L-shaped kitchenette with timber counters, white cupboards and black handles',
     work: 'Kitchenette fitted',
-    suburb: filler('Sunridge Park'),
-    month: filler('January 2026'),
+    suburb: 'Sunridge Park',
+    month: 'January 2026',
     trades: ['kitchens'],
   },
   {
@@ -52,8 +54,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 346,
     alt: 'A roof ridge and verge sealed and painted red along the tile edge',
     work: 'Ridge and verge sealed',
-    suburb: filler('Lorraine'),
-    month: filler('February 2026'),
+    suburb: 'Lorraine',
+    month: 'February 2026',
     trades: ['roofs', 'damp'],
   },
   {
@@ -62,8 +64,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 1050,
     alt: 'A face-brick boundary wall going up course by course, new bricks stacked beside it',
     work: 'Face-brick boundary wall going up',
-    suburb: filler('Kabega'),
-    month: filler('April 2026'),
+    suburb: 'Kabega',
+    month: 'April 2026',
     trades: ['walls'],
     smallWidth: 800,
   },
@@ -73,8 +75,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 1050,
     alt: 'A new concrete apron and ramp at the door and gate of a face-brick building',
     work: 'Concrete apron and ramp',
-    suburb: filler('Westering'),
-    month: filler('August 2025'),
+    suburb: 'Westering',
+    month: 'August 2025',
     trades: ['paving'],
     smallWidth: 800,
   },
@@ -84,8 +86,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 424,
     alt: 'A white basin and toilet against tiled walls in a refreshed bathroom',
     work: 'Basin and toilet in a refreshed bathroom',
-    suburb: filler('Walmer'),
-    month: filler('March 2026'),
+    suburb: 'Walmer',
+    month: 'March 2026',
     trades: ['plumbing'],
   },
   {
@@ -94,8 +96,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 1050,
     alt: 'Scaffolding up along a building facade for repairs, city buildings behind',
     work: 'Scaffolding up for facade repairs',
-    suburb: filler('Central'),
-    month: filler('October 2025'),
+    suburb: 'Central',
+    month: 'October 2025',
     trades: ['cracks'],
     smallWidth: 800,
   },
@@ -105,8 +107,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 437,
     alt: 'A curved wall with a glass-block window, waterproofed and painted',
     work: 'Exterior waterproofing and paint',
-    suburb: filler('Newton Park'),
-    month: filler('June 2025'),
+    suburb: 'Newton Park',
+    month: 'June 2025',
     trades: ['damp', 'painting'],
   },
   {
@@ -115,8 +117,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 400,
     alt: 'A double stainless-steel sink set into a timber counter over white cupboards',
     work: 'Sink and cupboards fitted',
-    suburb: filler('Sunridge Park'),
-    month: filler('January 2026'),
+    suburb: 'Sunridge Park',
+    month: 'January 2026',
     trades: ['kitchens', 'plumbing'],
   },
   {
@@ -125,8 +127,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 1400,
     alt: 'A tiled roof with the verge and ridge freshly painted red, beside a chimney',
     work: 'Roof verge and ridge painted',
-    suburb: filler('Charlo'),
-    month: filler('July 2025'),
+    suburb: 'Charlo',
+    month: 'July 2025',
     trades: ['roofs', 'painting'],
     smallWidth: 800,
   },
@@ -136,8 +138,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 1400,
     alt: 'A channel dug beside a paved walkway, new kerbs going in along the road edge',
     work: 'Channel and kerbs going in',
-    suburb: filler('Fairview'),
-    month: filler('March 2026'),
+    suburb: 'Fairview',
+    month: 'March 2026',
     trades: ['paving'],
     smallWidth: 800,
   },
@@ -147,8 +149,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 432,
     alt: 'A bathroom after mould treatment, the bath and wall tiles clean',
     work: 'Bathroom mould treated',
-    suburb: filler('Walmer'),
-    month: filler('March 2026'),
+    suburb: 'Walmer',
+    month: 'March 2026',
     trades: ['damp'],
   },
   {
@@ -157,8 +159,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 397,
     alt: 'New white ceiling boards in a room, a ceiling fan in the middle',
     work: 'New ceiling boards',
-    suburb: filler('Walmer'),
-    month: filler('March 2026'),
+    suburb: 'Walmer',
+    month: 'March 2026',
     trades: ['kitchens'],
   },
   {
@@ -167,8 +169,8 @@ export const workPhotos: WorkPhoto[] = [
     height: 440,
     alt: 'A long exterior wall with windows, waterproofed and painted',
     work: 'Walls waterproofed and painted',
-    suburb: filler('Newton Park'),
-    month: filler('June 2025'),
+    suburb: 'Newton Park',
+    month: 'June 2025',
     trades: ['painting', 'damp'],
   },
 ]

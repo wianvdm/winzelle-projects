@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { act, cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { fillerValues, getTrade } from '../../content/next/index.ts'
+import { getTrade } from '../../content/next/index.ts'
 import { PickStateProvider, usePickState } from '../pick-state.tsx'
 import {
   buildWhatsAppLink,
@@ -163,10 +163,10 @@ describe('ContactCard', () => {
     expect(document.querySelector('.leaflet-container')).toBeNull()
   })
 
-  it('carries the flagged service-area line in the lead', () => {
+  it('carries the confirmed service-area line in the lead', () => {
     renderContactCard()
 
-    expect(fillerValues.has(SERVICE_AREA)).toBe(true)
+    expect(SERVICE_AREA.length).toBeGreaterThan(0)
     expect(screen.getByText(/^WhatsApp is quickest\./).textContent).toBe(
       `WhatsApp is quickest. Send a photo and your suburb and we'll arrange a time to come and look. ${SERVICE_AREA}`,
     )

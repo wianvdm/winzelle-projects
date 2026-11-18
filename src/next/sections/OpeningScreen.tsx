@@ -32,8 +32,11 @@ function WhatsAppIcon() {
   )
 }
 
-/** NHBRC stamp (spec S2): registered, never a registration number. */
-function NhbrcSeal() {
+/**
+ * NHBRC stamp (spec S2): registered, never a registration number. The
+ * number line renders only once a registration number is supplied.
+ */
+export function NhbrcSeal({ nhbrcNumber }: { nhbrcNumber: string }) {
   const [topLine, centreLine, bottomLine] = opening.sealLines
   return (
     <svg
@@ -62,6 +65,11 @@ function NhbrcSeal() {
       <text className="wz-seal-mark" x="64" y="71" textAnchor="middle">
         {centreLine}
       </text>
+      {nhbrcNumber !== '' && (
+        <text className="wz-seal-arc" x="64" y="86" textAnchor="middle">
+          {nhbrcNumber}
+        </text>
+      )}
     </svg>
   )
 }
@@ -107,7 +115,7 @@ export function OpeningScreen({
 
         <Header currentSectionId={currentSectionId} />
 
-        <NhbrcSeal />
+        <NhbrcSeal nhbrcNumber={opening.nhbrcNumber} />
 
         {/* Placement, aspect and crop live in sections.css under the photo
             id: the CSP forbids inline style attributes. */}
