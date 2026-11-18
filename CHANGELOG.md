@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/wianvdm/winzelle-projects/compare/v0.3.0...v0.4.0) (2026-11-18)
+
+
+### Features
+
+* **release:** make the redesigned page the home page ([#124](https://github.com/wianvdm/winzelle-projects/issues/124)) ([63eeed9](https://github.com/wianvdm/winzelle-projects/commit/63eeed9c63004db700734a89455ed5e9150f4173))
+
 ## [0.3.0](https://github.com/wianvdm/winzelle-projects/compare/v0.2.2...v0.3.0) (2026-11-18)
 
 
