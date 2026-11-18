@@ -256,8 +256,9 @@ describe('filler marker', () => {
 })
 
 describe('NHBRC registration number slot', () => {
-  it('stays empty until a number is supplied, with the claims unchanged', () => {
-    expect(opening.nhbrcNumber).toBe('')
+  it('holds no number or one of up to ten digits, with the claims unchanged', () => {
+    // Ten digits is the most the stamp's inner ring fits.
+    expect(opening.nhbrcNumber).toMatch(/^\d{0,10}$/)
     expect(opening.sealLabel).toBe('Stamp: NHBRC registered')
     expect(opening.sealLines).toEqual(['registered', 'NHBRC', 'home builder'])
   })

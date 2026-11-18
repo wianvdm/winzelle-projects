@@ -6,17 +6,15 @@
   padding-top: 24px;
 }
 
+/* The tray and the "Not sure" card stack in the first column; the sheet
+   spans both rows of the second, and the card's row takes whatever height
+   the sheet needs beyond the tray. */
 .wz-needs {
   display: grid;
   grid-template-columns: minmax(380px, 452px) minmax(0, 1fr);
-  gap: 28px;
+  grid-template-rows: auto 1fr;
+  gap: 40px 28px;
   align-items: start;
-}
-
-.wz-tray-side {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
 }
 
 .wz-tray {
@@ -182,6 +180,8 @@
 
 /* ===== The explorer sheet ===== */
 .wz-explorer {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   position: relative;
   margin-top: 10px;
   padding: 28px 32px 30px;
@@ -401,7 +401,7 @@
 }
 
 /* ===== Narrow windows and phones: the sheet a tile opens comes straight
-   after the tiles, and the "Not sure" card follows it. ===== */
+   after the tiles, and the "Not sure" card follows it, as in the DOM. ===== */
 @media (max-width: 1099px) {
   #wz-what {
     padding-top: 40px;
@@ -409,15 +409,11 @@
 
   .wz-needs {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
     gap: 24px;
   }
 
-  .wz-tray-side {
-    display: contents;
-  }
-
   .wz-unsure {
-    order: 1;
     margin: 0;
     transform: none;
   }
@@ -449,6 +445,8 @@
   }
 
   .wz-explorer {
+    grid-column: auto;
+    grid-row: auto;
     margin-top: 0;
     padding: 24px 16px 26px;
   }

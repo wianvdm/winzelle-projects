@@ -263,6 +263,14 @@
   fill: var(--color-wz-navy);
 }
 
+/* Small and unspaced so a 10-digit registration number fits inside the
+   inner ring under the mark. */
+.wz-seal-number {
+  font: 500 10px var(--font-wz-voice);
+  font-variant-numeric: lining-nums tabular-nums;
+  fill: var(--color-wz-navy);
+}
+
 .wz-seal-mark {
   font: 600 var(--text-wz-3) var(--font-wz-serif);
   letter-spacing: 0.02em;

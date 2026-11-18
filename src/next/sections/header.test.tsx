@@ -65,7 +65,7 @@ function placeHeroAction(top: number, bottom: number) {
 describe('StickyBar', () => {
   const whatsappHref = buildWhatsAppLink(defaultMessage())
 
-  it('carries the firm, links, phone, Call and WhatsApp us without a second nav landmark', () => {
+  it('carries the firm, links, phone, Call and WhatsApp us without a landmark of its own', () => {
     const heroAction = placeHeroAction(400, 460)
     const { container } = render(
       <StickyBar whatsappHref={whatsappHref} currentSectionId={null} />,
@@ -73,7 +73,9 @@ describe('StickyBar', () => {
     heroAction.remove()
 
     const bar = container.querySelector('#wz-sticky')
-    expect(bar?.tagName).toBe('HEADER')
+    // The header is the page's banner; the bar only repeats its links.
+    expect(bar?.tagName).toBe('DIV')
+    expect(bar?.getAttribute('role')).toBeNull()
     expect(bar?.querySelector('nav')).toBeNull()
     expect(
       [...(bar?.querySelectorAll('.wz-sticky-nav a') ?? [])].map((link) =>

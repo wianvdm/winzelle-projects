@@ -46,18 +46,14 @@ function useHeroActionOutOfView(): boolean {
 /**
  * Sticky contact bar (spec S1, #wz-sticky). Hidden (visibility: hidden, so
  * out of the Tab order) until the opening WhatsApp action leaves the window.
- * The section links are a plain group: the header carries the page's one
- * navigation landmark.
+ * No landmark: the header is the page's banner and carries its navigation,
+ * and the bar repeats its links.
  */
 export function StickyBar({ whatsappHref, currentSectionId }: StickyBarProps) {
   const shown = useHeroActionOutOfView()
 
   return (
-    <header
-      className={shown ? 'wz-sticky wz-shown' : 'wz-sticky'}
-      id="wz-sticky"
-      aria-label="Contact"
-    >
+    <div className={shown ? 'wz-sticky wz-shown' : 'wz-sticky'} id="wz-sticky">
       <div className="wz-sticky-row">
         <span className="wz-sticky-name">{companyName}</span>
         <div className="wz-sticky-nav">
@@ -82,6 +78,6 @@ export function StickyBar({ whatsappHref, currentSectionId }: StickyBarProps) {
           {whatsappLabels.general}
         </a>
       </div>
-    </header>
+    </div>
   )
 }

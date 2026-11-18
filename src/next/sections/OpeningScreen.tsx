@@ -33,17 +33,21 @@ function WhatsAppIcon() {
 }
 
 /**
- * NHBRC stamp (spec S2): registered, never a registration number. The
- * number line renders only once a registration number is supplied.
+ * NHBRC stamp (spec S2): registered. The registration number renders, and
+ * joins the stamp's name, only once one is supplied; empty, the slot adds
+ * nothing.
  */
 export function NhbrcSeal({ nhbrcNumber }: { nhbrcNumber: string }) {
   const [topLine, centreLine, bottomLine] = opening.sealLines
+  const label = nhbrcNumber
+    ? `${opening.sealLabel}, ${opening.sealNumberLead} ${nhbrcNumber}`
+    : opening.sealLabel
   return (
     <svg
       className="wz-seal"
       viewBox="0 0 128 128"
       role="img"
-      aria-label={opening.sealLabel}
+      aria-label={label}
     >
       <defs>
         <path id="wz-seal-top" d="M20 64a44 44 0 0 1 88 0" />
@@ -66,7 +70,7 @@ export function NhbrcSeal({ nhbrcNumber }: { nhbrcNumber: string }) {
         {centreLine}
       </text>
       {nhbrcNumber !== '' && (
-        <text className="wz-seal-arc" x="64" y="86" textAnchor="middle">
+        <text className="wz-seal-number" x="64" y="84" textAnchor="middle">
           {nhbrcNumber}
         </text>
       )}

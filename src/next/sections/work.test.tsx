@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs'
 import {
   cleanup,
+  createEvent,
   fireEvent,
   render,
   screen,
@@ -271,8 +272,14 @@ describe('Our work board', () => {
     // The enlarged print names its own width for the srcset pick.
     expect(sizesOf('wall-facebrick')).toEqual(['560px', '560px'])
 
+    fireEvent.click(tag('Paving'))
+    // Two prints: the first takes a row alone, up to the 560px cap; the
+    // second shares the next row with the ask at the two-to-a-row 371px.
+    expect(widthOf('paving-forecourt')).toBe('560px')
+    expect(widthOf('paving-kerb')).toBe('371px')
+
     fireEvent.click(tag('Roofs'))
-    // Two to a row share 371px; the 268px ridge photo stops at 1.3x plus
+    // Three to a board: two to a row share 371px; the 268px ridge photo stops at 1.3x plus
     // the print's paper (jsdom computes no aspect, so the 4:3 default).
     expect(widthOf('waterproof-roof')).toBe('371px')
     expect(widthOf('roof-ridge-sealed')).toBe(
@@ -403,6 +410,18 @@ describe('Lightbox', () => {
     expect(
       fireEvent.touchEnd(dialog().querySelector('.wz-lb-photo') as HTMLElement),
     ).toBe(true)
+  })
+
+  it('leaves a touchend it cannot cancel alone after a drag on the backdrop', () => {
+    renderPage()
+    fireEvent.click(openerFor(board(), photoCaption(workPhotos[0])))
+    const inner = dialog().querySelector('.wz-lb-inner') as HTMLElement
+
+    // Chrome logs an error when a page tries to cancel a scroll's touchend.
+    const touchEnd = createEvent.touchEnd(inner, { cancelable: false })
+    const preventDefault = vi.spyOn(touchEnd, 'preventDefault')
+    fireEvent(inner, touchEnd)
+    expect(preventDefault).not.toHaveBeenCalled()
   })
 
   it('closes from the backdrop and the close button, returning focus to the print', () => {

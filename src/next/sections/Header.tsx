@@ -35,14 +35,16 @@ function splitLastWord(text: string): [string, string] {
 }
 
 /**
- * Top header (spec S1). Sits after the headline sheet in the DOM so the
- * opening WhatsApp action is the first Tab stop; CSS places it on top.
+ * Top header (spec S1), the page's banner landmark. Sits after the headline
+ * sheet in the DOM so the opening WhatsApp action is the first Tab stop; CSS
+ * places it on top. Inside main a header element maps to no landmark, so the
+ * banner role is set on a plain element.
  */
 export function Header({ currentSectionId }: SectionLinksProps) {
   const [summaryLead, summaryTail] = splitLastWord(header.tradeSummary)
 
   return (
-    <header className="wz-header">
+    <div className="wz-header" role="banner">
       <span className="wz-plate">
         <img
           src={LOGO_SRC}
@@ -64,6 +66,6 @@ export function Header({ currentSectionId }: SectionLinksProps) {
       <a className="wz-header-phone wz-voice" href={PHONE_HREF}>
         {contactFacts.phoneDisplay}
       </a>
-    </header>
+    </div>
   )
 }
