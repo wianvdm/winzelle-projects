@@ -231,6 +231,16 @@ describe('redesign tokens and self-hosted fonts', () => {
     expect(css).toContain('--shadow-wz-sheet:')
   })
 
+  it('keeps Tailwind from turning /next, content and test words into utilities', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8')
+    expect(css).toContain("@import 'tailwindcss' source('.');")
+    expect(css).toContain("@source not './next';")
+    expect(css).toContain("@source not './content/next';")
+    expect(css).toContain("@source not './**/*.test.*';")
+    // Unscanned, the redesign tokens ship only because they are static.
+    expect(css).toContain('@theme static {')
+  })
+
   it('uses only local /fonts/ files in src/next/next.css with no data: URLs', () => {
     const css = readFileSync(
       resolve(process.cwd(), 'src/next/next.css'),
