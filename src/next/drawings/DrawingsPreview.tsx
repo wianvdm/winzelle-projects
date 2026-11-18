@@ -1,4 +1,4 @@
-// Dev-only preview of the drawing kit (#94, #95), mounted at /next/drawings
+// Dev-only preview of the drawing kit (#94, #95), mounted at /drawings
 // only when import.meta.env.DEV is true (see src/router.tsx), so it is absent
 // from every build. It renders each trade's drawing in both views, with a held
 // part, with live markers and a view toggle, and as a tile crop, plus a note

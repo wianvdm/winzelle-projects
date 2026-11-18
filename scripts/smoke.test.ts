@@ -40,7 +40,7 @@ function homeHtml(overrides: Record<string, unknown> = {}) {
   return [
     '<!doctype html><html><head>',
     canonical,
-    '<link href="https://fonts.googleapis.com/css2?family=Inter" rel="stylesheet" />',
+    '<link href="https://fonts.example.com/css2?family=Serif" rel="stylesheet" />',
     script,
     css,
     '</head><body><div id="app"></div></body></html>',
@@ -209,9 +209,9 @@ const KEY_CHUNK_FILE = 'public-env-key.js'
 const KEY_CHUNK = `/assets/${KEY_CHUNK_FILE}`
 const NEXT_CHUNK = '/assets/NextPage-next.js'
 
-// Mirrors the flag-on build: the quote form and the /next page both use the
-// key helper, so the bundler moves it into its own chunk that both import,
-// and both import the main script back.
+// Mirrors v0.3.0, a rollback target: the quote form and the page that later
+// became the home page both use the key helper, so the bundler moves it into
+// its own chunk that both import, and both import the main script back.
 function splitKeyRoutes(overrides: Record<string, StubResponse> = {}) {
   const js = (body: string) => ({
     contentType: 'application/javascript',
@@ -327,14 +327,14 @@ describe('extractStaticImports', () => {
 })
 
 describe('extractLocalStylesheet', () => {
-  it('skips remote stylesheets such as Google Fonts', () => {
+  it('skips remote stylesheets such as hosted web fonts', () => {
     expect(extractLocalStylesheet(homeHtml())).toBe(STYLESHEET)
   })
 
   it('returns null when no local stylesheet exists', () => {
     expect(
       extractLocalStylesheet(
-        '<link href="https://fonts.googleapis.com/css2?family=Inter" rel="stylesheet" />',
+        '<link href="https://fonts.example.com/css2?family=Serif" rel="stylesheet" />',
       ),
     ).toBeNull()
   })
@@ -646,7 +646,7 @@ describe('runSmoke', () => {
     )
   })
 
-  it('passes when the minified key helper sits inline in the lazy chunk (flag-off shape)', async () => {
+  it('passes when the minified key helper sits inline in the lazy chunk (inline shape)', async () => {
     const { ok, results } = await smokeAccessKey({
       [`${BASE_URL}${CHUNK_SCRIPT}`]: {
         contentType: 'application/javascript',
@@ -663,7 +663,7 @@ describe('runSmoke', () => {
     })
   })
 
-  it('passes when the key helper sits in a split chunk the form chunks import (flag-on shape)', async () => {
+  it('passes when the key helper sits in a split chunk the form chunks import (split shape)', async () => {
     const { ok, results, requests } = await smokeAccessKey(splitKeyRoutes())
     expect(ok).toBe(true)
     expect(findResult(results, 'form-endpoint')).toMatchObject({ ok: true })
@@ -677,6 +677,35 @@ describe('runSmoke', () => {
     // fetched once.
     expect(fetched(MODULE_SCRIPT)).toHaveLength(1)
     expect(fetched(KEY_CHUNK)).toHaveLength(1)
+  })
+
+  it('passes when the form chunk reaches the key helper through another static import', async () => {
+    const { ok, results } = await smokeAccessKey(
+      splitKeyRoutes({
+        [`${BASE_URL}${CHUNK_SCRIPT}`]: {
+          contentType: 'application/javascript',
+          body:
+            'import{s as e}from"./shared-env.js";' +
+            'let r=e();await fetch(`https://api.web3forms.com/submit`,' +
+            '{body:JSON.stringify({access_key:r})});',
+        },
+        [`${BASE_URL}/assets/shared-env.js`]: {
+          contentType: 'application/javascript',
+          body:
+            `import{t as e}from"./${KEY_CHUNK_FILE}";` +
+            'import{a as b}from"./routes-quote.js";export{e as s};',
+        },
+        [`${BASE_URL}${NEXT_CHUNK}`]: {
+          contentType: 'application/javascript',
+          body: 'export const page=1;',
+        },
+      }),
+    )
+    expect(ok).toBe(true)
+    expect(findResult(results, 'form-access-key')).toMatchObject({
+      ok: true,
+      reason: 'key present',
+    })
   })
 
   it('fails the form-access-key check when no chunk that sets access_key imports the key helper', async () => {

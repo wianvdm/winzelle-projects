@@ -21,7 +21,7 @@ Spectral and Spectral SC are copyright 2017 The Spectral Project Authors
 (https://github.com/productiontype/Spectral) and licensed under the
 SIL Open Font License, Version 1.1 (OFL-1.1; see `public/fonts/OFL.txt`).
 
-Third-party code in the `/next` map:
+Third-party code in the contact map:
 
 - Leaflet 1.9.4 (bundled script and adapted styles): the build bundles the
   `leaflet` package's script into the map chunk, and `src/next/map/map.css`

@@ -267,7 +267,7 @@ svg[data-state='problem'] .wz-hang {
   }
 }
 
-/* Dev-only kit preview page (/next/drawings, registered only in dev). */
+/* Dev-only kit preview page (/drawings, registered only in dev). */
 .wz-preview-section {
   max-width: 1280px;
   margin: 48px auto 0;

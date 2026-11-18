@@ -1,7 +1,7 @@
 // Marks a placeholder value that still needs a confirmed fact. #102 replaced
 // every placeholder the redesign started with; the filler() call keeps any
 // new one machine-detectable: scripts/check-filler.mjs scans for filler( call
-// sites and fails a production build that enables /next while any remain.
+// sites and fails a production build while any remain.
 
 declare const fillerBrand: unique symbol
 

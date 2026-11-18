@@ -17,7 +17,7 @@ Copy `.env.example` to `.env` and set `VITE_WEB3FORMS_ACCESS_KEY` before buildin
 
 ## Where content lives
 
-Site content lives in typed modules under `src/content/`; media lives in `public/content/`. To change content, edit those modules and open a PR per [CONTRIBUTING.md](CONTRIBUTING.md); a merge to `main` reaches production with the next published release. The content was migrated from Sanity; see [docs/content-migration.md](docs/content-migration.md).
+Site content lives in typed modules under `src/content/next/`; media lives in `public/content/`. To change content, edit those modules and open a PR per [CONTRIBUTING.md](CONTRIBUTING.md); a merge to `main` reaches production with the next published release. The page design is specified in [docs/design/home-page.md](docs/design/home-page.md).
 
 ## Deployment
 
@@ -30,7 +30,7 @@ A Cloudflare Worker serves `dist/` as static assets with an SPA fallback, config
 - [docs/development.md](docs/development.md): setup, CI, releases, hosting, security headers, monitoring, agent access.
 - [docs/architecture.md](docs/architecture.md): components and data flow.
 - [docs/rollback.md](docs/rollback.md): restoring a previous production version.
-- [docs/content-migration.md](docs/content-migration.md): record of the Sanity content migration.
+- [docs/design/home-page.md](docs/design/home-page.md): home page design specification and quality gates.
 - [docs/production-baseline.md](docs/production-baseline.md): the dated W1 production baseline.
 
 ## Licence

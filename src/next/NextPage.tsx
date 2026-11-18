@@ -89,12 +89,9 @@ export function HomeBoard() {
 
 export function NextPage() {
   return (
-    <>
-      <meta name="robots" content="noindex" />
-      <PickStateProvider>
-        <HomeBoard />
-      </PickStateProvider>
-    </>
+    <PickStateProvider>
+      <HomeBoard />
+    </PickStateProvider>
   )
 }
 

@@ -1,26 +1,13 @@
-/* Utilities come from the legacy page's own source only. Words in prose,
-   tests and the /next files (plain CSS, no utilities) would otherwise turn
-   into unused rules in the stylesheet for /. */
+/* The page is plain CSS under src/next/; Tailwind supplies the base reset
+   and the tokens. Words in prose, tests and those files would otherwise turn
+   into unused utility rules. */
 @import 'tailwindcss' source('.');
 @source not './next';
 @source not './content/next';
 @source not './**/*.test.*';
 
-@theme {
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
-
-  --color-primary: #102e44;
-  --color-secondary: #4b7995;
-  --color-accent: #71a0b5;
-  --color-light: #cbe5f1;
-  --color-surface: #fefefd;
-  --color-text-dark: #102e44;
-  --color-text-muted: #4b7995;
-}
-
-/* static: only the /next stylesheets read these, and Tailwind no longer
-   scans them for their use. */
+/* static: only the plain stylesheets read these, and Tailwind does not scan
+   them for their use. */
 @theme static {
   /* Redesign tokens (pinboard: steel-blue board, white sheets, warm prints, navy ink, brick accent) */
   --color-wz-field: #b9cddb;
@@ -68,10 +55,6 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 html,
 body,
 #app {
@@ -80,40 +63,41 @@ body,
 
 body {
   margin: 0;
-  color: var(--color-text-dark);
-  font-family: var(--font-sans);
-  background-color: var(--color-surface);
+  color: var(--color-wz-navy);
+  font-family: var(--font-wz-serif);
+  background-color: var(--color-wz-field);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Section heading accent underline */
-.section-underline {
-  width: 60px;
-  height: 3px;
-  background-color: var(--color-accent);
-  margin: 0.75rem auto 0;
-  border-radius: 2px;
+/* Not-found page: one sheet pinned to the board. */
+.wz-not-found-sheet {
+  max-width: 560px;
+  margin: 10vh auto 0;
+  padding: 40px 32px;
+  text-align: center;
+  background: var(--color-wz-sheet);
+  border: var(--wz-ink-line);
+  box-shadow: var(--shadow-wz-sheet);
 }
 
-/* Badge label (e.g., "Our Work", "Contact Us") */
-.section-badge {
-  display: inline-block;
-  padding: 0.25rem 1rem;
-  border: 1px solid var(--color-accent);
-  border-radius: 9999px;
-  font-size: 0.75rem;
+.wz-not-found-sheet p {
+  margin: 16px 0 24px;
+}
+
+.wz-not-found-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 8px;
+  color: var(--color-wz-navy);
   font-weight: 600;
-  color: var(--color-accent);
-  letter-spacing: 0.05em;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-/* Frosted glass card */
-.glass-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 1.25rem;
+.wz-not-found-link:focus-visible {
+  outline: 3px solid var(--color-wz-river);
+  outline-offset: 3px;
 }

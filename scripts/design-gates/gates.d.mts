@@ -56,6 +56,8 @@ export function classifyRequest(
   state?: RequestState,
 ): RequestVerdict
 export function gateOutcome(result: ProbeResult): GateOutcome
+/** Skipped gates and pending rules, which fail a run that expects a whole page. */
+export function incompleteRules(result: ProbeResult): string[]
 export function finalise(data: {
   parts: Record<string, unknown>
   errors: Record<string, string[]>

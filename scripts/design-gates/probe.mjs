@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // Headless-Chrome probe for the design gates G1-G12 (docs/design/home-page.md)
 // plus C6.1 measurements. Probes a served URL, not a file.
-// Usage: node probe.mjs <url> <outDir>
+// Usage: node probe.mjs <url> <outDir> [--expect-complete]
 //
-// Exit codes: 0 = every gate passed, was manual or was skipped; 1 = the probe
-// itself broke (Chrome launch, navigation); 2 = bad arguments; 4 = at least one
-// gate failed or came back unknown.
+// Exit codes: 0 = every gate passed, was manual or was skipped (with
+// --expect-complete: no skipped gate and no pending rule); 1 = the probe
+// itself broke (Chrome launch, navigation); 2 = bad arguments; 4 = at least
+// one gate failed or came back unknown, or the page is incomplete under
+// --expect-complete.
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,6 +16,7 @@ import {
   classifyRequest,
   finalise,
   gateOutcome,
+  incompleteRules,
   REFLOW_WIDTHS,
   VIEWPORTS,
 } from './gates.mjs'
@@ -28,6 +31,7 @@ const PHONE_REFLOW_HEIGHT = 844
 const CONTACT_STEP_PX = 50
 const MAX_TAB_STOPS = 400
 const DIALOG_TAB_PRESSES = 10
+const EXPECT_COMPLETE_FLAG = '--expect-complete'
 const MAX_SINGLE_SHOT_PX = 16000
 const LOAD_TIMEOUT_MS = 60000
 const MAP_TILES_TIMEOUT_MS = 20000
@@ -857,9 +861,15 @@ async function run(targetUrl, outDir) {
 }
 
 async function main() {
-  const [urlArg, outArg] = process.argv.slice(2)
-  if (!urlArg || !outArg) {
-    console.error('Usage: node probe.mjs <url> <outDir>')
+  const args = process.argv.slice(2)
+  const expectComplete = args.includes(EXPECT_COMPLETE_FLAG)
+  const [urlArg, outArg, ...extra] = args.filter(
+    (arg) => arg !== EXPECT_COMPLETE_FLAG,
+  )
+  if (!urlArg || !outArg || extra.length) {
+    console.error(
+      `Usage: node probe.mjs <url> <outDir> [${EXPECT_COMPLETE_FLAG}]`,
+    )
     process.exit(2)
   }
   let targetUrl
@@ -884,8 +894,9 @@ async function main() {
   for (const gate of Object.values(result.gates))
     console.log(`${gate.id} ${gate.status.toUpperCase()} ${gate.summary}`)
   const outcome = gateOutcome(result)
+  const incomplete = expectComplete ? incompleteRules(result) : []
   console.log(`Wrote ${path.join(outDir, 'probe.json')} and probe.md`)
-  if (!outcome.ok) {
+  if (!outcome.ok || incomplete.length) {
     const parts = []
     if (outcome.failed.length)
       parts.push(`failed: ${outcome.failed.join(', ')}`)
@@ -893,6 +904,8 @@ async function main() {
       parts.push(`unknown: ${outcome.unknown.join(', ')}`)
     if (outcome.screenshots.length)
       parts.push(`screenshots: ${outcome.screenshots.join('; ')}`)
+    if (incomplete.length)
+      parts.push(`incomplete page: ${incomplete.join('; ')}`)
     console.error(`Design gate FAILED (${parts.join('; ')})`)
     process.exit(4)
   }

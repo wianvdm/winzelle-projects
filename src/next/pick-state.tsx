@@ -1,4 +1,4 @@
-// Shared trade pick state for the /next sections (spec S3: one unified
+// Shared trade pick state for the home page sections (spec S3: one unified
 // picker updates the explorer sheet, WhatsApp links and the Our work filter).
 // pickedTradeId is null until the visitor picks a tile, so the general
 // WhatsApp messages and the Our work filter stay at their defaults on load.

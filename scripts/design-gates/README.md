@@ -6,12 +6,12 @@ measurements in [docs/design/home-page.md](../../docs/design/home-page.md)
 reworked to test a served URL instead of a single HTML file.
 
 The CI job lives in [design-gate.yml](../../.github/workflows/design-gate.yml)
-and runs this on every pull request to `main` against the flag-on `/next`
+and runs this on every pull request to `main` against `/` of the production
 build. To run it the way CI does:
 
 ```
-VITE_HOME_NEXT=true npm run build
-node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/next --out design-gate-report
+npm run build
+node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/ --out design-gate-report --expect-complete
 ```
 
 `serve.mjs` starts the pinned wrangler in local dev mode (no Cloudflare login,
@@ -20,7 +20,7 @@ equals the value `dist/_headers` declares for its path, then runs the probe
 and forwards its exit code. To probe an already-running server directly:
 
 ```
-node scripts/design-gates/probe.mjs http://127.0.0.1:8787/next design-gate-report
+node scripts/design-gates/probe.mjs http://127.0.0.1:8787/ design-gate-report --expect-complete
 ```
 
 Needs Node 22+ (global `WebSocket`) and Chrome. The probe finds Chrome via
@@ -42,8 +42,8 @@ to gate makes G11 `unknown` rather than passing unmeasured.
 
 ## Skip semantics
 
-While `/next` is still being built, a gate whose subject is not on the page yet
-reports `skipped` with a reason, never `pass`:
+A gate whose subject is not on the page reports `skipped` with a reason, never
+`pass`. These rules let the page land section by section during #90:
 
 - G1, G2 and G10 wait for design content (the `#wz-hero-wa` opening action).
 - G3, G4 and G5 wait for focusable controls.
@@ -55,15 +55,15 @@ reports `skipped` with a reason, never `pass`:
   their own section lands: the `h1`, `banner` and `navigation` wait for the
   opening screen (#96, `#wz-hero-wa`), the `contentinfo` landmark waits for
   story and contact (#99, `#wz-contact`), and the form's error text waits for
-  the form itself (#101, `#wz-form`). `main` is part of the `/next` shell
+  the form itself (#101, `#wz-form`). `main` is part of the page shell
   itself and is always required.
 
 A pending rule only becomes a failure once its section id appears on the
-page, so a rule whose section never lands would stay green forever. The
-cutover child (#105) must therefore run with every structural rule required:
-by then every section id above is on the page, and a rule still pending
-there means an id is missing or renamed, which the cutover PR must fix
-rather than ship.
+page, so a rule whose section never lands would stay green forever. Since the
+cutover (#105) the page is whole, and CI passes `--expect-complete`: every
+skipped gate and every pending rule (G12 structure, G8 `mailto:`) then fails
+the run, because it means a section id is missing or renamed. Without the
+flag, skips and pending rules still never fail a run.
 
 The map phase runs last, on a fresh 1280 load: the probe presses
 `Show the map`, from that moment answers tile requests with its stub PNG, and
@@ -86,23 +86,26 @@ that source-text tests missed (#115 review). A missing row fails too, so a
 renamed class cannot switch the check off.
 
 G6 (reflow) and G11 (console, network, CSP) always run. A skipped gate never
-fails the run. If the `/next` shell itself (the `main` element and the `h1`)
-is absent at survey time, the page rendered nothing the probe can trust (the
-flag-off page, or the survey ran before React committed): every skip becomes
+fails the run unless `--expect-complete` is set. If the page shell itself
+(the `main` element and the `h1`) is absent at survey time, the page rendered
+nothing the probe can trust (another page, or the survey ran before React
+committed): every skip becomes
 `unknown` and fails the run. The run also fails when a screenshot step errored
 or an expected screenshot set is missing; screenshots are evidence, not a
 gate, so they are checked in the run outcome rather than under a gate id.
 
 ## Exit codes
 
-- `0`: every gate passed, was manual or was skipped.
+- `0`: every gate passed, was manual or was skipped (with `--expect-complete`:
+  no gate skipped and no rule pending).
 - `1`: the probe itself broke (Chrome launch, navigation, serving).
 - `2`: bad arguments or missing `dist/`.
 - `3`: the served `Content-Security-Policy` does not match `dist/_headers`
   (missing or different). BLOCKED: fix the serving setup rather than switching
   servers.
-- `4`: at least one gate reported `fail` or `unknown`, or screenshots are
-  missing or errored.
+- `4`: at least one gate reported `fail` or `unknown`, screenshots are
+  missing or errored, or `--expect-complete` found a skipped gate or a
+  pending rule.
 
 ## Output
 
@@ -151,7 +154,7 @@ gate, so they are checked in the run outcome rather than under a gate id.
 - `inpage.js`: measurements evaluated inside the page (`window.__probe`).
 - `gates.mjs`: pass/fail/manual/skipped verdicts, the network allow-list, the
   shared viewport and reflow lists (`probe.mjs` imports them), the run
-  outcome.
+  outcome and the `--expect-complete` check (`incompleteRules`).
 - `report.mjs`: `probe.md`.
 - `cdp.mjs`: Chrome launch and DevTools Protocol client.
 - `gates.test.ts`: vitest unit tests for the verdict logic in `gates.mjs`.
