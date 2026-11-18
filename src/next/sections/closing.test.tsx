@@ -109,9 +109,15 @@ describe('Story', () => {
 
 describe('ContactCard', () => {
   const whatsappHref = buildWhatsAppLink(defaultMessage())
+  const renderContactCard = () =>
+    render(
+      <PickStateProvider>
+        <ContactCard whatsappHref={whatsappHref} />
+      </PickStateProvider>,
+    )
 
   it('leads with WhatsApp, then phone, email, address and Facebook', () => {
-    render(<ContactCard whatsappHref={whatsappHref} />)
+    renderContactCard()
 
     const section = screen.getByRole('region', {
       name: 'Tell us what needs doing',
@@ -131,19 +137,34 @@ describe('ContactCard', () => {
     ).toEqual(['Phone', 'Email', 'Address', 'Facebook'])
   })
 
+  it('notes under the WhatsApp action that WhatsApp is run by Meta', () => {
+    renderContactCard()
+
+    const card = document.querySelector<HTMLElement>('.wz-card')
+    const whatsapp = within(card!).getByRole('link', { name: /WhatsApp us/ })
+    const note = whatsapp.nextElementSibling
+    expect(note?.className).toBe('wz-meta-note')
+    expect(note?.textContent).toBe('WhatsApp is run by Meta.')
+    expect(whatsapp.textContent).toBe('WhatsApp us082 878 1557')
+  })
+
   it('hangs the card over the map print, which starts as a still picture', () => {
-    render(<ContactCard whatsappHref={whatsappHref} />)
+    renderContactCard()
 
     const board = document.querySelector('.wz-contact-board')
     expect(
       [...(board?.children ?? [])].map((child) => child.className),
-    ).toEqual(['wz-card wz-pin', 'wz-map-print wz-pin wz-pin-print'])
+    ).toEqual([
+      'wz-card wz-pin',
+      'wz-map-print wz-pin wz-pin-print',
+      'wz-form wz-pin',
+    ])
     expect(screen.getByRole('button', { name: 'Show the map' })).toBeDefined()
     expect(document.querySelector('.leaflet-container')).toBeNull()
   })
 
   it('carries the flagged service-area line in the lead', () => {
-    render(<ContactCard whatsappHref={whatsappHref} />)
+    renderContactCard()
 
     expect(fillerValues.has(SERVICE_AREA)).toBe(true)
     expect(screen.getByText(/^WhatsApp is quickest\./).textContent).toBe(

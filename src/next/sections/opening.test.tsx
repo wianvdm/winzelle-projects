@@ -58,6 +58,17 @@ describe('OpeningScreen', () => {
     expect(screen.getByText('The visit and the quote are free.')).toBeDefined()
   })
 
+  it('notes beside the opening actions that WhatsApp is run by Meta', () => {
+    renderOpening()
+
+    const note = screen.getByText('WhatsApp is run by Meta.')
+    expect(note.className).toBe('wz-meta-note')
+    expect(note.closest('.wz-headline')).not.toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'WhatsApp us a photo' }).textContent,
+    ).toBe('WhatsApp us a photo')
+  })
+
   it('shows the NHBRC stamp as registered, without a number', () => {
     renderOpening()
 
