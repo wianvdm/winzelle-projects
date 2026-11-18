@@ -11,7 +11,6 @@ import { StickyBar, STICKY_CLEARANCE_PX } from './sections/StickyBar.tsx'
 import { Story } from './sections/Story.tsx'
 import { TradeBoard } from './sections/TradeBoard.tsx'
 import { buildWhatsAppLink, defaultMessage, tradeMessage } from './whatsapp.ts'
-import './next.css'
 import './sections/sections.css'
 
 const SECTION_IDS = pageNavLinks.map((link) => link.href.slice(1))
@@ -94,5 +93,3 @@ export function NextPage() {
     </PickStateProvider>
   )
 }
-
-export default NextPage

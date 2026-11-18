@@ -46,18 +46,8 @@
     U+2215, U+FEFF, U+FFFD;
 }
 
-html:has(.wz-page, .wz-home) {
-  scroll-behavior: auto;
-}
-
 html:has(.wz-home) {
   scroll-padding-top: 72px;
-}
-
-body:has(.wz-page, .wz-home) {
-  color: var(--color-wz-navy);
-  font-family: var(--font-wz-serif);
-  background-color: var(--color-wz-field);
 }
 
 /* Depth only ever darkens the field, so sheets keep their contrast against

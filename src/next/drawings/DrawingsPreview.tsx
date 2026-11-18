@@ -7,6 +7,7 @@ import { useState } from 'react'
 
 import { trades, whatNeedsDoing, type TradeId } from '../../content/next/trades'
 import '../next.css'
+import './preview.css'
 import { CracksDrawing } from './CracksDrawing'
 import { DampDrawing } from './DampDrawing'
 import type { DrawingView } from './Drawing'
