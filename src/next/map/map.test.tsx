@@ -21,8 +21,6 @@ import {
   BAY_BOUNDS,
   CspSafeTileLayer,
   mapOptions,
-  MAX_ZOOM,
-  MIN_ZOOM,
   StillMap,
   TILE_URL,
   type LiveMapSettings,
@@ -256,8 +254,8 @@ describe('mapOptions', () => {
 
   it('keeps tile requests to the bay and to sensible zooms', () => {
     expect(mapOptions(SETTINGS)).toMatchObject({
-      minZoom: MIN_ZOOM,
-      maxZoom: MAX_ZOOM,
+      minZoom: 12,
+      maxZoom: 18,
       maxBounds: BAY_BOUNDS,
       maxBoundsViscosity: 1,
     })
@@ -321,6 +319,77 @@ describe('createLiveMap', () => {
       setAttribute.mock.calls.filter(([name]) => name === 'style'),
     ).toEqual([])
     expect(container.innerHTML).not.toMatch(/data:/)
+    live.remove()
+    container.remove()
+  })
+})
+
+describe('zooming the live map', () => {
+  const FRAME: [number, number] = [1000, 560]
+  // Near the frame's bottom-right corner, where a centre zoom loses the pin.
+  const OFFSET: [number, number] = [420, 220]
+  const PIN_AT = { x: FRAME[0] / 2 + OFFSET[0], y: FRAME[1] / 2 + OFFSET[1] }
+  // Leaflet rounds the view to whole pixels at each level.
+  const ROUNDING_PX = 2
+  const ZOOM_IN_KEY = 187
+  const ZOOM_OUT_KEY = 189
+
+  type Positioned = HTMLElement & { _leaflet_pos: { x: number; y: number } }
+
+  async function liveMapInFrame() {
+    const { createLiveMap } =
+      await vi.importActual<typeof import('./loadMap.ts')>('./loadMap.ts')
+    const container = document.createElement('div')
+    Object.defineProperty(container, 'clientWidth', { value: FRAME[0] })
+    Object.defineProperty(container, 'clientHeight', { value: FRAME[1] })
+    document.body.append(container)
+    const live = createLiveMap(container, {
+      ...SETTINGS,
+      pin: { ...SETTINGS.pin, offset: OFFSET },
+    })
+    return { container, live }
+  }
+
+  /** How far the pin's tip is from where the preview had it, in frame pixels. */
+  function pinDrift(container: HTMLElement, markElement: HTMLElement) {
+    // Leaflet places the marker element at the pin's anchor point.
+    const pane = container.querySelector('.leaflet-map-pane') as Positioned
+    const marker = markElement as Positioned
+    return Math.max(
+      Math.abs(marker._leaflet_pos.x + pane._leaflet_pos.x - PIN_AT.x),
+      Math.abs(marker._leaflet_pos.y + pane._leaflet_pos.y - PIN_AT.y),
+    )
+  }
+
+  it('keeps the pin where it was at every level, with the buttons and the keys', async () => {
+    const { container, live } = await liveMapInFrame()
+    const zoomIn = container.querySelector('.leaflet-control-zoom-in')!
+    const zoomOut = container.querySelector('.leaflet-control-zoom-out')!
+    const press = (keyCode: number, shiftKey = false) =>
+      fireEvent.keyDown(document, { keyCode, shiftKey })
+    container.focus()
+    const steps: [string, () => void][] = [
+      ['button in', () => fireEvent.click(zoomIn)],
+      ['button in', () => fireEvent.click(zoomIn)],
+      ['button in', () => fireEvent.click(zoomIn)],
+      ['button in at the top', () => fireEvent.click(zoomIn)],
+      ['key in at the top', () => press(ZOOM_IN_KEY)],
+      ['key out', () => press(ZOOM_OUT_KEY)],
+      ['shift key out', () => press(ZOOM_OUT_KEY, true)],
+      ['button out', () => fireEvent.click(zoomOut)],
+      ['shift key out past the bottom', () => press(ZOOM_OUT_KEY, true)],
+      ['shift key in', () => press(ZOOM_IN_KEY, true)],
+    ]
+
+    expect(pinDrift(container, live.markElement)).toBeLessThanOrEqual(
+      ROUNDING_PX,
+    )
+    for (const [step, act] of steps) {
+      act()
+      expect(pinDrift(container, live.markElement), step).toBeLessThanOrEqual(
+        ROUNDING_PX,
+      )
+    }
     live.remove()
     container.remove()
   })

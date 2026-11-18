@@ -38,10 +38,22 @@ declare module 'leaflet/dist/leaflet-src.esm.js' {
     duration?: number
   }
 
+  export interface ZoomOptions {
+    animate?: boolean
+  }
+
   export class Map {
     constructor(element: HTMLElement, options?: MapOptions)
     setView(center: LatLng | LatLngTuple, zoom: number): this
     panBy(offset: Point | PointTuple, options?: PanOptions): this
+    setZoom(zoom: number, options?: ZoomOptions): this
+    setZoomAround(
+      latlng: LatLng | LatLngTuple,
+      zoom: number,
+      options?: ZoomOptions,
+    ): this
+    getMinZoom(): number
+    getMaxZoom(): number
     project(latlng: LatLng | LatLngTuple, zoom: number): Point
     unproject(point: Point | PointTuple, zoom: number): LatLng
     remove(): this

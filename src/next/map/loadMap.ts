@@ -15,6 +15,7 @@ import {
   type PanOptions,
   type Point,
   type PointTuple,
+  type ZoomOptions,
 } from 'leaflet/dist/leaflet-src.esm.js'
 
 import { mapPin } from '../../content/next/index.ts'
@@ -81,8 +82,26 @@ export class CspSafeTileLayer extends TileLayer {
   }
 }
 
+/**
+ * The zoom buttons and the + and - keys zoom about the pin. It sits off
+ * centre where the preview had it, so zooming about the frame's centre
+ * would push it out of the frame at the closest levels.
+ */
+class PinnedMap extends LeafletMap {
+  override setZoom(zoom: number, options?: ZoomOptions): this {
+    // Shift with + or - asks for three levels and can pass a limit.
+    // setZoomAround places the pin for the zoom it gets, so an unclamped
+    // zoom moves the pin once setView limits it.
+    const clampedZoom = Math.min(
+      Math.max(zoom, this.getMinZoom()),
+      this.getMaxZoom(),
+    )
+    return this.setZoomAround(PIN, clampedZoom, options)
+  }
+}
+
 /** Keyboard pans jump instead of gliding when reduced motion is set. */
-export class StillMap extends LeafletMap {
+export class StillMap extends PinnedMap {
   override panBy(offset: Point | PointTuple, options?: PanOptions): this {
     return super.panBy(offset, { ...options, animate: false })
   }
@@ -114,7 +133,7 @@ export function createLiveMap(
   container: HTMLElement,
   settings: LiveMapSettings,
 ): LiveMap {
-  const MapClass = settings.reducedMotion ? StillMap : LeafletMap
+  const MapClass = settings.reducedMotion ? StillMap : PinnedMap
   const map = new MapClass(container, mapOptions(settings))
   new Control.Zoom({ position: 'topright' }).addTo(map)
 
