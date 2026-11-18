@@ -67,6 +67,13 @@ const send = () =>
 
 const statusText = () => screen.getByRole('status').textContent
 
+/** Enter in a field: jsdom skips implicit submission, so submit with focus kept there. */
+function pressEnterIn(label: string) {
+  field(label).focus()
+  fireEvent.keyDown(field(label), { key: 'Enter' })
+  fireEvent.submit(document.getElementById('wz-form') as HTMLFormElement)
+}
+
 /** The text an invalid field points at through aria-describedby. */
 function describedError(label: string): string | null {
   const input = field(label)
@@ -169,15 +176,35 @@ describe('ContactForm', () => {
     renderForm()
 
     type('Email', 'name@example')
-    field('Email').focus()
-    fireEvent.keyDown(field('Email'), { key: 'Enter' })
-    // jsdom skips the implicit submission Enter would trigger; submit the
-    // form the same way with focus still in the invalid field.
-    fireEvent.submit(document.getElementById('wz-form') as HTMLFormElement)
+    pressEnterIn('Email')
 
     expect(document.activeElement).toBe(field('Email'))
     expect(statusText()).toBe(quoteForm.errors.emailBadShape)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('clears the mirrored error from the status region once the field is edited', () => {
+    renderForm()
+    type('Email', 'name@example')
+    pressEnterIn('Email')
+
+    type('Email', 'name@example.co.za')
+
+    expect(describedError('Email')).toBeNull()
+    expect(statusText()).toBe('')
+  })
+
+  it('puts the same error in a new node on a repeat Enter, so it is announced again', () => {
+    renderForm()
+    type('Email', 'name@example')
+    pressEnterIn('Email')
+    const firstNote = screen.getByRole('status').firstElementChild
+
+    pressEnterIn('Email')
+
+    const secondNote = screen.getByRole('status').firstElementChild
+    expect(secondNote?.textContent).toBe(quoteForm.errors.emailBadShape)
+    expect(secondNote).not.toBe(firstNote)
   })
 
   it('does not mirror the error into the status region when focus moves to the field', () => {

@@ -169,6 +169,9 @@ export function ContactForm() {
   // focus stays put (Enter pressed in the invalid field), so a reader hears
   // it even though no description change or focus move announces it.
   const [statusNote, setStatusNote] = useState('')
+  // Keys the note's node: the same error mirrored again is a new node, so
+  // the status region announces it again.
+  const [noteSerial, setNoteSerial] = useState(0)
   const phoneRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const jobRef = useRef<HTMLTextAreaElement>(null)
@@ -180,6 +183,7 @@ export function ContactForm() {
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const nextValues = { ...values, [field]: event.target.value }
       setValues(nextValues)
+      setStatusNote('')
       const nextErrors = checkForm(nextValues)
       setErrors((shown) => ({
         phone: shown.phone && nextErrors.phone,
@@ -207,6 +211,7 @@ export function ContactForm() {
       const focusStays = document.activeElement === target
       target?.focus()
       setStatusNote(focusStays ? found[firstInvalid] : '')
+      setNoteSerial((serial) => serial + 1)
       return
     }
 
@@ -214,7 +219,6 @@ export function ContactForm() {
     setStatusNote('')
     const accessKey = getWeb3FormsAccessKey()
     if (accessKey === undefined) {
-      setStatusNote('')
       setSendState('failed')
       return
     }
@@ -328,7 +332,7 @@ export function ContactForm() {
         </div>
       </div>
       <p className="wz-form-status" id={STATUS_ID} role="status">
-        {statusNote}
+        {statusNote && <span key={noteSerial}>{statusNote}</span>}
         <SendStatus sendState={sendState} />
       </p>
       <p className="wz-form-privacy">{privacyNotes.form}</p>
