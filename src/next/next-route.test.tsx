@@ -94,7 +94,7 @@ describe('/next route gating', () => {
     ).toBeNull()
   })
 
-  it('keeps the legacy / route, chrome, and Google Fonts links when VITE_HOME_NEXT is true', async () => {
+  it('keeps the legacy / route and chrome without injecting head tags when VITE_HOME_NEXT is true', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'true')
 
     await loadRouterAtPath('/')
@@ -105,34 +105,10 @@ describe('/next route gating', () => {
 
     expect(screen.getByRole('link', { name: 'Chat on WhatsApp' })).toBeDefined()
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull()
-    expect(
-      document.head.querySelector(
-        'link[rel="stylesheet"][href*="fonts.googleapis.com"]',
-      ),
-    ).not.toBeNull()
-    expect(
-      document.head.querySelector(
-        'link[rel="preconnect"][href="https://fonts.gstatic.com"]',
-      ),
-    ).not.toBeNull()
+    // / gets its Google Fonts from the static tags in index.html.
+    expect(document.head.querySelector('link[href*="fonts.g"]')).toBeNull()
   })
 
-  it('does not inject duplicate LegacyFonts links on / when VITE_HOME_NEXT is unset', async () => {
-    vi.stubEnv('VITE_HOME_NEXT', undefined)
-
-    await loadRouterAtPath('/')
-
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'Get a Quote' })).toBeDefined()
-    })
-
-    expect(
-      document.head.querySelector('link[href*="fonts.googleapis.com"]'),
-    ).toBeNull()
-    expect(
-      document.head.querySelector('link[href*="fonts.gstatic.com"]'),
-    ).toBeNull()
-  })
   it('registers the dev-only /next/drawings preview without legacy chrome when the flag is on', async () => {
     vi.stubEnv('VITE_HOME_NEXT', 'true')
 
@@ -160,64 +136,106 @@ describe('/next route gating', () => {
 })
 
 describe('redesign tokens and self-hosted fonts', () => {
-  it('keeps Google Fonts tags in flag-off builds and strips them via transformIndexHtml when flag-on', async () => {
-    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
-    const {
-      default: viteConfig,
-      resolveHomeNext,
-      stripGoogleFontsPlugin,
-    } = await import('../../vite.config')
+  it('turns the flag on by default in every build and off with an explicit value', async () => {
+    const { resolveHomeNext } = await import('../../vite.config')
 
     vi.stubEnv('VITE_HOME_NEXT', undefined)
-    expect(resolveHomeNext('build', 'production')).toBe(false)
-    expect(resolveHomeNext('serve', 'development')).toBe(true)
+    expect(resolveHomeNext('production')).toBe(true)
+    expect(resolveHomeNext('development')).toBe(true)
 
-    const offConfig = await (
-      viteConfig as unknown as (env: {
-        command: 'build' | 'serve'
-        mode: string
-      }) => Promise<{
-        define?: Record<string, string>
-        plugins?: Array<{ name?: string }>
-      }>
-    )({ command: 'build', mode: 'production' })
+    vi.stubEnv('VITE_HOME_NEXT', 'false')
+    expect(resolveHomeNext('production')).toBe(false)
+  })
 
-    expect(offConfig.define?.['import.meta.env.VITE_HOME_NEXT']).toBe('"false"')
-    expect(
-      offConfig.plugins?.some(
-        (plugin) => plugin?.name === 'strip-google-fonts',
-      ),
-    ).toBe(false)
-    expect(html).toContain('fonts.googleapis.com')
-    expect(html).toContain('fonts.gstatic.com')
+  it('adds the next.html plugin only when the flag is on', async () => {
+    const { default: viteConfig } = await import('../../vite.config')
+    const resolveConfig = viteConfig as unknown as (env: {
+      command: 'build' | 'serve'
+      mode: string
+    }) => Promise<{
+      define?: Record<string, string>
+      plugins?: Array<{ name?: string }>
+    }>
+    const pluginNames = (config: { plugins?: Array<{ name?: string }> }) =>
+      config.plugins?.map((plugin) => plugin?.name)
 
-    vi.stubEnv('VITE_HOME_NEXT', 'true')
-    expect(resolveHomeNext('build', 'production')).toBe(true)
-
-    const onConfig = await (
-      viteConfig as unknown as (env: {
-        command: 'build' | 'serve'
-        mode: string
-      }) => Promise<{
-        define?: Record<string, string>
-        plugins?: Array<{ name?: string }>
-      }>
-    )({ command: 'build', mode: 'production' })
-
+    vi.stubEnv('VITE_HOME_NEXT', undefined)
+    const onConfig = await resolveConfig({
+      command: 'build',
+      mode: 'production',
+    })
     expect(onConfig.define?.['import.meta.env.VITE_HOME_NEXT']).toBe('"true"')
-    expect(
-      onConfig.plugins?.some((plugin) => plugin?.name === 'strip-google-fonts'),
-    ).toBe(true)
+    expect(pluginNames(onConfig)).toContain('next-html')
 
-    const plugin = stripGoogleFontsPlugin()
+    vi.stubEnv('VITE_HOME_NEXT', 'false')
+    const offConfig = await resolveConfig({
+      command: 'build',
+      mode: 'production',
+    })
+    expect(offConfig.define?.['import.meta.env.VITE_HOME_NEXT']).toBe('"false"')
+    expect(pluginNames(offConfig)).not.toContain('next-html')
+  })
+
+  it('derives next.html from index.html without Google Fonts or the canonical link, with a static noindex', async () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+    const { toNextHtml } = await import('../../vite.config')
+
+    expect(html).toContain('fonts.googleapis.com')
+    expect(html).toContain('rel="canonical"')
+    expect(html).not.toContain('name="robots"')
+
+    const nextHtml = toNextHtml(html)
+    expect(nextHtml).not.toContain('fonts.googleapis.com')
+    expect(nextHtml).not.toContain('fonts.gstatic.com')
+    expect(nextHtml).not.toContain('rel="canonical"')
+    expect(
+      nextHtml.match(/<meta name="robots" content="noindex" \/>/g),
+    ).toHaveLength(1)
+    expect(nextHtml).toContain('<div id="app"></div>')
+    expect(nextHtml).toContain('<script type="module" src="/src/main.tsx">')
+  })
+
+  it('fails instead of emitting next.html when index.html drifts', async () => {
+    const { toNextHtml } = await import('../../vite.config')
+
+    expect(() => toNextHtml('<html><head></head></html>')).toThrow(
+      /index\.html no longer contains/,
+    )
+  })
+
+  it('emits next.html beside the built index.html and rewrites only /next in dev', async () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
+    const { nextHtmlPlugin, toNextHtml } = await import('../../vite.config')
+    const plugin = nextHtmlPlugin()
+
+    const emitFile = vi.fn()
+    const generateBundle = plugin.generateBundle as unknown as (
+      this: { emitFile: typeof emitFile },
+      options: unknown,
+      bundle: Record<string, unknown>,
+    ) => void
+    generateBundle.call(
+      { emitFile },
+      {},
+      {
+        'index.html': { type: 'asset', source: html },
+      },
+    )
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'next.html',
+      source: toNextHtml(html),
+    })
+
     const transform = plugin.transformIndexHtml as (
       input: string,
+      context: { server?: object; originalUrl?: string },
     ) => string | undefined
-    const transformed = transform(html)
-    expect(transformed).toBeDefined()
-    expect(transformed).not.toContain('fonts.googleapis.com')
-    expect(transformed).not.toContain('fonts.gstatic.com')
-    expect(transformed).toContain('<div id="app"></div>')
+    expect(transform(html, { server: {}, originalUrl: '/next?x=1' })).toBe(
+      toNextHtml(html),
+    )
+    expect(transform(html, { server: {}, originalUrl: '/' })).toBeUndefined()
+    expect(transform(html, {})).toBeUndefined()
   })
 
   it('defines wz- tokens alongside existing tokens in src/styles.css', () => {

@@ -84,13 +84,15 @@ describe('check-filler build guard', () => {
     expect(result.status).toBe(0)
   })
 
-  it('passes a production build with the flag unset (default off)', () => {
-    const result = runCheckFiller({})
-    expect(result.status).toBe(0)
+  it('guards a production build with the flag unset (default on)', () => {
+    const result = runCheckFiller({}, FIXTURE_DIR)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('flagged.ts')
   })
 
-  it('passes a production build with VITE_HOME_NEXT=false', () => {
-    const result = runCheckFiller({ VITE_HOME_NEXT: 'false' })
+  it('skips the scan for a production build with VITE_HOME_NEXT=false', () => {
+    const result = runCheckFiller({ VITE_HOME_NEXT: 'false' }, FIXTURE_DIR)
     expect(result.status).toBe(0)
+    expect(result.stdout).toContain('/next is off')
   })
 })

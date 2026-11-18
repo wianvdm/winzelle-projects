@@ -1,4 +1,3 @@
-import { useLayoutEffect } from 'react'
 import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
 import '../styles.css'
 import { Navbar } from '../components/Navbar'
@@ -29,35 +28,6 @@ function NotFound() {
   )
 }
 
-const LEGACY_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap'
-
-function LegacyFonts() {
-  useLayoutEffect(() => {
-    const links = [
-      Object.assign(document.createElement('link'), {
-        rel: 'preconnect',
-        href: 'https://fonts.googleapis.com',
-      }),
-      Object.assign(document.createElement('link'), {
-        rel: 'preconnect',
-        href: 'https://fonts.gstatic.com',
-        crossOrigin: 'anonymous',
-      }),
-      Object.assign(document.createElement('link'), {
-        rel: 'stylesheet',
-        href: LEGACY_FONTS_HREF,
-      }),
-    ]
-    document.head.append(...links)
-    return () => {
-      for (const link of links) link.remove()
-    }
-  }, [])
-
-  return null
-}
-
 function RootComponent() {
   const homeNextEnabled = import.meta.env.VITE_HOME_NEXT === 'true'
   const isNextRoute = useRouterState({
@@ -77,7 +47,6 @@ function RootComponent() {
 
   return (
     <>
-      {homeNextEnabled && <LegacyFonts />}
       <Navbar />
       <Outlet />
       <Footer />

@@ -14,7 +14,7 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -72,12 +72,13 @@ async function waitForServer(url) {
 }
 
 // Parses a Cloudflare _headers file into blocks of { pattern, headers }.
-// A block starts with an unindented path pattern; header lines are indented.
-function parseHeadersFile(text) {
+// A block starts with an unindented path pattern; header lines are indented;
+// `#` starts a comment line.
+export function parseHeadersFile(text) {
   const blocks = []
   let current = null
   for (const line of text.split('\n')) {
-    if (!line.trim()) continue
+    if (!line.trim() || line.trim().startsWith('#')) continue
     if (!/^\s/.test(line)) {
       current = { pattern: line.trim(), headers: [] }
       blocks.push(current)
@@ -90,9 +91,11 @@ function parseHeadersFile(text) {
   return blocks
 }
 
-// The headers for one URL path: the longest matching pattern wins, `*` is a
-// wildcard (Cloudflare's rule).
-function headersFor(blocks, pathname) {
+// The headers for one URL path, merged the way Cloudflare does: every block
+// whose pattern matches applies, in file order, and a header set by more
+// than one block joins its values with a comma. `*` is a wildcard.
+// https://developers.cloudflare.com/workers/static-assets/headers/
+export function headersFor(blocks, pathname) {
   const toRegex = (pattern) =>
     new RegExp(
       `^${pattern
@@ -100,10 +103,17 @@ function headersFor(blocks, pathname) {
         .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
         .join('.*')}$`,
     )
-  const matching = blocks
-    .filter(({ pattern }) => toRegex(pattern).test(pathname))
-    .sort((a, b) => b.pattern.length - a.pattern.length)
-  return matching[0]?.headers || []
+  const merged = new Map()
+  for (const { pattern, headers } of blocks) {
+    if (!toRegex(pattern).test(pathname)) continue
+    for (const [name, value] of headers) {
+      merged.set(
+        name,
+        merged.has(name) ? `${merged.get(name)}, ${value}` : value,
+      )
+    }
+  }
+  return [...merged]
 }
 
 // The CSP the page must carry: the value dist/_headers declares for it.
@@ -195,4 +205,10 @@ async function main() {
   }
 }
 
-main()
+// Runs only as a script, so tests can import the _headers helpers.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}
