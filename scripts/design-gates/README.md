@@ -62,7 +62,8 @@ A pending rule only becomes a failure once its section id appears on the
 page, so a rule whose section never lands would stay green forever. Since the
 cutover (#105) the page is whole, and CI passes `--expect-complete`: every
 skipped gate and every pending rule (G12 structure, G8 `mailto:`) then fails
-the run, because it means a section id is missing or renamed. Without the
+the run, because it means a section id is missing or renamed. So does a
+section the survey reports missing, or a run with no survey. Without the
 flag, skips and pending rules still never fail a run.
 
 The map phase runs last, on a fresh 1280 load: the probe presses
@@ -97,15 +98,15 @@ gate, so they are checked in the run outcome rather than under a gate id.
 ## Exit codes
 
 - `0`: every gate passed, was manual or was skipped (with `--expect-complete`:
-  no gate skipped and no rule pending).
+  no gate skipped, no rule pending, no section missing and a survey present).
 - `1`: the probe itself broke (Chrome launch, navigation, serving).
 - `2`: bad arguments or missing `dist/`.
 - `3`: the served `Content-Security-Policy` does not match `dist/_headers`
   (missing or different). BLOCKED: fix the serving setup rather than switching
   servers.
 - `4`: at least one gate reported `fail` or `unknown`, screenshots are
-  missing or errored, or `--expect-complete` found a skipped gate or a
-  pending rule.
+  missing or errored, or `--expect-complete` found a skipped gate, a
+  pending rule, a missing section or no survey.
 
 ## Output
 

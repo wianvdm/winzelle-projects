@@ -4,7 +4,8 @@
 // Usage: node probe.mjs <url> <outDir> [--expect-complete]
 //
 // Exit codes: 0 = every gate passed, was manual or was skipped (with
-// --expect-complete: no skipped gate and no pending rule); 1 = the probe
+// --expect-complete: no skipped gate, no pending rule, no missing section and
+// a survey present); 1 = the probe
 // itself broke (Chrome launch, navigation); 2 = bad arguments; 4 = at least
 // one gate failed or came back unknown, or the page is incomplete under
 // --expect-complete.

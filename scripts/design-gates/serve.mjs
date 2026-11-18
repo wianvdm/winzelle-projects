@@ -7,8 +7,8 @@
 //
 // Usage: node serve.mjs [--url http://127.0.0.1:8787/] [--out <dir>]
 //                       [--expect-complete]
-// --expect-complete passes through to the probe: skipped gates and pending
-// rules fail the run.
+// --expect-complete passes through to the probe: skipped gates, pending
+// rules, missing sections and a missing survey fail the run.
 //
 // Exit codes: probe exit codes pass through; 2 = bad arguments or missing
 // dist/; 3 = wrangler dev did not apply _headers or served a different CSP

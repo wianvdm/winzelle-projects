@@ -37,7 +37,8 @@ jobs:
         # serve.mjs serves dist/ with the pinned wrangler (local mode, no
         # Cloudflare login), asserts the CSP from public/_headers is applied,
         # then runs scripts/design-gates/probe.mjs with the runner's Chrome.
-        # --expect-complete fails the run on a skipped gate or pending rule:
+        # --expect-complete fails the run on a skipped gate, a pending rule, a
+        # missing section or no survey:
         # the page is whole since the cutover (#105).
         run: node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/ --out design-gate-report --expect-complete
         env:
