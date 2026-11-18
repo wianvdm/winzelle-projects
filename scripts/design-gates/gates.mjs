@@ -3,8 +3,8 @@
 // pass · fail · manual (nothing failed, but some items need a person to look)
 // skipped (the page has none of the gate's subject yet while it is built up;
 // a skipped gate is never a pass) · unknown (the check could not run).
-// incompleteRules() turns skips and pending rules into failures once the page
-// must be whole (--expect-complete).
+// incompleteRules() turns missing sections, skips and pending rules into
+// failures once the page must be whole (--expect-complete).
 const TITLES = {
   G1: 'Text contrast',
   G2: 'Non-text contrast',
@@ -1233,8 +1233,9 @@ export function gateOutcome(result) {
 }
 
 // For a page that must be whole (--expect-complete, from the cutover in #105
-// on): a skipped gate or a pending rule then means a section id is missing or
-// renamed, not a section still to come, so each one fails the run.
+// on): a missing section, a skipped gate or a pending rule then means a section
+// id is missing or renamed, not a section still to come, and a missing survey
+// proves no section is there, so each one fails the run.
 export function incompleteRules(result) {
   const gates = Object.values(result.gates)
   const skipped = gates
@@ -1246,7 +1247,14 @@ export function incompleteRules(result) {
       (gate) =>
         `${gate.id} ${gate.title}: pending ${gate.pending.map((item) => item.text).join(', ')}`,
     )
-  return [...skipped, ...pending]
+  return [...missingSections(result.survey), ...skipped, ...pending]
+}
+
+function missingSections(survey) {
+  if (!survey?.sections) return ['survey: missing, so no section was checked']
+  return Object.entries(survey.sections)
+    .filter(([, present]) => !present)
+    .map(([section]) => `section ${section}: missing`)
 }
 
 export function finalise(data) {
@@ -1265,7 +1273,7 @@ export function finalise(data) {
     G11: g11(log, parts.map, survey),
     G12: g12(parts, survey),
   }
-  // A missing shell (no main or h1 at survey time) means the flag-off page
+  // A missing shell (no main or h1 at survey time) means another page
   // rendered or the survey ran before React committed. A skip then measured
   // nothing, so every skipped gate becomes unknown and fails the run.
   if (survey && survey.shell === false)

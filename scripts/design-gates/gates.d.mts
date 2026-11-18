@@ -33,6 +33,8 @@ export const REFLOW_WIDTHS: number[]
 export interface ProbeResult {
   page: string
   gates: Record<string, Gate>
+  /** What the page had at survey time; null when no survey ran. */
+  survey?: Record<string, unknown> | null
   [key: string]: unknown
 }
 
@@ -56,7 +58,10 @@ export function classifyRequest(
   state?: RequestState,
 ): RequestVerdict
 export function gateOutcome(result: ProbeResult): GateOutcome
-/** Skipped gates and pending rules, which fail a run that expects a whole page. */
+/**
+ * A missing survey or section, skipped gates and pending rules, which fail a
+ * run that expects a whole page.
+ */
 export function incompleteRules(result: ProbeResult): string[]
 export function finalise(data: {
   parts: Record<string, unknown>

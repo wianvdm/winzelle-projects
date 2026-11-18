@@ -802,10 +802,13 @@ describe('incompleteRules (--expect-complete)', () => {
         },
       ]),
     ) as ProbeResult['gates']
-    return { page: PAGE, gates }
+    const sections = Object.fromEntries(
+      Object.keys(SHELL_SURVEY.sections).map((section) => [section, true]),
+    )
+    return { page: PAGE, gates, survey: { ...READY_SURVEY, sections } }
   }
 
-  it('finds nothing on a page with no skipped gate and no pending rule', () => {
+  it('finds nothing on a page with every section, no skipped gate and no pending rule', () => {
     expect(incompleteRules(wholePage())).toEqual([])
   })
 
@@ -830,6 +833,32 @@ describe('incompleteRules (--expect-complete)', () => {
     expect(incompleteRules(result)).toContain(
       'G8 Phone and email: pending no mailto: link',
     )
+  })
+
+  it('reports each section the survey found missing', () => {
+    const result = wholePage()
+    result.survey = {
+      ...READY_SURVEY,
+      sections: {
+        ...SHELL_SURVEY.sections,
+        hero: true,
+        contact: true,
+        form: true,
+      },
+    }
+    expect(incompleteRules(result)).toEqual([
+      'section what: missing',
+      'section work: missing',
+      'section story: missing',
+    ])
+  })
+
+  it('reports a missing survey', () => {
+    const result = wholePage()
+    result.survey = null
+    expect(incompleteRules(result)).toEqual([
+      'survey: missing, so no section was checked',
+    ])
   })
 
   it('reports a pending rule on an otherwise passing gate', () => {
