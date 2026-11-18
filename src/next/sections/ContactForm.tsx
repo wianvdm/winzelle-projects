@@ -18,6 +18,9 @@ const STATUS_ID = 'wz-form-status'
 // A ticked honeypot is sent the way a browser sends a ticked checkbox;
 // Web3Forms drops any message that carries it.
 const HONEYPOT_TICKED = 'on'
+// A send still pending after this long has stalled; the visitor gets the
+// failure line with the phone number instead of "Sending" with no end.
+export const SEND_TIMEOUT_MS = 15_000
 
 const PHONE_PATTERN = new RegExp(quoteForm.phonePattern)
 const EMAIL_PATTERN = new RegExp(quoteForm.emailPattern)
@@ -102,6 +105,8 @@ function buildSubmission({
 }
 
 async function postSubmission(body: Record<string, string>): Promise<boolean> {
+  const stall = new AbortController()
+  const stallTimer = setTimeout(() => stall.abort(), SEND_TIMEOUT_MS)
   try {
     const response = await fetch(WEB3FORMS_ENDPOINT, {
       method: 'POST',
@@ -110,6 +115,7 @@ async function postSubmission(body: Record<string, string>): Promise<boolean> {
         Accept: 'application/json',
       },
       body: JSON.stringify(body),
+      signal: stall.signal,
     })
     const result: unknown = await response.json()
     return (
@@ -119,8 +125,11 @@ async function postSubmission(body: Record<string, string>): Promise<boolean> {
       (result as { success?: unknown }).success === true
     )
   } catch {
-    // Offline, blocked or a non-JSON reply: the failure line gives the phone.
+    // Offline, blocked, stalled or a non-JSON reply: the failure line gives
+    // the phone number.
     return false
+  } finally {
+    clearTimeout(stallTimer)
   }
 }
 
@@ -163,7 +172,6 @@ export function ContactForm() {
   const { pickedTradeId } = usePickState()
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES)
   const [errors, setErrors] = useState<FieldErrors>(NO_ERRORS)
-  const [honeypotTicked, setHoneypotTicked] = useState(false)
   const [sendState, setSendState] = useState<SendState>('idle')
   // The first validation error, mirrored into the status region only when
   // focus stays put (Enter pressed in the invalid field), so a reader hears
@@ -175,6 +183,9 @@ export function ContactForm() {
   const phoneRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const jobRef = useRef<HTMLTextAreaElement>(null)
+  // Read at submit, not tracked in state: a script that ticks the box sets
+  // checked without the change event React would hear.
+  const honeypotRef = useRef<HTMLInputElement>(null)
 
   // A field showing an error is checked again on every change, so its error
   // clears once fixed (an email clears the phone's "add a number" error too).
@@ -224,6 +235,7 @@ export function ContactForm() {
     }
     setSendState('sending')
     const tradeLabel = pickedTradeId ? getTrade(pickedTradeId).label : null
+    const honeypotTicked = honeypotRef.current?.checked ?? false
     const sent = await postSubmission(
       buildSubmission({ accessKey, values, tradeLabel, honeypotTicked }),
     )
@@ -232,7 +244,7 @@ export function ContactForm() {
       return
     }
     setValues(EMPTY_VALUES)
-    setHoneypotTicked(false)
+    if (honeypotRef.current) honeypotRef.current.checked = false
     setStatusNote('')
     setSendState('sent')
   }
@@ -320,8 +332,7 @@ export function ContactForm() {
               type="checkbox"
               name="botcheck"
               tabIndex={-1}
-              checked={honeypotTicked}
-              onChange={(event) => setHoneypotTicked(event.target.checked)}
+              ref={honeypotRef}
             />
           </label>
         </div>

@@ -64,8 +64,9 @@ function matchesHost(hostname, entry) {
 
 // Classifies one request URL against the G11 allow-list. pageOrigin is the
 // origin of the page under test; state.mapActive is true once the probe has
-// activated the map. External hosts must use https:; an http response can be
-// rewritten in transit, so the hostname alone is not enough.
+// activated the map. External hosts must use https: on its default port; an
+// http response can be rewritten in transit, and another port is another
+// server, so the hostname alone is not enough.
 export function classifyRequest(rawUrl, pageOrigin, state = {}) {
   if (rawUrl.startsWith('data:') || rawUrl === 'about:blank')
     return { allowed: true, kind: 'inline' }
@@ -94,6 +95,13 @@ export function classifyRequest(rawUrl, pageOrigin, state = {}) {
       allowed: false,
       kind: entry.name,
       reason: `external hosts must use https: (got ${url.protocol})`,
+    }
+  // URL drops the default port, so any port left is a different one.
+  if (url.port)
+    return {
+      allowed: false,
+      kind: entry.name,
+      reason: `external hosts must use the default https port (got ${url.port})`,
     }
   if (entry.needsMapActive && !state.mapActive)
     return { allowed: false, kind: entry.name, reason: entry.inactiveReason }
@@ -559,11 +567,41 @@ function g5(parts, survey) {
   }
 }
 
+// Cascade-order check (#115 review): a later padding shorthand once beat the
+// footer base row's vertical padding in closing.css, leaving a 24px row no
+// source-text test caught. Padded, the row is over 40px wherever the footer
+// sits four across.
+const FOOTER_BASE_ROW = '.wz-ft-base .wz-ft-base-row'
+const FOOTER_BASE_ROW_MIN_PX = 40
+const FOOTER_FOUR_ACROSS_MIN_WIDTH = 1200
+
+function footerBaseRowFailures(run) {
+  if (run.width < FOOTER_FOUR_ACROSS_MIN_WIDTH) return []
+  const height = run.footerBaseRowHeight
+  if (height === null || height === undefined)
+    return [
+      {
+        selector: FOOTER_BASE_ROW,
+        text: 'footer base row not found, so the cascade-order check did not run',
+        width: run.width,
+      },
+    ]
+  if (height >= FOOTER_BASE_ROW_MIN_PX) return []
+  return [
+    {
+      selector: FOOTER_BASE_ROW,
+      text: `footer base row ${height}px tall, under ${FOOTER_BASE_ROW_MIN_PX}px: its padding lost to a later rule`,
+      width: run.width,
+    },
+  ]
+}
+
 function g6(parts) {
   const runs = parts.G6?.runs || []
   if (!runs.length)
     return { status: 'unknown', summary: 'no reflow run completed' }
   const fails = runs.flatMap((run) => [
+    ...footerBaseRowFailures(run),
     ...(run.sideways
       ? [
           {
@@ -604,6 +642,7 @@ function g6(parts) {
           'bodyScrollWidth',
           'viewportOverflowX',
           'sideways',
+          'footerBaseRowHeight',
           'widestOverflow',
         ]),
       ),
@@ -877,13 +916,14 @@ function mapActivationFailures(map, survey) {
   return []
 }
 
-function mapSummary(map, requests) {
+// answeredTiles holds the tile requests the probe fulfilled with its stub.
+// A request the CSP refused never reaches the probe, so it is not counted.
+function mapSummary(map, answeredTiles) {
   if (!map?.found) return ''
-  const stubbed = requests.filter((request) => request.stubbed).length
   const zoomIn = map.zoomIn?.found
     ? `, then ${map.zoomIn.tilesLoaded} at zoom ${map.zoomIn.zoom}`
     : ''
-  return `; map activated, ${map.tilesLoaded} tiles loaded at zoom ${map.zoom}${zoomIn}; ${stubbed} tile requests answered by the probe's stub`
+  return `; map activated, ${map.tilesLoaded} tiles loaded at zoom ${map.zoom}${zoomIn}; ${answeredTiles.length} tile requests answered by the probe's stub`
 }
 
 function g11(log, map, survey) {
@@ -914,10 +954,11 @@ function g11(log, map, survey) {
   const status = fails.length ? 'fail' : gateErrors.length ? 'unknown' : 'pass'
   return {
     status,
-    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${mapSummary(map, log.requests)}${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
+    summary: `${log.console.length} console errors or CSP violations, ${disallowed.length} requests outside the allow-list (blocked by the probe)${mapSummary(map, log.answeredTiles)}${gateErrors.length ? `; ${gateErrors.length} request-gate errors, so not every request was vetted` : ''}`,
     measured: {
       console: log.console,
       requests: log.requests,
+      answeredTiles: log.answeredTiles,
       requestGateErrors: gateErrors,
       map: map || null,
     },

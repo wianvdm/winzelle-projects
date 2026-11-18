@@ -46,6 +46,8 @@
     'picture',
   ])
   const SKIP_TEXT_PARENTS = 'script, style, noscript, template, title, desc'
+  // For the G6 cascade-order check in gates.mjs.
+  const FOOTER_BASE_ROW = '.wz-ft-base .wz-ft-base-row'
   const SHELL_WAIT_MS = 5000
   const SHELL_POLL_MS = 100
   const MAP_POLL_MS = 100
@@ -1579,6 +1581,7 @@
     const outermost = wide.filter(
       (el) => !wide.some((other) => other !== el && other.contains(el)),
     )
+    const footerBaseRow = document.querySelector(FOOTER_BASE_ROW)
     return {
       innerWidth,
       clientWidth: width,
@@ -1588,6 +1591,9 @@
       sideways,
       clipped: [...clipped.values()],
       offscreenText: [...offscreen.values()],
+      footerBaseRowHeight: footerBaseRow
+        ? round(footerBaseRow.getBoundingClientRect().height, 1)
+        : null,
       widestOverflow: outermost.slice(0, 10).map((el) => {
         const rect = el.getBoundingClientRect()
         return {

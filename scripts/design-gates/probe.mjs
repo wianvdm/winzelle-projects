@@ -137,14 +137,15 @@ class Page {
           requestId,
           errorReason: 'BlockedByClient',
         })
-      else if (verdict.stubbed)
+      else if (verdict.stubbed) {
         await this.send('Fetch.fulfillRequest', {
           requestId,
           responseCode: 200,
           responseHeaders: [{ name: 'Content-Type', value: 'image/png' }],
           body: STUB_TILE_PNG_BASE64,
         })
-      else await this.send('Fetch.continueRequest', { requestId })
+        this.log.answeredTiles.push(request.url.slice(0, 200))
+      } else await this.send('Fetch.continueRequest', { requestId })
     } catch (error) {
       this.log.probeNotes.push(`request gate: ${error.message}`)
     }
@@ -643,7 +644,7 @@ async function motionCheck(page) {
 async function run(targetUrl, outDir) {
   const shotsDir = path.join(outDir, 'shots')
   await mkdir(shotsDir, { recursive: true })
-  const log = { console: [], requests: [], probeNotes: [] }
+  const log = { console: [], requests: [], answeredTiles: [], probeNotes: [] }
   const data = {
     page: targetUrl,
     startedAt: new Date().toISOString(),
