@@ -17,11 +17,12 @@ export const PLACEHOLDER_ACCESS_KEY = 'your-web3forms-access-key'
 
 // The key is wired into the Web3Forms payload as access_key, so only a UUID
 // bound to that field counts; a stray UUID elsewhere in the bundle is not a
-// form key. The first alternative mirrors the placeholder-as-key pattern
-// below (`access_key: "<uuid>"`); the second covers the minified shape, where
-// the literal sits in a helper and the payload passes a variable
-// (`access_key:r` beside `function ae(){return `<uuid>`}`), so the UUID may
-// sit a short distance before the access_key reference.
+// form key. Each chunk is checked on its own. The first alternative mirrors
+// the placeholder-as-key pattern below (`access_key: "<uuid>"`); the second
+// covers the minified shape, where the literal sits in a helper and the
+// payload passes a variable (`access_key:r` beside
+// `function ae(){return `<uuid>`}`), so the UUID may sit a short distance
+// before the access_key reference.
 const UUID_SOURCE =
   '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 const MAX_ACCESS_KEY_DISTANCE = 4096
@@ -30,6 +31,12 @@ const ACCESS_KEY_UUID = new RegExp(
     `|${UUID_SOURCE}[\\s\\S]{0,${MAX_ACCESS_KEY_DISTANCE}}?access_key`,
   'i',
 )
+// When two chunks share the key helper, the bundler moves it into its own
+// chunk (`function e(){return `<uuid>`}export{e as t};`) and the payload
+// chunks import it statically. The key then counts only when a chunk that
+// sets access_key imports a chunk whose helper returns the UUID.
+const ACCESS_KEY_FIELD = /access_key["']?\s*[:=]/
+const KEY_HELPER = new RegExp(`return\\s*["'\`]${UUID_SOURCE}["'\`]`, 'i')
 // public-env.ts ships the placeholder as a guard constant in every build,
 // so presence alone is not a leak; it fails only when wired in as the key.
 const PLACEHOLDER_AS_KEY =
@@ -69,19 +76,29 @@ export function extractLocalStylesheet(html) {
 }
 
 // TanStack Router code splitting lazy-loads the quote form from a separate
-// chunk, so the Web3Forms config lives in the chunks the main script
-// references, not always in the main script itself. The production minifier
-// emits template literals (import(`./routes-x.js`)), so backticks count too.
+// chunk, and that chunk can import the Web3Forms key from yet another one,
+// so the form checks follow chunk references transitively. The production
+// minifier emits template literals (import(`./routes-x.js`)), so backticks
+// count too.
 const CHUNK_REFERENCE =
   /(?:import|from)\s*\(?\s*["'`](\.\.?\/[a-zA-Z0-9._-]+\.js)["'`]\s*\)?/g
-const MAX_CHUNKS = 10
+const STATIC_IMPORT = /from\s*["'`](\.\.?\/[a-zA-Z0-9._-]+\.js)["'`]/g
+// Counts the main script. Chunks past the bound go unchecked, so a runaway
+// chunk graph cannot stall the deploy.
+export const MAX_BUNDLE_CHUNKS = 20
+
+function uniqueMatches(scriptBody, pattern) {
+  return [
+    ...new Set([...scriptBody.matchAll(pattern)].map((match) => match[1])),
+  ]
+}
 
 export function extractChunkReferences(scriptBody) {
-  const refs = new Set()
-  for (const match of scriptBody.matchAll(CHUNK_REFERENCE)) {
-    refs.add(match[1])
-  }
-  return [...refs].slice(0, MAX_CHUNKS)
+  return uniqueMatches(scriptBody, CHUNK_REFERENCE)
+}
+
+export function extractStaticImports(scriptBody) {
+  return uniqueMatches(scriptBody, STATIC_IMPORT)
 }
 
 function extractCanonicalHref(html) {
@@ -135,6 +152,63 @@ async function tryText(response) {
 // the check that owns the URL instead of as a misleading header failure.
 function okHeaders(fetched) {
   return fetched.response?.status === 200 ? fetched.response.headers : null
+}
+
+// Chunk references are relative to the referencing chunk; only the path is
+// kept, so any base host works.
+const CHUNK_PATH_BASE = 'http://chunk.invalid'
+
+function chunkPaths(fromPath, references) {
+  return references.map(
+    (ref) => new URL(ref, `${CHUNK_PATH_BASE}${fromPath}`).pathname,
+  )
+}
+
+async function fetchChunk(fetchImpl, url) {
+  const chunk = await safeFetch(fetchImpl, url)
+  if (chunk.error) return { error: `failed: ${chunk.error}` }
+  if (chunk.response.status !== 200) {
+    return { error: `returned ${chunk.response.status}` }
+  }
+  return { text: (await tryText(chunk.response)) ?? '' }
+}
+
+// Breadth-first from the main script, each chunk fetched once, so the form
+// checks cover code-split routes; a missing chunk means a broken deploy.
+async function fetchBundle({ fetchImpl, origin, moduleScript, moduleBody }) {
+  const chunks = new Map([[moduleScript, moduleBody]])
+  const pending = chunkPaths(moduleScript, extractChunkReferences(moduleBody))
+  while (pending.length > 0 && chunks.size < MAX_BUNDLE_CHUNKS) {
+    const path = pending.shift()
+    if (chunks.has(path)) continue
+    const chunk = await fetchChunk(fetchImpl, `${origin}${path}`)
+    if (chunk.error) return { error: `chunk ${path} ${chunk.error}` }
+    chunks.set(path, chunk.text)
+    pending.push(...chunkPaths(path, extractChunkReferences(chunk.text)))
+  }
+  return { chunks }
+}
+
+function importsKeyHelper(chunks, path) {
+  const text = chunks.get(path)
+  if (!ACCESS_KEY_FIELD.test(text)) return false
+  return chunkPaths(path, extractStaticImports(text)).some((dependency) =>
+    KEY_HELPER.test(chunks.get(dependency) ?? ''),
+  )
+}
+
+function checkAccessKey(chunks) {
+  const texts = [...chunks.values()]
+  if (texts.some((text) => PLACEHOLDER_AS_KEY.test(text))) {
+    return result('form-access-key', false, 'placeholder used as access key')
+  }
+  const keyBound = [...chunks].some(
+    ([path, text]) =>
+      ACCESS_KEY_UUID.test(text) || importsKeyHelper(chunks, path),
+  )
+  return keyBound
+    ? result('form-access-key', true, 'key present')
+    : result('form-access-key', false, 'key missing')
 }
 
 const MIN_HSTS_MAX_AGE_SECONDS = 31_536_000
@@ -362,29 +436,19 @@ async function runAttempt({
         result('form-access-key', false, 'module script body unavailable'),
       )
     } else {
-      // Follow the chunks the main script loads so the form checks cover
-      // code-split routes; a missing chunk means a broken deploy.
-      const bundleParts = [moduleBody]
-      let chunkError = null
-      for (const ref of extractChunkReferences(moduleBody)) {
-        const chunkUrl = new URL(ref, `${origin}${moduleScript}`).pathname
-        const chunk = await safeFetch(fetchImpl, `${origin}${chunkUrl}`)
-        if (chunk.error) {
-          chunkError = `chunk ${chunkUrl} failed: ${chunk.error}`
-          break
-        }
-        if (chunk.response.status !== 200) {
-          chunkError = `chunk ${chunkUrl} returned ${chunk.response.status}`
-          break
-        }
-        bundleParts.push(await tryText(chunk.response))
-      }
-      const bundle = bundleParts.filter((part) => part !== null).join('\n')
-      if (chunkError !== null) {
-        results.push(result('form-endpoint', false, chunkError))
-        results.push(result('form-access-key', false, chunkError))
+      const bundle = await fetchBundle({
+        fetchImpl,
+        origin,
+        moduleScript,
+        moduleBody,
+      })
+      if (bundle.error) {
+        results.push(result('form-endpoint', false, bundle.error))
+        results.push(result('form-access-key', false, bundle.error))
       } else {
-        const endpointFound = FORM_ENDPOINT.test(bundle)
+        const endpointFound = [...bundle.chunks.values()].some((text) =>
+          FORM_ENDPOINT.test(text),
+        )
         results.push(
           result(
             'form-endpoint',
@@ -394,17 +458,7 @@ async function runAttempt({
               : 'does not reference api.web3forms.com',
           ),
         )
-        const placeholderAsKey = PLACEHOLDER_AS_KEY.test(bundle)
-        const keyPresent = ACCESS_KEY_UUID.test(bundle)
-        if (placeholderAsKey) {
-          results.push(
-            result('form-access-key', false, 'placeholder used as access key'),
-          )
-        } else if (!keyPresent) {
-          results.push(result('form-access-key', false, 'key missing'))
-        } else {
-          results.push(result('form-access-key', true, 'key present'))
-        }
+        results.push(checkAccessKey(bundle.chunks))
       }
     }
   }
