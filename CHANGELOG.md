@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.3.0](https://github.com/wianvdm/winzelle-projects/compare/v0.2.2...v0.3.0) (2026-11-18)
+
+
+### Features
+
+* **content:** add /next content, photos and WhatsApp builder ([#109](https://github.com/wianvdm/winzelle-projects/issues/109)) ([2accee7](https://github.com/wianvdm/winzelle-projects/commit/2accee755270c1bd689538f902e1fa7e91315653))
+* **content:** replace /next filler with confirmed facts ([#120](https://github.com/wianvdm/winzelle-projects/issues/120)) ([a660a2f](https://github.com/wianvdm/winzelle-projects/commit/a660a2f37c8db92a5967b950553a989200000e57))
+* **forms:** add the fallback message form to /next ([#117](https://github.com/wianvdm/winzelle-projects/issues/117)) ([e187769](https://github.com/wianvdm/winzelle-projects/commit/e18776962fe57ae4985fd28e6ebe2618cb34999c))
+* **frontend:** add surveyor drawing kit with Paving and Roofs ([#110](https://github.com/wianvdm/winzelle-projects/issues/110)) ([e776b2c](https://github.com/wianvdm/winzelle-projects/commit/e776b2c454871715c00c202e87c89a62ceca8745))
+* **frontend:** add the OpenStreetMap map to the /next contact section ([#116](https://github.com/wianvdm/winzelle-projects/issues/116)) ([870ef10](https://github.com/wianvdm/winzelle-projects/commit/870ef101421a918bbbe5a88f035a5de0123080b1))
+* **frontend:** build Our work board, filters and lightbox on /next ([#114](https://github.com/wianvdm/winzelle-projects/issues/114)) ([70e23f7](https://github.com/wianvdm/winzelle-projects/commit/70e23f73445ebd6d39d31cb48d6a8829b9aa28f8))
+* **frontend:** build the /next header, sticky bar and opening screen ([#112](https://github.com/wianvdm/winzelle-projects/issues/112)) ([84f9b60](https://github.com/wianvdm/winzelle-projects/commit/84f9b6014f50c6c586c86f6a7f63cfc22ddf09bd))
+* **frontend:** build the story, contact card and footer on /next ([#115](https://github.com/wianvdm/winzelle-projects/issues/115)) ([69caecc](https://github.com/wianvdm/winzelle-projects/commit/69caecca11373adfa28067772109397bcaa8d9e5))
+* **frontend:** build the trade board and explorer sheet on /next ([#113](https://github.com/wianvdm/winzelle-projects/issues/113)) ([8a812a9](https://github.com/wianvdm/winzelle-projects/commit/8a812a92dc833ca9aff5ae66b217209d75143814))
+* **frontend:** draw the remaining eight trade drawings ([#111](https://github.com/wianvdm/winzelle-projects/issues/111)) ([c2162e6](https://github.com/wianvdm/winzelle-projects/commit/c2162e6527e51f732ddb6e3c8e46491da08949e2))
+* **frontend:** lay redesign foundations and flagged /next route ([#106](https://github.com/wianvdm/winzelle-projects/issues/106)) ([57b4e8d](https://github.com/wianvdm/winzelle-projects/commit/57b4e8deb7cf1651ad1a36a8d86c8bdebcc0e300))
+* **release:** turn the /next flag on for production builds ([#123](https://github.com/wianvdm/winzelle-projects/issues/123)) ([13096a9](https://github.com/wianvdm/winzelle-projects/commit/13096a959d3cdfd9ebeeea7a7285b3adaef867a8))
+
+
+### Bug Fixes
+
+* **frontend:** address the /next interaction, accessibility and drawing follow-ups ([#122](https://github.com/wianvdm/winzelle-projects/issues/122)) ([2aa421c](https://github.com/wianvdm/winzelle-projects/commit/2aa421c1e98da17bfa1e6fee65d627df3727114a))
+* **next:** fix the map, form and design-gate follow-ups ([#121](https://github.com/wianvdm/winzelle-projects/issues/121)) ([8c215c1](https://github.com/wianvdm/winzelle-projects/commit/8c215c1006a073b68e6801de053b50c50c5781f6))
+
 ## [0.2.2](https://github.com/wianvdm/winzelle-projects/compare/v0.2.1...v0.2.2) (2026-11-15)
 
 
