@@ -14,7 +14,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { quoteForm } from '../../content/next/index.ts'
 import { PickStateProvider, usePickState } from '../pick-state.tsx'
-import { checkForm, ContactForm, WEB3FORMS_ENDPOINT } from './ContactForm.tsx'
+import {
+  checkForm,
+  ContactForm,
+  SEND_TIMEOUT_MS,
+  WEB3FORMS_ENDPOINT,
+} from './ContactForm.tsx'
 
 const TEST_KEY = 'test-access-key'
 const PRIVACY_NOTICE =
@@ -26,6 +31,7 @@ const FAILURE =
 
 afterEach(() => {
   cleanup()
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
 })
@@ -328,6 +334,71 @@ describe('ContactForm', () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     expect(sentBody(fetchMock)).toMatchObject({ botcheck: 'on' })
+  })
+
+  it('sends botcheck when a script ticks the honeypot without a change event', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', TEST_KEY)
+    const fetchMock = stubFetch(jsonResponse(200, { success: true }))
+    renderForm()
+    fillForm()
+    document.querySelector<HTMLInputElement>(
+      'input[name="botcheck"]',
+    )!.checked = true
+
+    send()
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(sentBody(fetchMock)).toMatchObject({ botcheck: 'on' })
+  })
+
+  it('sends no botcheck when the honeypot is left alone', async () => {
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', TEST_KEY)
+    const fetchMock = stubFetch(jsonResponse(200, { success: true }))
+    renderForm()
+    fillForm()
+
+    send()
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(sentBody(fetchMock)).not.toHaveProperty('botcheck')
+  })
+
+  it('gives the phone number and keeps the input when the send stalls', async () => {
+    vi.useFakeTimers()
+    vi.stubEnv('VITE_WEB3FORMS_ACCESS_KEY', TEST_KEY)
+    // A connection that never answers: only the request's signal ends it.
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason),
+          )
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    renderForm()
+    fillForm()
+
+    send()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS - 1)
+    })
+    expect(statusText()).toBe('Sending your message…')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1)
+    })
+    expect(statusText()).toBe(FAILURE)
+    expect(
+      within(screen.getByRole('status'))
+        .getByRole('link', { name: '082 878 1557' })
+        .getAttribute('href'),
+    ).toBe('tel:+27828781557')
+    expect(field('Your name').value).toBe('Thandi')
+    expect(field('What needs doing, and where').value).toBe(
+      'Damp wall in the lounge, Walmer',
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('shows "sending" while the post is under way', async () => {
