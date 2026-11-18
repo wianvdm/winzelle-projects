@@ -5,7 +5,10 @@
 // in dist/_headers, then runs the design-gate probe against it and forwards
 // the probe's exit code.
 //
-// Usage: node serve.mjs [--url http://127.0.0.1:8787/next] [--out <dir>]
+// Usage: node serve.mjs [--url http://127.0.0.1:8787/] [--out <dir>]
+//                       [--expect-complete]
+// --expect-complete passes through to the probe: skipped gates, pending
+// rules, missing sections and a missing survey fail the run.
 //
 // Exit codes: probe exit codes pass through; 2 = bad arguments or missing
 // dist/; 3 = wrangler dev did not apply _headers or served a different CSP
@@ -23,21 +26,26 @@ const ROOT = path.resolve(
 )
 const READY_TIMEOUT_MS = 90000
 const READY_POLL_MS = 500
+const EXPECT_COMPLETE_FLAG = '--expect-complete'
+const USAGE = `Usage: node serve.mjs [--url http://127.0.0.1:8787/] [--out <dir>] [${EXPECT_COMPLETE_FLAG}]`
 
 function parseArgs(argv) {
-  const args = { url: 'http://127.0.0.1:8787/next', out: 'design-gate-report' }
+  const args = {
+    url: 'http://127.0.0.1:8787/',
+    out: 'design-gate-report',
+    expectComplete: false,
+  }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--url') args.url = argv[++i]
     else if (argv[i] === '--out') args.out = argv[++i]
+    else if (argv[i] === EXPECT_COMPLETE_FLAG) args.expectComplete = true
     else {
       console.error(`Unknown argument: ${argv[i]}`)
       process.exit(2)
     }
   }
   if (!args.url || !args.out) {
-    console.error(
-      'Usage: node serve.mjs [--url http://127.0.0.1:8787/next] [--out <dir>]',
-    )
+    console.error(USAGE)
     process.exit(2)
   }
   return args
@@ -146,7 +154,7 @@ function stopServer(child) {
 }
 
 async function main() {
-  const { url, out } = parseArgs(process.argv.slice(2))
+  const { url, out, expectComplete } = parseArgs(process.argv.slice(2))
   if (!existsSync(path.join(ROOT, 'dist', 'index.html'))) {
     console.error('dist/index.html is missing; build first (npm run build).')
     process.exit(2)
@@ -189,7 +197,12 @@ async function main() {
     )
     const probe = spawn(
       process.execPath,
-      [path.join(ROOT, 'scripts', 'design-gates', 'probe.mjs'), url, out],
+      [
+        path.join(ROOT, 'scripts', 'design-gates', 'probe.mjs'),
+        url,
+        out,
+        ...(expectComplete ? [EXPECT_COMPLETE_FLAG] : []),
+      ],
       {
         cwd: ROOT,
         stdio: 'inherit',

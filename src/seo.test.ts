@@ -1,103 +1,151 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error the script ships no type declarations
 import { headersFor, parseHeadersFile } from '../scripts/design-gates/serve.mjs'
-import { siteSettings } from './content/site-settings.ts'
-import { services } from './content/services.ts'
+import { contactFacts, trades } from './content/next/index.ts'
+
+function readRepoFile(path: string): string {
+  return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+}
 
 function readJsonLd(): Record<string, unknown> {
-  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
-  const match = html.match(
+  const match = readRepoFile('index.html').match(
     /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
   )
   expect(match, 'index.html should contain a JSON-LD block').not.toBeNull()
   return JSON.parse(match![1]!) as Record<string, unknown>
 }
 
-function toE164(phone: string): string {
-  return phone.replace(/\s+/g, '')
+function normaliseWhitespace(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+function readMetaContent(html: string, attribute: string): string {
+  const metaTag = html
+    .match(/<meta\b[^>]*>/g)
+    ?.find((tag) => tag.includes(attribute))
+  const content = metaTag?.match(/content="([^"]*)"/)?.[1]
+  expect(
+    content,
+    `index.html should contain a ${attribute} meta tag`,
+  ).toBeDefined()
+  return normaliseWhitespace(content!)
 }
 
 describe('index.html SEO metadata', () => {
-  it('keeps the JSON-LD business details in sync with siteSettings', () => {
+  it('keeps the JSON-LD business details in sync with src/content/next', () => {
     const jsonLd = readJsonLd()
 
     expect(jsonLd['url']).toBe('https://winzelle.co.za/')
-    expect(jsonLd['telephone']).toBe(toE164(siteSettings.phone))
-    expect(jsonLd['email']).toBe(siteSettings.email)
-    expect(jsonLd['sameAs']).toEqual([siteSettings.facebookUrl])
+    expect(jsonLd['telephone']).toBe(contactFacts.phoneTel)
+    expect(jsonLd['email']).toBe(contactFacts.email)
+    expect(jsonLd['sameAs']).toEqual([contactFacts.facebookUrl])
 
     const address = jsonLd['address'] as Record<string, unknown>
-    const parts = siteSettings.address.split(',').map((part) => part.trim())
-    const street = parts.slice(0, 2).join(', ')
-    const city = parts[2]!
-    // JSON-LD uses the ISO 3166-1 alpha-2 code for the country name.
-    const country = { 'South Africa': 'ZA' }[parts[3]!] ?? parts[3]
-    const postalCode = parts[4]!
-    expect(address['streetAddress']).toBe(street)
+    const [street, suburb, city, postalCode] = contactFacts.address
+      .split(',')
+      .map((part) => part.trim())
+    expect(address['streetAddress']).toBe(`${street}, ${suburb}`)
     expect(address['addressLocality']).toBe(city)
-    expect(address['addressCountry']).toBe(country)
     expect(address['postalCode']).toBe(postalCode)
+    expect(address['addressCountry']).toBe('ZA')
   })
 
-  it('lists every service from src/content in the offer catalog', () => {
-    const jsonLd = readJsonLd()
-    const catalog = jsonLd['hasOfferCatalog'] as Record<string, unknown>
+  it('lists every trade but the catch-all in the offer catalog', () => {
+    const catalog = readJsonLd()['hasOfferCatalog'] as Record<string, unknown>
     const offers = catalog['itemListElement'] as Record<string, unknown>[]
     const offerNames = offers.map(
       (offer) =>
         (offer['itemOffered'] as Record<string, unknown>)['name'] as string,
     )
 
-    expect(offerNames).toEqual(services.map((service) => service.title))
+    expect(offerNames).toEqual(
+      trades
+        .filter((trade) => trade.id !== 'other')
+        .map((trade) => trade.label),
+    )
+  })
+
+  it('states no opening hours, which the page does not show', () => {
+    expect(readJsonLd()).not.toHaveProperty('openingHoursSpecification')
+  })
+
+  it('drops the old waterproofing headline from every tag', () => {
+    const html = readRepoFile('index.html')
+
+    expect(html).not.toMatch(/damp\s+sealing/i)
+    expect(html).toMatch(
+      /<title>\s*Winzelle Projects \| Maintenance, repairs and building in Port Elizabeth\s*<\/title>/,
+    )
+  })
+
+  it('gives social cards the same title and description as search results', () => {
+    const html = readRepoFile('index.html')
+
+    expect(readMetaContent(html, 'property="og:title"')).toBe(
+      normaliseWhitespace(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ''),
+    )
+    expect(readMetaContent(html, 'property="og:description"')).toBe(
+      readMetaContent(html, 'name="description"'),
+    )
+  })
+
+  it('stays indexable at the canonical home page', () => {
+    const html = readRepoFile('index.html')
+
+    expect(html).toContain(
+      '<link rel="canonical" href="https://winzelle.co.za/" />',
+    )
+    expect(html).not.toContain('name="robots"')
   })
 
   it('contains no obsolete domain or placeholder telephone', () => {
-    const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+    const html = readRepoFile('index.html')
 
     expect(html).not.toContain('winzelleprojects.co.za')
     expect(html).not.toContain('XXXX')
   })
 })
 
-function readRepoFile(path: string): string {
-  return readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-}
-
-// The files that render /: its HTML, the legacy components and the legacy
-// content modules (src/content/next/ belongs to /next).
-function legacyPageFiles(): string[] {
-  const inDir = (dir: string) =>
-    readdirSync(new URL(`../${dir}`, import.meta.url), { withFileTypes: true })
-      .filter((entry) => entry.isFile() && !entry.name.includes('.test.'))
-      .map((entry) => `${dir}/${entry.name}`)
-  return [
-    'index.html',
-    'src/routes/index.tsx',
-    ...inDir('src/components'),
-    ...inDir('src/content'),
-  ]
-}
-
-describe('/next soak stays out of search (#104)', () => {
-  const headerBlocks = parseHeadersFile(readRepoFile('public/_headers'))
-  const robotsHeaderAt = (pathname: string) =>
-    new Map<string, string>(headersFor(headerBlocks, pathname)).get(
-      'x-robots-tag',
+describe('self-hosted fonts only', () => {
+  it('loads no stylesheet or preconnect from another host in index.html', () => {
+    const linkTags = readRepoFile('index.html').match(/<link\b[^>]*>/g) ?? []
+    const remote = linkTags.filter(
+      (tag) =>
+        /rel="(?:stylesheet|preconnect)"/.test(tag) &&
+        !/href="\/(?!\/)/.test(tag),
     )
 
-  it('sends X-Robots-Tag: noindex on /next and not on /', () => {
-    expect(robotsHeaderAt('/next')).toBe('noindex')
-    expect(robotsHeaderAt('/')).toBeUndefined()
+    expect(remote).toEqual([])
   })
 
-  it('keeps /next out of the sitemap', () => {
-    expect(readRepoFile('public/sitemap.xml')).not.toContain('/next')
+  it("limits styles and fonts to 'self' in the CSP", () => {
+    const csp = new Map<string, string>(
+      headersFor(parseHeadersFile(readRepoFile('public/_headers')), '/'),
+    ).get('content-security-policy')
+
+    expect(csp).toContain("style-src 'self';")
+    expect(csp).toContain("font-src 'self';")
+  })
+})
+
+describe('crawl surface', () => {
+  it('sends no X-Robots-Tag on any path', () => {
+    const blocks = parseHeadersFile(readRepoFile('public/_headers'))
+    for (const pathname of ['/', '/next'])
+      expect(
+        new Map<string, string>(headersFor(blocks, pathname)).has(
+          'x-robots-tag',
+        ),
+        pathname,
+      ).toBe(false)
   })
 
-  it('never links to /next from /', () => {
-    for (const file of legacyPageFiles()) {
-      expect(readRepoFile(file), file).not.toContain('/next')
-    }
+  it('lists only / in the sitemap', () => {
+    const locations = [
+      ...readRepoFile('public/sitemap.xml').matchAll(/<loc>([^<]*)<\/loc>/g),
+    ].map((match) => match[1])
+
+    expect(locations).toEqual(['https://winzelle.co.za/'])
   })
 })

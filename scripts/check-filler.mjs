@@ -1,34 +1,17 @@
-// Fails a production build that enables /next while any source file still
-// contains a flagged filler() call (suburbs, months, the service-area line;
-// replaced with confirmed facts in #102). Runs
-// before vite build in npm run build. VITE_HOME_NEXT resolution is shared
-// with vite.config.ts through scripts/home-next-flag.mjs: on by default,
-// off when VITE_HOME_NEXT is set to anything but 'true'.
-// VITE_ALLOW_FILLER=true is the explicit opt-in for builds that knowingly
-// ship placeholders.
+// Fails a production build while any source file still contains a flagged
+// filler() call (suburbs, months, the service-area line; replaced with
+// confirmed facts in #102). Runs before vite build in npm run build.
 //
-// Scans src/ recursively so a placeholder in a subfolder or in src/next/
-// cannot slip past. Tests pass a fixture directory as the first argument.
+// Scans src/ recursively so a placeholder in a subfolder cannot slip past.
+// Tests pass a fixture directory as the first argument.
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-
-import { resolveHomeNext } from './home-next-flag.mjs'
 
 const MARKER = 'filler('
 // filler.ts defines the marker itself; test files reference call sites in
 // fixtures and assertions rather than holding placeholder values.
 const EXCLUDED_NAMES = new Set(['filler.ts'])
-
-if (!resolveHomeNext('production')) {
-  console.log('[check-filler] /next is off in this build; filler allowed.')
-  process.exit(0)
-}
-
-if (process.env.VITE_ALLOW_FILLER === 'true') {
-  console.log('[check-filler] VITE_ALLOW_FILLER=true: flagged filler allowed.')
-  process.exit(0)
-}
 
 const scanRoot = process.argv[2]
   ? resolve(process.argv[2])
@@ -67,7 +50,7 @@ if (flaggedFiles.length === 0) {
 }
 
 console.error(
-  `[check-filler] Production build with VITE_HOME_NEXT=true still contains flagged filler in: ${flaggedFiles.join(', ')}. ` +
-    'Replace the filler() values (#102), or set VITE_ALLOW_FILLER=true for a build that knowingly ships placeholders.',
+  `[check-filler] Production build still contains flagged filler in: ${flaggedFiles.join(', ')}. ` +
+    'Replace the filler() values with confirmed facts.',
 )
 process.exit(1)

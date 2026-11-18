@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { classifyRequest, finalise, gateOutcome } from './gates.mjs'
+import {
+  classifyRequest,
+  finalise,
+  gateOutcome,
+  incompleteRules,
+} from './gates.mjs'
 import type { ProbeResult } from './gates.mjs'
 // @ts-expect-error the script ships no type declarations
 import { headersFor, parseHeadersFile } from './serve.mjs'
@@ -8,9 +13,9 @@ import { headersFor, parseHeadersFile } from './serve.mjs'
 type ProbeData = Parameters<typeof finalise>[0]
 
 const ORIGIN = 'http://127.0.0.1:8787'
-const PAGE = `${ORIGIN}/next`
+const PAGE = `${ORIGIN}/`
 
-// The /next shell: no controls, no contact links, no design content.
+// The page shell: no controls, no contact links, no design content.
 const SHELL_SURVEY = {
   shell: true,
   designReady: false,
@@ -181,7 +186,7 @@ describe('classifyRequest', () => {
 
   it('stubs no other allow-listed host', () => {
     for (const url of [
-      `${ORIGIN}/next`,
+      `${ORIGIN}/`,
       'https://api.web3forms.com/submit',
       'https://static.cloudflareinsights.com/beacon.min.js',
     ])
@@ -257,9 +262,9 @@ describe('classifyRequest', () => {
     ).toMatchObject({ allowed: true, stubbed: true })
   })
 
-  it('blocks everything else, including Google Fonts', () => {
+  it('blocks everything else, including hosted web fonts', () => {
     expect(
-      classifyRequest('https://fonts.googleapis.com/css2?family=Inter', ORIGIN)
+      classifyRequest('https://fonts.example.com/css2?family=Serif', ORIGIN)
         .allowed,
     ).toBe(false)
     expect(
@@ -269,7 +274,7 @@ describe('classifyRequest', () => {
   })
 })
 
-describe('finalise on the empty /next shell', () => {
+describe('finalise on the empty page shell', () => {
   it('skips the content gates and never passes them', () => {
     const result = finalise(probeData())
     for (const id of ['G1', 'G2', 'G3', 'G4', 'G5', 'G7', 'G8', 'G9', 'G10']) {
@@ -278,7 +283,7 @@ describe('finalise on the empty /next shell', () => {
     }
   })
 
-  it('turns skips into unknowns when the /next shell did not render', () => {
+  it('turns skips into unknowns when the page shell did not render', () => {
     const result = finalise(
       probeData({ survey: { ...SHELL_SURVEY, shell: false } }),
     )
@@ -778,6 +783,90 @@ describe('gateOutcome', () => {
     const outcome = gateOutcome(finalise(data))
     expect(outcome.ok).toBe(false)
     expect(outcome.screenshots).toEqual(['390: boom'])
+  })
+})
+
+describe('incompleteRules (--expect-complete)', () => {
+  function wholePage(): ProbeResult {
+    const ids = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8', 'G9', 'G10']
+    const gates = Object.fromEntries(
+      [...ids, 'G11', 'G12'].map((id) => [
+        id,
+        {
+          id,
+          title: id,
+          status: 'pass',
+          summary: '',
+          failures: [],
+          manual: [],
+        },
+      ]),
+    ) as ProbeResult['gates']
+    const sections = Object.fromEntries(
+      Object.keys(SHELL_SURVEY.sections).map((section) => [section, true]),
+    )
+    return { page: PAGE, gates, survey: { ...READY_SURVEY, sections } }
+  }
+
+  it('finds nothing on a page with every section, no skipped gate and no pending rule', () => {
+    expect(incompleteRules(wholePage())).toEqual([])
+  })
+
+  it('reports every skipped gate and the pending G12 structure rules', () => {
+    const result = finalise(probeData())
+    const incomplete = incompleteRules(result)
+    expect(gateOutcome(result).ok).toBe(true)
+    expect(incomplete).toContain('G1 Text contrast: skipped')
+    expect(
+      incomplete.some((entry) => entry.startsWith('G12 Structure: pending')),
+    ).toBe(true)
+  })
+
+  it('reports a still-pending G8 mailto rule that a normal run lets pass', () => {
+    const data = probeData({ survey: READY_SURVEY })
+    data.parts.G8 = {
+      links: [{ type: 'tel', href: 'tel:+27287281557', status: 'pass' }],
+      textFormats: [{ format: '028 728 1557', count: 1 }],
+    }
+    const result = finalise(data)
+    expect(gate(result, 'G8').status).toBe('pass')
+    expect(incompleteRules(result)).toContain(
+      'G8 Phone and email: pending no mailto: link',
+    )
+  })
+
+  it('reports each section the survey found missing', () => {
+    const result = wholePage()
+    result.survey = {
+      ...READY_SURVEY,
+      sections: {
+        ...SHELL_SURVEY.sections,
+        hero: true,
+        contact: true,
+        form: true,
+      },
+    }
+    expect(incompleteRules(result)).toEqual([
+      'section what: missing',
+      'section work: missing',
+      'section story: missing',
+    ])
+  })
+
+  it('reports a missing survey', () => {
+    const result = wholePage()
+    result.survey = null
+    expect(incompleteRules(result)).toEqual([
+      'survey: missing, so no section was checked',
+    ])
+  })
+
+  it('reports a pending rule on an otherwise passing gate', () => {
+    const result = wholePage()
+    result.gates['G12']!.pending = [{ text: 'no form on the page' }]
+    expect(incompleteRules(result)).toEqual([
+      'G12 G12: pending no form on the page',
+    ])
   })
 })
 

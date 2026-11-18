@@ -4,10 +4,9 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
-// The guard is a build-step script, so the tests run it as a subprocess with
-// controlled env, the same way npm run build does. Scan behaviour runs
-// against a fixture directory, so these tests keep passing after #102
-// removes every filler() call from src/.
+// The guard is a build-step script, so the tests run it as a subprocess, the
+// same way npm run build does. Scan behaviour runs against fixture
+// directories, because src/ holds no filler() call since #102.
 
 const FIXTURE_DIR = join(process.cwd(), 'scripts', 'fixtures', 'filler')
 
@@ -19,17 +18,12 @@ afterEach(() => {
   }
 })
 
-function runCheckFiller(env: Record<string, string>, scanDir?: string) {
-  const childEnv = { ...process.env }
-  delete childEnv.VITE_HOME_NEXT
-  delete childEnv.VITE_ALLOW_FILLER
-  Object.assign(childEnv, env)
+function runCheckFiller(scanDir?: string) {
   return spawnSync(
     process.execPath,
     ['scripts/check-filler.mjs', ...(scanDir ? [scanDir] : [])],
     {
       cwd: process.cwd(),
-      env: childEnv,
       encoding: 'utf8',
     },
   )
@@ -47,8 +41,8 @@ function makeScanDir(files: Record<string, string>): string {
 }
 
 describe('check-filler build guard', () => {
-  it('fails a flag-on production build while filler is flagged, naming only the flagged files', () => {
-    const result = runCheckFiller({ VITE_HOME_NEXT: 'true' }, FIXTURE_DIR)
+  it('fails while filler is flagged, naming only the flagged files', () => {
+    const result = runCheckFiller(FIXTURE_DIR)
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('check-filler')
     expect(result.stderr).toContain('flagged.ts')
@@ -61,38 +55,24 @@ describe('check-filler build guard', () => {
         "export const value = filler('Placeholder suburb')\n",
       'nested/confirmed.ts': "export const value = 'Newton Park'\n",
     })
-    const result = runCheckFiller({ VITE_HOME_NEXT: 'true' }, scanDir)
+    const result = runCheckFiller(scanDir)
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('placeholder.ts')
     expect(result.stderr).not.toContain('confirmed.ts')
   })
 
-  it('passes a flag-on production build when the scanned tree has no filler', () => {
+  it('passes when the scanned tree has no filler', () => {
     const scanDir = makeScanDir({
       'content/confirmed.ts': "export const value = 'Newton Park'\n",
     })
-    const result = runCheckFiller({ VITE_HOME_NEXT: 'true' }, scanDir)
+    const result = runCheckFiller(scanDir)
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('No flagged filler')
   })
 
-  it('passes the same build with the VITE_ALLOW_FILLER=true opt-in', () => {
-    const result = runCheckFiller(
-      { VITE_HOME_NEXT: 'true', VITE_ALLOW_FILLER: 'true' },
-      FIXTURE_DIR,
-    )
+  it('passes on the real src/ tree', () => {
+    const result = runCheckFiller()
     expect(result.status).toBe(0)
-  })
-
-  it('guards a production build with the flag unset (default on)', () => {
-    const result = runCheckFiller({}, FIXTURE_DIR)
-    expect(result.status).toBe(1)
-    expect(result.stderr).toContain('flagged.ts')
-  })
-
-  it('skips the scan for a production build with VITE_HOME_NEXT=false', () => {
-    const result = runCheckFiller({ VITE_HOME_NEXT: 'false' }, FIXTURE_DIR)
-    expect(result.status).toBe(0)
-    expect(result.stdout).toContain('/next is off')
+    expect(result.stdout).toContain('No flagged filler in src')
   })
 })

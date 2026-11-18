@@ -2151,10 +2151,10 @@
 
   // What the page already has, so gates.mjs can skip gates whose subject is not
   // built yet instead of passing or failing them. designReady flips when the
-  // opening WhatsApp action (#wz-hero-wa, design spec S2) lands on /next.
+  // opening WhatsApp action (#wz-hero-wa, design spec S2) is on the page.
   // sections records which parts of the page exist, so G12 can judge only the
   // sections that landed. shell is false when the app shell (main + h1) never
-  // rendered: the flag-off page or a survey taken before React committed. The
+  // rendered: another page or a survey taken before React committed. The
   // shell renders right after load, so wait briefly before calling it absent.
   async function contentSurvey() {
     const deadline = performance.now() + SHELL_WAIT_MS

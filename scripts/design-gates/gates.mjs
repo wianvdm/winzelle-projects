@@ -1,8 +1,10 @@
 // Turns the raw probe measurements into one verdict per gate, per the quality
 // gates in docs/design/home-page.md (G1-G12). Status values:
 // pass · fail · manual (nothing failed, but some items need a person to look)
-// skipped (the page has none of the gate's subject yet while /next is built up;
+// skipped (the page has none of the gate's subject yet while it is built up;
 // a skipped gate is never a pass) · unknown (the check could not run).
+// incompleteRules() turns missing sections, skips and pending rules into
+// failures once the page must be whole (--expect-complete).
 const TITLES = {
   G1: 'Text contrast',
   G2: 'Non-text contrast',
@@ -1000,7 +1002,7 @@ function g12(parts, survey) {
   // page is judged only on what exists. The h1, header and nav arrive with
   // the opening screen (#96); the footer arrives with story and contact
   // (#99, #wz-contact); the form arrives with #101 (#wz-form). main is part
-  // of the /next shell itself, so it is always required.
+  // of the page shell itself, so it is always required.
   const sections = survey?.sections || {}
   const ready = (section) => !survey || !!sections[section]
   const LANDMARK_SECTION = {
@@ -1230,6 +1232,31 @@ export function gateOutcome(result) {
   }
 }
 
+// For a page that must be whole (--expect-complete, from the cutover in #105
+// on): a missing section, a skipped gate or a pending rule then means a section
+// id is missing or renamed, not a section still to come, and a missing survey
+// proves no section is there, so each one fails the run.
+export function incompleteRules(result) {
+  const gates = Object.values(result.gates)
+  const skipped = gates
+    .filter((gate) => gate.status === 'skipped')
+    .map((gate) => `${gate.id} ${gate.title}: skipped`)
+  const pending = gates
+    .filter((gate) => gate.pending?.length)
+    .map(
+      (gate) =>
+        `${gate.id} ${gate.title}: pending ${gate.pending.map((item) => item.text).join(', ')}`,
+    )
+  return [...missingSections(result.survey), ...skipped, ...pending]
+}
+
+function missingSections(survey) {
+  if (!survey?.sections) return ['survey: missing, so no section was checked']
+  return Object.entries(survey.sections)
+    .filter(([, present]) => !present)
+    .map(([section]) => `section ${section}: missing`)
+}
+
 export function finalise(data) {
   const { parts, errors, log, survey } = data
   const gates = {
@@ -1246,14 +1273,14 @@ export function finalise(data) {
     G11: g11(log, parts.map, survey),
     G12: g12(parts, survey),
   }
-  // A missing shell (no main or h1 at survey time) means the flag-off page
+  // A missing shell (no main or h1 at survey time) means another page
   // rendered or the survey ran before React committed. A skip then measured
   // nothing, so every skipped gate becomes unknown and fails the run.
   if (survey && survey.shell === false)
     for (const gate of Object.values(gates)) {
       if (gate.status !== 'skipped') continue
       gate.status = 'unknown'
-      gate.summary = `${gate.summary} · the /next shell (main and h1) is absent, so this skip is not trusted`
+      gate.summary = `${gate.summary} · the page shell (main and h1) is absent, so this skip is not trusted`
     }
   for (const [id, gate] of Object.entries(gates)) {
     gate.id = id

@@ -1,0 +1,56 @@
+/* Dev-only kit preview page (/drawings, registered only in dev). Kept out of
+   drawings.css so no build ships these rules. */
+.wz-preview-section {
+  max-width: 1280px;
+  margin: 48px auto 0;
+}
+
+.wz-preview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.wz-preview-case > p {
+  margin: 0 0 6px;
+  color: var(--color-wz-steel);
+  font-family: var(--font-wz-voice);
+  font-size: var(--text-wz-1);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.wz-preview-case .wz-drawing {
+  margin-top: 0;
+}
+
+.wz-preview-toggle {
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border: var(--wz-ink-line);
+  background: var(--color-wz-sheet);
+  color: var(--color-wz-navy);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wz-preview-tile {
+  max-width: 200px;
+  padding: 6px 7px 2px;
+  background: var(--color-wz-sheet);
+  border: 1px solid var(--color-wz-pin-sheet);
+  box-shadow: var(--shadow-wz-note);
+}
+
+@media (max-width: 760px) {
+  .wz-preview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.wz-preview-fill {
+  max-width: 640px;
+  border: var(--wz-ink-line);
+}

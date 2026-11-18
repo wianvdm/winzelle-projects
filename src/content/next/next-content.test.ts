@@ -1,4 +1,4 @@
-// Integrity checks for the /next content modules against the design spec
+// Integrity checks for the home page content modules against the design spec
 // (docs/design/home-page.md). Verbatim copy is asserted where #93 fixes the
 // wording; the rest is structural so sections can rely on the data.
 

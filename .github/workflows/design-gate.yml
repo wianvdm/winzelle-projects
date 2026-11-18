@@ -29,16 +29,18 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Build with the /next flag on
+      - name: Build
         run: npm run build
         env:
           VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
-          VITE_HOME_NEXT: 'true'
-      - name: Run the design gates against /next
+      - name: Run the design gates against /
         # serve.mjs serves dist/ with the pinned wrangler (local mode, no
         # Cloudflare login), asserts the CSP from public/_headers is applied,
         # then runs scripts/design-gates/probe.mjs with the runner's Chrome.
-        run: node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/next --out design-gate-report
+        # --expect-complete fails the run on a skipped gate, a pending rule, a
+        # missing section or no survey:
+        # the page is whole since the cutover (#105).
+        run: node scripts/design-gates/serve.mjs --url http://127.0.0.1:8787/ --out design-gate-report --expect-complete
         env:
           CHROME_PATH: /usr/bin/google-chrome
       - name: Upload the report and screenshots

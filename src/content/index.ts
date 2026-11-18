@@ -1,8 +1,0 @@
-export * from './types.ts'
-export { siteSettings } from './site-settings.ts'
-export { heroSection } from './hero.ts'
-export { aboutSection } from './about.ts'
-export { services } from './services.ts'
-export { projects } from './projects.ts'
-export { contactSection } from './contact.ts'
-export { facebookBanner } from './facebook-banner.ts'
