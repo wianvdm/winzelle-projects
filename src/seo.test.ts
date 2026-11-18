@@ -16,6 +16,22 @@ function readJsonLd(): Record<string, unknown> {
   return JSON.parse(match![1]!) as Record<string, unknown>
 }
 
+function normaliseWhitespace(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+function readMetaContent(html: string, attribute: string): string {
+  const metaTag = html
+    .match(/<meta\b[^>]*>/g)
+    ?.find((tag) => tag.includes(attribute))
+  const content = metaTag?.match(/content="([^"]*)"/)?.[1]
+  expect(
+    content,
+    `index.html should contain a ${attribute} meta tag`,
+  ).toBeDefined()
+  return normaliseWhitespace(content!)
+}
+
 describe('index.html SEO metadata', () => {
   it('keeps the JSON-LD business details in sync with src/content/next', () => {
     const jsonLd = readJsonLd()
@@ -35,7 +51,7 @@ describe('index.html SEO metadata', () => {
     expect(address['addressCountry']).toBe('ZA')
   })
 
-  it('lists every trade from src/content/next in the offer catalog', () => {
+  it('lists every trade but the catch-all in the offer catalog', () => {
     const catalog = readJsonLd()['hasOfferCatalog'] as Record<string, unknown>
     const offers = catalog['itemListElement'] as Record<string, unknown>[]
     const offerNames = offers.map(
@@ -43,7 +59,11 @@ describe('index.html SEO metadata', () => {
         (offer['itemOffered'] as Record<string, unknown>)['name'] as string,
     )
 
-    expect(offerNames).toEqual(trades.map((trade) => trade.label))
+    expect(offerNames).toEqual(
+      trades
+        .filter((trade) => trade.id !== 'other')
+        .map((trade) => trade.label),
+    )
   })
 
   it('states no opening hours, which the page does not show', () => {
@@ -56,6 +76,17 @@ describe('index.html SEO metadata', () => {
     expect(html).not.toMatch(/damp\s+sealing/i)
     expect(html).toMatch(
       /<title>\s*Winzelle Projects \| Maintenance, repairs and building in Port Elizabeth\s*<\/title>/,
+    )
+  })
+
+  it('gives social cards the same title and description as search results', () => {
+    const html = readRepoFile('index.html')
+
+    expect(readMetaContent(html, 'property="og:title"')).toBe(
+      normaliseWhitespace(html.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? ''),
+    )
+    expect(readMetaContent(html, 'property="og:description"')).toBe(
+      readMetaContent(html, 'name="description"'),
     )
   })
 
