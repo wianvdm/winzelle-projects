@@ -59,7 +59,13 @@ export function gateOutcome(result: ProbeResult): GateOutcome
 export function finalise(data: {
   parts: Record<string, unknown>
   errors: Record<string, string[]>
-  log: { console: unknown[]; requests: unknown[]; probeNotes: string[] }
+  log: {
+    console: unknown[]
+    requests: unknown[]
+    /** Tile URLs the probe answered with its stub PNG. */
+    answeredTiles: string[]
+    probeNotes: string[]
+  }
   survey?: Record<string, unknown> | null
   page: string
   chrome: string | null

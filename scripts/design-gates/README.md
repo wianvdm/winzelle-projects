@@ -34,7 +34,8 @@ OpenStreetMap tiles pass only from `https://tile.openstreetmap.org` and only
 after the probe has pressed the map's `Show the map` control (#100), and even
 then the probe answers each tile request itself with a 1x1 PNG, so no request
 reaches OpenStreetMap; anything else is blocked by the probe and fails G11.
-CSP violations and console errors fail G11 too. External hosts must use `https:`; a plain-http request to an
+CSP violations and console errors fail G11 too. External hosts must use `https:`
+on its default port; a plain-http request, or one to another port, of an
 allow-listed host is refused. Web3Forms is allow-listed outright today;
 narrowing it to submit-only belongs to #101. A request the probe itself failed
 to gate makes G11 `unknown` rather than passing unmeasured.
@@ -74,7 +75,15 @@ checks every tile URL against the CSP. Every earlier phase, and every new
 load, keeps tiles blocked, so a tile requested before the press fails G11.
 Once the contact section (`#wz-contact`) is on the page, G11 also fails when
 it has no `Show the map` control, when no tile loads after the press, or when
-zoom-in is missing or does not settle on the next level.
+zoom-in is missing or does not settle on the next level. G11's summary counts
+the tile requests the probe answered with its stub; a tile the CSP refused
+never reaches the probe and is not counted.
+
+G6 also guards cascade order: at 1200px and up, where the footer sits four
+across, the footer base row (`.wz-ft-base .wz-ft-base-row`) must be at least
+40px tall. A later padding rule once overrode its padding and left a 24px row
+that source-text tests missed (#115 review). A missing row fails too, so a
+renamed class cannot switch the check off.
 
 G6 (reflow) and G11 (console, network, CSP) always run. A skipped gate never
 fails the run. If the `/next` shell itself (the `main` element and the `h1`)
@@ -114,7 +123,7 @@ gate, so they are checked in the run outcome rather than under a gate id.
 | G3   | Real Tab key presses from page load until focus leaves the page; each stop with its accessible name. Fails on a trap, a visible control never reached, or the first WhatsApp link inside `<main>` later than stop 3. Opens the first photo with Enter and with a mouse click, Tabs inside, presses Esc, checks the dialog closed and focus returned. Enter on a trade tile and Space on a filter tag must toggle `aria-pressed`. Upward jumps over 300px are listed for review, not failed. |
 | G4   | At each Tab stop: outline (or zero-offset box-shadow spread) ≥2px; ring colour ≥3:1 against what lies next to it, sampled at three points per side (median per side, at least two sides measured); a side fails if most samples sit under a fixed, sticky or z-indexed element or outside a clipping ancestor; the element centre must not be covered.                                                                                                                                      |
 | G5   | Every visible control at 1440, 1280, 390 (top and mid-page, so the sticky bar counts) and inside the lightbox at 1280 and 390. Under 24×24 fails unless it is an inline link in a sentence or passes the 24px-circle spacing exception. At 390 every visible WhatsApp and `tel:` link must be ≥48px tall, inline ones included. Sizes are bounding boxes, so tilted objects read a little large.                                                                                            |
-| G6   | Fresh load at 320, 390 (mobile), 768, 1280, 1440, 1920: document `scrollWidth` vs `clientWidth` (sideways scroll unless the viewport clips x), text clipped by an `overflow: hidden/clip` ancestor or ellipsis, text outside the viewport. Elements sticking out are listed for review.                                                                                                                                                                                                     |
+| G6   | Fresh load at 320, 390 (mobile), 768, 1280, 1440, 1920: document `scrollWidth` vs `clientWidth` (sideways scroll unless the viewport clips x), text clipped by an `overflow: hidden/clip` ancestor or ellipsis, text outside the viewport; at 1280, 1440 and 1920 a footer base row under 40px tall (cascade order). Elements sticking out are listed for review.                                                                                                                           |
 | G7   | Every `wa.me` link: host, number 27828781557, `target=_blank`, URL-encoded non-empty message (decoded text recorded). Each trade tile is clicked; some WhatsApp message must then name that trade (word stems of the tile label; "Something else" only needs a changed message). The lightbox action must quote the photo caption. Links sharing one message are listed for review.                                                                                                         |
 | G8   | `tel:` normalises to 27828781557; `mailto:` address is valid; every visible occurrence of the number uses one textual format.                                                                                                                                                                                                                                                                                                                                                               |
 | G9   | 1280×800, every 50px to the bottom: a WhatsApp or `tel:` link at least half inside the viewport, visible, opacity ≥0.5, and hit-testable at its centre or quarter points.                                                                                                                                                                                                                                                                                                                   |
